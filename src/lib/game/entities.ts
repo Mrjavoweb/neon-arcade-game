@@ -30,7 +30,7 @@ export class Player {
 
   render(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    
+
     if (this.sprite && this.sprite.complete) {
       ctx.shadowBlur = 20;
       ctx.shadowColor = this.color;
@@ -103,7 +103,7 @@ export class Enemy {
     if (!this.isAlive) return;
 
     ctx.save();
-    
+
     if (this.sprite && this.sprite.complete) {
       ctx.shadowBlur = 15;
       ctx.shadowColor = this.color;
@@ -206,7 +206,7 @@ export class Explosion {
   update() {
     this.lifetime++;
     this.size += 3;
-    this.frame = Math.floor((this.lifetime / this.maxLifetime) * this.maxFrames);
+    this.frame = Math.floor(this.lifetime / this.maxLifetime * this.maxFrames);
   }
 
   render(ctx: CanvasRenderingContext2D) {
@@ -214,7 +214,7 @@ export class Explosion {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    
+
     if (this.sprite && this.sprite.complete) {
       ctx.shadowBlur = 20;
       ctx.shadowColor = this.color;

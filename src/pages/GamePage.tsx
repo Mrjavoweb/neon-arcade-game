@@ -25,14 +25,14 @@ export default function GamePage() {
     const loadAssets = async () => {
       try {
         const assetManager = new AssetManager();
-        
+
         // Track loading progress
         const progressInterval = setInterval(() => {
           setLoadingProgress(assetManager.getLoadProgress());
         }, 100);
 
         const loadedAssets = await assetManager.loadAllAssets();
-        
+
         clearInterval(progressInterval);
         setAssets(loadedAssets);
         setLoadingProgress(1);
@@ -57,13 +57,13 @@ export default function GamePage() {
           
           {/* Loading bar */}
           <div className="w-80 h-4 bg-gray-800 rounded-full overflow-hidden border-2 border-cyan-500/30">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 ease-out"
-              style={{ 
+              style={{
                 width: `${loadingProgress * 100}%`,
                 boxShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
-              }}
-            />
+              }} />
+
           </div>
           
           {/* Percentage */}
@@ -73,17 +73,17 @@ export default function GamePage() {
           
           {/* Loading dots animation */}
           <div className="flex justify-center space-x-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
-            ))}
+            {[0, 1, 2].map((i) =>
+            <div
+              key={i}
+              className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse"
+              style={{ animationDelay: `${i * 0.2}s` }} />
+
+            )}
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (loadError) {
@@ -97,13 +97,13 @@ export default function GamePage() {
           <button
             onClick={() => window.location.reload()}
             className="mt-6 px-8 py-3 bg-cyan-500/30 border-2 border-cyan-500 rounded-lg text-cyan-300 font-bold hover:bg-cyan-500/50 transition-all"
-            style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.4)' }}
-          >
+            style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.4)' }}>
+
             RELOAD
           </button>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return <GameCanvas isMobile={isMobile} assets={assets} />;

@@ -10,8 +10,8 @@ export class AssetManager {
     const assetEntries = Object.entries(ASSET_PATHS) as [keyof GameAssets, string][];
     this.totalCount = assetEntries.length;
 
-    const loadPromises = assetEntries.map(([key, path]) => 
-      this.loadImage(key, path)
+    const loadPromises = assetEntries.map(([key, path]) =>
+    this.loadImage(key, path)
     );
 
     await Promise.all(loadPromises);
@@ -94,9 +94,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 6,
       projectileSpeed: 8,
-      enemySpeed: 1,
+      enemySpeed: 0.5,
       enemyFireRate: 2000,
-      enemyDescendAmount: 30,
+      enemyDescendAmount: 15,
       initialLives: 3
     };
 
@@ -121,19 +121,19 @@ export class GameEngine {
     const enemyHeight = 45;
     const padding = 15;
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    const offsetY = 60;
+    const offsetY = 100;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const x = offsetX + col * (enemyWidth + padding);
         const y = offsetY + row * (enemyHeight + padding);
-        
+
         // Use different alien sprites based on row
         let sprite = this.assets.alienBasic;
-        if (row === 0) sprite = this.assets.alienFast;
-        else if (row === 1 || row === 2) sprite = this.assets.alienBasic;
-        else sprite = this.assets.alienHeavy;
-        
+        if (row === 0) sprite = this.assets.alienFast;else
+        if (row === 1 || row === 2) sprite = this.assets.alienBasic;else
+        sprite = this.assets.alienHeavy;
+
         this.enemies.push(new Enemy(x, y, sprite));
       }
     }
@@ -354,7 +354,7 @@ export class GameEngine {
 
   nextWave() {
     this.stats.wave++;
-    this.enemySpeed += 0.3;
+    this.enemySpeed += 0.2;
     this.enemyFireRate = Math.max(1000, this.enemyFireRate - 200);
     this.initEnemies();
     this.projectiles = [];
