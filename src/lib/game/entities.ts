@@ -7,10 +7,9 @@ export class Player {
   color: string;
   speed: number;
   canvasWidth: number;
-  sprite: HTMLImageElement | null;
 
-  constructor(canvasWidth: number, canvasHeight: number, speed: number, sprite?: HTMLImageElement) {
-    this.size = { width: 50, height: 50 };
+  constructor(canvasWidth: number, canvasHeight: number, speed: number) {
+    this.size = { width: 40, height: 40 };
     this.position = {
       x: canvasWidth / 2 - this.size.width / 2,
       y: canvasHeight - this.size.height - 20
@@ -19,7 +18,6 @@ export class Player {
     this.color = '#22d3ee'; // cyan
     this.speed = speed;
     this.canvasWidth = canvasWidth;
-    this.sprite = sprite || null;
   }
 
   update() {
@@ -30,24 +28,18 @@ export class Player {
 
   render(ctx: CanvasRenderingContext2D) {
     ctx.save();
-
-    if (this.sprite && this.sprite.complete) {
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = this.color;
-      ctx.drawImage(this.sprite, this.position.x, this.position.y, this.size.width, this.size.height);
-    } else {
-      // Fallback rendering
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = this.color;
-      ctx.beginPath();
-      ctx.moveTo(this.position.x + this.size.width / 2, this.position.y);
-      ctx.lineTo(this.position.x, this.position.y + this.size.height);
-      ctx.lineTo(this.position.x + this.size.width, this.position.y + this.size.height);
-      ctx.closePath();
-      ctx.fill();
-    }
-
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    
+    // Draw triangle ship
+    ctx.beginPath();
+    ctx.moveTo(this.position.x + this.size.width / 2, this.position.y);
+    ctx.lineTo(this.position.x, this.position.y + this.size.height);
+    ctx.lineTo(this.position.x + this.size.width, this.position.y + this.size.height);
+    ctx.closePath();
+    ctx.fill();
+    
     ctx.restore();
   }
 
@@ -83,15 +75,13 @@ export class Enemy {
   color: string;
   isAlive: boolean;
   points: number;
-  sprite: HTMLImageElement | null;
 
-  constructor(x: number, y: number, sprite?: HTMLImageElement) {
+  constructor(x: number, y: number) {
     this.position = { x, y };
-    this.size = { width: 45, height: 45 };
+    this.size = { width: 35, height: 35 };
     this.color = '#ec4899'; // pink
     this.isAlive = true;
     this.points = 10;
-    this.sprite = sprite || null;
   }
 
   update(dx: number, dy: number) {
@@ -103,22 +93,18 @@ export class Enemy {
     if (!this.isAlive) return;
 
     ctx.save();
-
-    if (this.sprite && this.sprite.complete) {
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = this.color;
-      ctx.drawImage(this.sprite, this.position.x, this.position.y, this.size.width, this.size.height);
-    } else {
-      // Fallback rendering
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = this.color;
-      ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(this.position.x + 5, this.position.y + 5, this.size.width - 10, this.size.height - 10);
-    }
-
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
+    
+    // Draw rectangle enemy
+    ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+    
+    // Add detail
+    ctx.strokeStyle = '#fbbf24'; // yellow accent
+    ctx.lineWidth = 2;
+    ctx.strokeRect(this.position.x + 5, this.position.y + 5, this.size.width - 10, this.size.height - 10);
+    
     ctx.restore();
   }
 
@@ -188,54 +174,33 @@ export class Explosion {
   color: string;
   lifetime: number;
   maxLifetime: number;
-  sprite: HTMLImageElement | null;
-  frame: number;
-  maxFrames: number;
 
-  constructor(x: number, y: number, color: string, sprite?: HTMLImageElement) {
+  constructor(x: number, y: number, color: string) {
     this.position = { x, y };
     this.size = 10;
     this.color = color;
     this.lifetime = 0;
     this.maxLifetime = 15;
-    this.sprite = sprite || null;
-    this.frame = 0;
-    this.maxFrames = 8;
   }
 
   update() {
     this.lifetime++;
-    this.size += 3;
-    this.frame = Math.floor(this.lifetime / this.maxLifetime * this.maxFrames);
+    this.size += 2;
   }
 
   render(ctx: CanvasRenderingContext2D) {
     const alpha = 1 - this.lifetime / this.maxLifetime;
-
+    
     ctx.save();
     ctx.globalAlpha = alpha;
-
-    if (this.sprite && this.sprite.complete) {
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = this.color;
-      const drawSize = this.size * 2;
-      ctx.drawImage(
-        this.sprite,
-        this.position.x - drawSize / 2,
-        this.position.y - drawSize / 2,
-        drawSize,
-        drawSize
-      );
-    } else {
-      // Fallback rendering
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = this.color;
-      ctx.beginPath();
-      ctx.arc(this.position.x, this.position.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
+    ctx.fillStyle = this.color;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    
     ctx.restore();
   }
 

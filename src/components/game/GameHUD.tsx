@@ -28,19 +28,19 @@ export default function GameHUD({ stats }: GameHUDProps) {
         <div className="text-right">
           <div className="text-yellow-400 text-sm font-bold tracking-wider">LIVES</div>
           <div className="flex gap-2 justify-end mt-1">
-            {Array.from({ length: stats.lives }).map((_, i) =>
-            <div
-              key={i}
-              className="w-6 h-6 bg-yellow-400 rounded-sm"
-              style={{
-                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-                boxShadow: '0 0 10px rgba(251, 191, 36, 0.8)'
-              }} />
-
-            )}
+            {Array.from({ length: stats.lives }).map((_, i) => (
+              <div
+                key={i}
+                className="w-6 h-6 bg-yellow-400 rounded-sm"
+                style={{ 
+                  clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+                  boxShadow: '0 0 10px rgba(251, 191, 36, 0.8)'
+                }}
+              />
+            ))}
           </div>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

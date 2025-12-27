@@ -7,25 +7,25 @@ export default function GameInstructions() {
       className="w-full max-w-4xl mx-auto mt-16 px-4"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.6 }}>
-
+      transition={{ duration: 0.8, delay: 0.6 }}
+    >
       <div className="grid md:grid-cols-2 gap-8">
         {/* Desktop Controls */}
-        <div
+        <div 
           className="relative p-6 rounded-xl border border-cyan-500/30 bg-black/40 backdrop-blur-sm"
           style={{
-            boxShadow: '0 0 20px rgba(34, 211, 238, 0.2), inset 0 0 20px rgba(34, 211, 238, 0.05)'
-          }}>
-
+            boxShadow: '0 0 20px rgba(34, 211, 238, 0.2), inset 0 0 20px rgba(34, 211, 238, 0.05)',
+          }}
+        >
           <div className="flex items-center gap-3 mb-4">
             <Keyboard className="w-6 h-6 text-cyan-400" />
-            <h3
+            <h3 
               className="text-xl font-bold text-cyan-400"
-              style={{
+              style={{ 
                 fontFamily: "'Space Grotesk', sans-serif",
-                textShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
-              }}>
-
+                textShadow: '0 0 10px rgba(34, 211, 238, 0.5)',
+              }}
+            >
               Desktop Controls
             </h3>
           </div>
@@ -50,21 +50,21 @@ export default function GameInstructions() {
         </div>
 
         {/* Mobile Controls */}
-        <div
+        <div 
           className="relative p-6 rounded-xl border border-magenta-500/30 bg-black/40 backdrop-blur-sm"
           style={{
-            boxShadow: '0 0 20px rgba(236, 72, 153, 0.2), inset 0 0 20px rgba(236, 72, 153, 0.05)'
-          }}>
-
+            boxShadow: '0 0 20px rgba(236, 72, 153, 0.2), inset 0 0 20px rgba(236, 72, 153, 0.05)',
+          }}
+        >
           <div className="flex items-center gap-3 mb-4">
             <Smartphone className="w-6 h-6 text-pink-400" />
-            <h3
+            <h3 
               className="text-xl font-bold text-pink-400"
-              style={{
+              style={{ 
                 fontFamily: "'Space Grotesk', sans-serif",
-                textShadow: '0 0 10px rgba(236, 72, 153, 0.5)'
-              }}>
-
+                textShadow: '0 0 10px rgba(236, 72, 153, 0.5)',
+              }}
+            >
               Mobile Controls
             </h3>
           </div>
@@ -82,6 +82,6 @@ export default function GameInstructions() {
           </div>
         </div>
       </div>
-    </motion.div>);
-
+    </motion.div>
+  );
 }

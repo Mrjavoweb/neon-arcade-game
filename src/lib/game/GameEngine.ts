@@ -1,50 +1,5 @@
 import { Player, Enemy, Projectile, Explosion } from './entities';
-import { GameState, GameStats, GameConfig, GameAssets, ASSET_PATHS } from './types';
-
-export class AssetManager {
-  private assets: Partial<GameAssets> = {};
-  private loadedCount = 0;
-  private totalCount = 0;
-
-  async loadAllAssets(): Promise<GameAssets> {
-    const assetEntries = Object.entries(ASSET_PATHS) as [keyof GameAssets, string][];
-    this.totalCount = assetEntries.length;
-
-    const loadPromises = assetEntries.map(([key, path]) =>
-    this.loadImage(key, path)
-    );
-
-    await Promise.all(loadPromises);
-    return this.assets as GameAssets;
-  }
-
-  private loadImage(key: keyof GameAssets, path: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        this.assets[key] = img;
-        this.loadedCount++;
-        resolve();
-      };
-      img.onerror = () => {
-        console.error(`Failed to load image: ${path}`);
-        // Create a fallback image
-        this.assets[key] = img;
-        this.loadedCount++;
-        resolve(); // Don't reject, allow game to continue with fallback rendering
-      };
-      img.src = path;
-    });
-  }
-
-  getAssets(): Partial<GameAssets> {
-    return this.assets;
-  }
-
-  getLoadProgress(): number {
-    return this.totalCount > 0 ? this.loadedCount / this.totalCount : 0;
-  }
-}
+import { GameState, GameStats, GameConfig } from './types';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -66,14 +21,13 @@ export class GameEngine {
   isMobile: boolean;
   touchX: number | null;
   autoFireInterval: number | null;
-  assets: Partial<GameAssets>;
 
-  constructor(canvas: HTMLCanvasElement, isMobile: boolean, assets: Partial<GameAssets> = {}) {
+  constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not get canvas context');
     this.ctx = context;
-
+    
     this.isMobile = isMobile;
     this.keys = new Set();
     this.state = 'playing';
@@ -94,17 +48,16 @@ export class GameEngine {
     this.config = {
       playerSpeed: 6,
       projectileSpeed: 8,
-      enemySpeed: 1.0,
-      enemyFireRate: 2500,
-      enemyDescendAmount: 20,
+      enemySpeed: 1,
+      enemyFireRate: 2000,
+      enemyDescendAmount: 30,
       initialLives: 3
     };
 
     this.enemySpeed = this.config.enemySpeed;
     this.enemyFireRate = this.config.enemyFireRate;
-    this.assets = assets;
 
-    this.player = new Player(canvas.width, canvas.height, this.config.playerSpeed, assets.playerShip);
+    this.player = new Player(canvas.width, canvas.height, this.config.playerSpeed);
     this.enemies = [];
     this.projectiles = [];
     this.explosions = [];
@@ -117,25 +70,17 @@ export class GameEngine {
     this.enemies = [];
     const rows = 5;
     const cols = 8;
-    const enemyWidth = 45;
-    const enemyHeight = 45;
+    const enemyWidth = 35;
+    const enemyHeight = 35;
     const padding = 15;
-    const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    // Start aliens higher up to ensure they don't immediately trigger game over
-    const offsetY = 50;
+    const offsetX = (this.canvas.width - (cols * (enemyWidth + padding))) / 2;
+    const offsetY = 60;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const x = offsetX + col * (enemyWidth + padding);
         const y = offsetY + row * (enemyHeight + padding);
-
-        // Use different alien sprites based on row
-        let sprite = this.assets.alienBasic;
-        if (row === 0) sprite = this.assets.alienFast;else
-        if (row === 1 || row === 2) sprite = this.assets.alienBasic;else
-        sprite = this.assets.alienHeavy;
-
-        this.enemies.push(new Enemy(x, y, sprite));
+        this.enemies.push(new Enemy(x, y));
       }
     }
   }
@@ -159,7 +104,7 @@ export class GameEngine {
       this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
       this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
       this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
-
+      
       // Auto-fire for mobile
       this.autoFireInterval = window.setInterval(() => {
         if (this.state === 'playing') {
@@ -233,8 +178,8 @@ export class GameEngine {
     if (now - this.lastEnemyFireTime < this.enemyFireRate) return;
 
     this.lastEnemyFireTime = now;
-
-    const aliveEnemies = this.enemies.filter((e) => e.isAlive);
+    
+    const aliveEnemies = this.enemies.filter(e => e.isAlive);
     if (aliveEnemies.length === 0) return;
 
     const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
@@ -275,11 +220,9 @@ export class GameEngine {
       }
     }
 
-    // Check if enemies reached player - with margin for actual collision
-    // Only trigger game over if aliens are actually overlapping with player
-    const gameOverThreshold = this.player.position.y - 20; // 20px margin
+    // Check if enemies reached player
     for (const enemy of this.enemies) {
-      if (enemy.isAlive && enemy.position.y + enemy.size.height >= gameOverThreshold) {
+      if (enemy.isAlive && enemy.position.y + enemy.size.height >= this.player.position.y) {
         this.gameOver();
         break;
       }
@@ -299,12 +242,11 @@ export class GameEngine {
           enemy.hit();
           this.stats.score += enemy.points;
           this.stats.enemiesDestroyed++;
-
+          
           this.explosions.push(new Explosion(
             enemy.position.x + enemy.size.width / 2,
             enemy.position.y + enemy.size.height / 2,
-            '#ec4899',
-            this.assets.explosion
+            '#ec4899'
           ));
           break;
         }
@@ -321,8 +263,7 @@ export class GameEngine {
         this.explosions.push(new Explosion(
           this.player.position.x + this.player.size.width / 2,
           this.player.position.y + this.player.size.height / 2,
-          '#22d3ee',
-          this.assets.explosion
+          '#22d3ee'
         ));
       }
     }
@@ -330,11 +271,11 @@ export class GameEngine {
 
   checkCollision(bounds1: any, bounds2: any): boolean {
     return !(
-    bounds1.right < bounds2.left ||
-    bounds1.left > bounds2.right ||
-    bounds1.bottom < bounds2.top ||
-    bounds1.top > bounds2.bottom);
-
+      bounds1.right < bounds2.left ||
+      bounds1.left > bounds2.right ||
+      bounds1.bottom < bounds2.top ||
+      bounds1.top > bounds2.bottom
+    );
   }
 
   hitPlayer() {
@@ -349,7 +290,7 @@ export class GameEngine {
   }
 
   checkWaveComplete() {
-    const aliveEnemies = this.enemies.filter((e) => e.isAlive);
+    const aliveEnemies = this.enemies.filter(e => e.isAlive);
     if (aliveEnemies.length === 0) {
       this.nextWave();
     }
@@ -357,7 +298,7 @@ export class GameEngine {
 
   nextWave() {
     this.stats.wave++;
-    this.enemySpeed += 0.2;
+    this.enemySpeed += 0.3;
     this.enemyFireRate = Math.max(1000, this.enemyFireRate - 200);
     this.initEnemies();
     this.projectiles = [];
@@ -372,15 +313,15 @@ export class GameEngine {
     this.enemyFire();
 
     // Update projectiles
-    this.projectiles = this.projectiles.filter((p) => {
+    this.projectiles = this.projectiles.filter(p => {
       if (!p.isActive) return false;
       p.update();
       return p.position.y > -20 && p.position.y < this.canvas.height + 20;
     });
 
     // Update explosions
-    this.explosions.forEach((e) => e.update());
-    this.explosions = this.explosions.filter((e) => !e.isDone());
+    this.explosions.forEach(e => e.update());
+    this.explosions = this.explosions.filter(e => !e.isDone());
 
     this.checkCollisions();
     this.checkWaveComplete();
@@ -393,9 +334,9 @@ export class GameEngine {
 
     // Render entities
     this.player.render(this.ctx);
-    this.enemies.forEach((enemy) => enemy.render(this.ctx));
-    this.projectiles.forEach((projectile) => projectile.render(this.ctx));
-    this.explosions.forEach((explosion) => explosion.render(this.ctx));
+    this.enemies.forEach(enemy => enemy.render(this.ctx));
+    this.projectiles.forEach(projectile => projectile.render(this.ctx));
+    this.explosions.forEach(explosion => explosion.render(this.ctx));
   }
 
   reset() {
@@ -411,7 +352,7 @@ export class GameEngine {
     this.projectiles = [];
     this.explosions = [];
     this.enemyDirection = 1;
-    this.player = new Player(this.canvas.width, this.canvas.height, this.config.playerSpeed, this.assets.playerShip);
+    this.player = new Player(this.canvas.width, this.canvas.height, this.config.playerSpeed);
     this.initEnemies();
   }
 

@@ -15,36 +15,36 @@ export default function NeonButton({ children, onClick, className = '' }: NeonBu
       style={{
         fontFamily: "'Sora', sans-serif",
         textShadow: '0 0 10px rgba(34, 211, 238, 0.8), 0 0 20px rgba(34, 211, 238, 0.5)',
-        boxShadow: '0 0 20px rgba(34, 211, 238, 0.5), inset 0 0 20px rgba(34, 211, 238, 0.1)'
+        boxShadow: '0 0 20px rgba(34, 211, 238, 0.5), inset 0 0 20px rgba(34, 211, 238, 0.1)',
       }}
       whileHover={{
         scale: 1.05,
-        boxShadow: '0 0 30px rgba(34, 211, 238, 0.8), inset 0 0 30px rgba(34, 211, 238, 0.2)'
+        boxShadow: '0 0 30px rgba(34, 211, 238, 0.8), inset 0 0 30px rgba(34, 211, 238, 0.2)',
       }}
       whileTap={{ scale: 0.95 }}
       animate={{
-        y: [0, -8, 0]
+        y: [0, -8, 0],
       }}
       transition={{
         y: {
           duration: 2,
           repeat: Infinity,
-          ease: 'easeInOut'
-        }
-      }}>
-
+          ease: 'easeInOut',
+        },
+      }}
+    >
       {/* Animated background glow */}
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20"
         animate={{
-          x: ['-100%', '100%']
+          x: ['-100%', '100%'],
         }}
         transition={{
           duration: 3,
           repeat: Infinity,
-          ease: 'linear'
-        }} />
-
+          ease: 'linear',
+        }}
+      />
       
       {/* Button content */}
       <span className="relative z-10">{children}</span>
@@ -54,6 +54,6 @@ export default function NeonButton({ children, onClick, className = '' }: NeonBu
       <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
       <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
       <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </motion.button>);
-
+    </motion.button>
+  );
 }
