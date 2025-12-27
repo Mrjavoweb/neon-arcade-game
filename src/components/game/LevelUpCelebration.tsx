@@ -12,21 +12,21 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
 
   useEffect(() => {
     // Generate random particle positions
-    const newParticles = Array.from({ length: 30 }, () => ({
+    const newParticles = Array.from({ length: 15 }, () => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
       delay: Math.random() * 0.3
     }));
     setParticles(newParticles);
 
-    // Auto-dismiss after 2.5 seconds
-    const timer = setTimeout(onComplete, 2500);
+    // Auto-dismiss after 1.5 seconds
+    const timer = setTimeout(onComplete, 1500);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
     <motion.div
-      className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center"
+      className="absolute inset-0 z-30 pointer-events-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}>
@@ -65,12 +65,12 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
 
       {/* Level up banner */}
       <motion.div
-        className="relative z-10"
+        className="absolute top-4 right-4 z-10"
         initial={{ scale: 0, rotateZ: -180 }}
         animate={{ scale: 1, rotateZ: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}>
 
-        <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 border-4 border-yellow-300 rounded-2xl p-6 shadow-2xl">
+        <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 border-2 border-yellow-300 rounded-2xl p-3 shadow-2xl">
           <motion.div
             className="text-center"
             animate={{
@@ -83,15 +83,15 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
             }}>
 
             <div
-              className="text-5xl md:text-6xl font-black text-white font-['Sora'] mb-2"
+              className="text-2xl md:text-3xl font-black text-white font-['Sora'] mb-1"
               style={{ textShadow: '0 0 20px rgba(0, 0, 0, 0.8)' }}>
 
               LEVEL UP!
             </div>
-            <div className="text-3xl md:text-4xl font-bold text-yellow-900 mb-2">
+            <div className="text-xl md:text-2xl font-bold text-yellow-900 mb-1">
               Level {level}
             </div>
-            <div className="text-lg md:text-xl text-white font-['Space_Grotesk']">
+            <div className="text-sm md:text-base text-white font-['Space_Grotesk']">
               {upgrade}
             </div>
 
@@ -101,7 +101,7 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
 
       {/* Radial burst effect */}
       <motion.div
-        className="absolute inset-0 flex items-center justify-center"
+        className="absolute top-4 right-4 z-0 flex items-center justify-center w-48 h-48"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 0] }}
         transition={{ duration: 0.8 }}>
@@ -109,7 +109,7 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
         {Array.from({ length: 12 }).map((_, i) =>
         <motion.div
           key={i}
-          className="absolute w-1 h-20 bg-gradient-to-b from-yellow-400 to-transparent"
+          className="absolute w-1 h-16 bg-gradient-to-b from-yellow-400 to-transparent"
           style={{
             transformOrigin: 'center',
             rotate: `${i * 30}deg`
