@@ -669,6 +669,7 @@ export class GameEngine {
             this.powerUps.push(powerUp);
 
             this.bossState.bossActive = false;
+            this.bossState.bossHealth = 0;
             this.bossState.bossVictoryTimer = 120; // 2 second victory pause
             this.state = 'bossVictory';
           } else {
@@ -957,7 +958,7 @@ export class GameEngine {
     if (this.slowMotionActive) {
       this.ctx.fillStyle = 'rgba(100, 50, 200, 0.15)';
       this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
-      
+
       // Add scanlines effect for slow-mo
       this.ctx.strokeStyle = 'rgba(100, 50, 200, 0.1)';
       this.ctx.lineWidth = 2;
@@ -979,7 +980,7 @@ export class GameEngine {
       this.ctx.beginPath();
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
-      
+
       // Add bright core to particles
       if (p.alpha > 0.5) {
         this.ctx.fillStyle = '#ffffff';
@@ -1116,7 +1117,7 @@ export class GameEngine {
       const particlesInRing = 30 + ring * 10;
       for (let i = 0; i < particlesInRing; i++) {
         const angle = Math.PI * 2 * i / particlesInRing;
-        const speed = (3 + ring * 2) + Math.random() * 4;
+        const speed = 3 + ring * 2 + Math.random() * 4;
         this.particles.push({
           x,
           y,

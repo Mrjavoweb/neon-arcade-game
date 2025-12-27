@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
 
 interface BossHealthBarProps {
+  show: boolean;
   health: number;
   maxHealth: number;
   phase: 'phase1' | 'phase2' | 'phase3' | 'phase4';
 }
 
-export default function BossHealthBar({ health, maxHealth, phase }: BossHealthBarProps) {
+export default function BossHealthBar({ show, health, maxHealth, phase }: BossHealthBarProps) {
+  if (!show) return null;
+  
   const healthPercent = health / maxHealth * 100;
 
   const phaseColors = {

@@ -98,7 +98,7 @@ export class Player {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
-      
+
       // Add bright core
       if (p.alpha > 0.5) {
         ctx.fillStyle = '#ffffff';
@@ -455,7 +455,7 @@ export class Enemy {
       if (this.health < this.maxHealth) {
         const flashAlpha = 0.6 + Math.sin(Date.now() / 50) * 0.4;
         ctx.globalAlpha = flashAlpha;
-        
+
         // Add red tint when damaged
         ctx.shadowBlur = 30;
         ctx.shadowColor = '#ff0000';
@@ -492,7 +492,7 @@ export class Enemy {
       ctx.shadowColor = healthColor;
       ctx.fillStyle = healthColor;
       ctx.fillRect(this.position.x, this.position.y - 12, barWidth * healthPercent, barHeight);
-      
+
       // Border
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 1;
@@ -585,7 +585,7 @@ export class Projectile {
 
     // Render projectile with enhanced glow
     ctx.save();
-    
+
     // Outer glow
     ctx.shadowBlur = 25;
     ctx.shadowColor = this.color;
@@ -597,7 +597,7 @@ export class Projectile {
     ctx.fillStyle = this.isPlayerProjectile ? '#ffffff' : '#ff6666';
     ctx.globalAlpha = 0.8;
     ctx.fillRect(this.position.x + 0.5, this.position.y + 2, this.size.width - 1, this.size.height - 4);
-    
+
     // Bright core
     ctx.fillStyle = 'white';
     ctx.globalAlpha = 0.6;
@@ -661,7 +661,7 @@ export class ExplosionAnimation {
     const glowIntensity = 40 * (1 - this.frame / this.maxFrames);
     ctx.shadowBlur = glowIntensity;
     ctx.shadowColor = '#ff6600';
-    
+
     // Add second glow layer
     ctx.globalCompositeOperation = 'screen';
 

@@ -19,8 +19,8 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
     }));
     setParticles(newParticles);
 
-    // Auto-dismiss after 2.5 seconds
-    const timer = setTimeout(onComplete, 2500);
+    // Auto-dismiss after 1.5 seconds
+    const timer = setTimeout(onComplete, 1500);
     return () => clearTimeout(timer);
   }, [onComplete]);
 

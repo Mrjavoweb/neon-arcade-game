@@ -76,13 +76,13 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     // Initialize game engine with assets
     const initGame = async () => {
       gameEngineRef.current = new GameEngine(canvas, isMobile);
-      
+
       // Set level up callback
       gameEngineRef.current.setLevelUpCallback((level: number, upgrade: string) => {
         setLevelUpData({ level, upgrade });
         setShowLevelUp(true);
       });
-      
+
       await gameEngineRef.current.loadAssets();
 
       if (!mounted) return;
@@ -176,13 +176,13 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
 
       {/* Level Up Celebration */}
       <AnimatePresence>
-        {showLevelUp && (
-          <LevelUpCelebration
-            level={levelUpData.level}
-            upgrade={levelUpData.upgrade}
-            onComplete={() => setShowLevelUp(false)}
-          />
-        )}
+        {showLevelUp &&
+        <LevelUpCelebration
+          level={levelUpData.level}
+          upgrade={levelUpData.upgrade}
+          onComplete={() => setShowLevelUp(false)} />
+
+        }
       </AnimatePresence>
       
       <GameOverlay
