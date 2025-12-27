@@ -29,10 +29,10 @@ export default function StarfieldBackground() {
 
     // Create parallax star layers
     const layers = [
-      { count: 100, speedMult: 0.2, sizeRange: [0.5, 1], color: 'rgba(100, 150, 200, ' },
-      { count: 80, speedMult: 0.5, sizeRange: [1, 1.5], color: 'rgba(147, 197, 253, ' },
-      { count: 50, speedMult: 1, sizeRange: [1.5, 2.5], color: 'rgba(200, 230, 255, ' }
-    ];
+    { count: 100, speedMult: 0.2, sizeRange: [0.5, 1], color: 'rgba(100, 150, 200, ' },
+    { count: 80, speedMult: 0.5, sizeRange: [1, 1.5], color: 'rgba(147, 197, 253, ' },
+    { count: 50, speedMult: 1, sizeRange: [1.5, 2.5], color: 'rgba(200, 230, 255, ' }];
+
 
     const stars: Star[] = [];
 
@@ -51,10 +51,10 @@ export default function StarfieldBackground() {
 
     // Nebula clouds
     const nebulae = [
-      { x: canvas.width * 0.2, y: canvas.height * 0.3, radius: 150, color: 'rgba(139, 92, 246, 0.03)' },
-      { x: canvas.width * 0.7, y: canvas.height * 0.6, radius: 200, color: 'rgba(236, 72, 153, 0.02)' },
-      { x: canvas.width * 0.5, y: canvas.height * 0.8, radius: 180, color: 'rgba(34, 211, 238, 0.02)' }
-    ];
+    { x: canvas.width * 0.2, y: canvas.height * 0.3, radius: 150, color: 'rgba(139, 92, 246, 0.03)' },
+    { x: canvas.width * 0.7, y: canvas.height * 0.6, radius: 200, color: 'rgba(236, 72, 153, 0.02)' },
+    { x: canvas.width * 0.5, y: canvas.height * 0.8, radius: 180, color: 'rgba(34, 211, 238, 0.02)' }];
+
 
     // Animation loop
     let animationFrameId: number;
@@ -68,7 +68,7 @@ export default function StarfieldBackground() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw nebulae
-      nebulae.forEach(nebula => {
+      nebulae.forEach((nebula) => {
         const nebulaGradient = ctx.createRadialGradient(nebula.x, nebula.y, 0, nebula.x, nebula.y, nebula.radius);
         nebulaGradient.addColorStop(0, nebula.color);
         nebulaGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -83,7 +83,7 @@ export default function StarfieldBackground() {
         star.opacity = Math.max(0.2, Math.min(1, star.opacity));
 
         const layer = layers[star.layer];
-        
+
         // Draw star with glow
         ctx.save();
         ctx.shadowBlur = star.size * 3;
@@ -127,6 +127,6 @@ export default function StarfieldBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full"
-      style={{ zIndex: 0 }} />
-  );
+      style={{ zIndex: 0 }} />);
+
 }

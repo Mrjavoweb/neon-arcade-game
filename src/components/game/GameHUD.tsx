@@ -6,7 +6,7 @@ interface GameHUDProps {
 
 export default function GameHUD({ stats }: GameHUDProps) {
   const xpPerLevel = 500;
-  const xpProgress = (stats.xp / xpPerLevel) * 100;
+  const xpProgress = stats.xp / xpPerLevel * 100;
 
   return (
     <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
@@ -23,10 +23,10 @@ export default function GameHUD({ stats }: GameHUDProps) {
           {/* Level indicator */}
           <div className="bg-black/50 border-2 border-yellow-400 rounded-lg p-2 backdrop-blur-sm">
             <div className="flex items-center gap-2">
-              <div 
+              <div
                 className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-black text-lg border-2 border-yellow-300"
-                style={{ boxShadow: '0 0 15px rgba(251, 191, 36, 0.6)' }}
-              >
+                style={{ boxShadow: '0 0 15px rgba(251, 191, 36, 0.6)' }}>
+
                 {stats.level}
               </div>
               <div className="text-left">
@@ -47,8 +47,8 @@ export default function GameHUD({ stats }: GameHUDProps) {
                   style={{
                     width: `${xpProgress}%`,
                     boxShadow: '0 0 10px rgba(251, 191, 36, 0.8)'
-                  }}
-                />
+                  }} />
+
               </div>
             </div>
           </div>
@@ -66,23 +66,23 @@ export default function GameHUD({ stats }: GameHUDProps) {
         <div className="text-right">
           <div className="text-yellow-400 text-sm font-bold tracking-wider">HEALTH</div>
           <div className="flex gap-2 justify-end mt-1 flex-wrap max-w-[120px]">
-            {Array.from({ length: stats.maxHealth }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-6 h-6 rounded-sm transition-all ${
-                  i < stats.lives 
-                    ? 'bg-yellow-400' 
-                    : 'bg-gray-600/50 border border-gray-500'
-                }`}
-                style={{
-                  clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-                  boxShadow: i < stats.lives ? '0 0 10px rgba(251, 191, 36, 0.8)' : 'none'
-                }}
-              />
-            ))}
+            {Array.from({ length: stats.maxHealth }).map((_, i) =>
+            <div
+              key={i}
+              className={`w-6 h-6 rounded-sm transition-all ${
+              i < stats.lives ?
+              'bg-yellow-400' :
+              'bg-gray-600/50 border border-gray-500'}`
+              }
+              style={{
+                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+                boxShadow: i < stats.lives ? '0 0 10px rgba(251, 191, 36, 0.8)' : 'none'
+              }} />
+
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }

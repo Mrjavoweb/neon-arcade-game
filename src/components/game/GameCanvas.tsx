@@ -126,6 +126,14 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     }
   };
 
+  const handleSkipBossIntro = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.bossState.bossIntroTimer = 0;
+      gameEngineRef.current.state = 'playing';
+      gameEngineRef.current.slowMotionActive = false;
+    }
+  };
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0a0014]">
       <canvas
@@ -137,18 +145,18 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       <GameHUD stats={stats} />
       
       {/* Boss health bar */}
-      {bossState.bossActive && (
-        <BossHealthBar 
-          health={bossState.bossHealth}
-          maxHealth={bossState.bossMaxHealth}
-          phase={bossState.bossPhase}
-        />
-      )}
+      {bossState.bossActive &&
+      <BossHealthBar
+        health={bossState.bossHealth}
+        maxHealth={bossState.bossMaxHealth}
+        phase={bossState.bossPhase} />
+
+      }
 
       {/* Boss intro */}
-      {gameState === 'bossIntro' && (
-        <BossIntro wave={stats.wave} />
-      )}
+      {gameState === 'bossIntro' &&
+      <BossIntro wave={stats.wave} onSkip={handleSkipBossIntro} />
+      }
       
       <GameOverlay
         state={gameState}

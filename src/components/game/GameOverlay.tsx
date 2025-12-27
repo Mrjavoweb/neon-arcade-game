@@ -72,10 +72,10 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
                 Final Score: <span className="font-bold text-cyan-400">{stats.score}</span>
               </div>
               <div className="flex items-center justify-center gap-2 my-3">
-                <div 
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-black text-2xl border-2 border-yellow-300"
-                  style={{ boxShadow: '0 0 15px rgba(251, 191, 36, 0.6)' }}
-                >
+                <div
+                className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-black text-2xl border-2 border-yellow-300"
+                style={{ boxShadow: '0 0 15px rgba(251, 191, 36, 0.6)' }}>
+
                   {stats.level}
                 </div>
                 <div className="text-left">

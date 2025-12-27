@@ -15,7 +15,7 @@ export default function GamePage() {
   const engineRef = useRef<GameEngine | null>(null);
   const animationFrameRef = useRef<number>();
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  const [levelUpData, setLevelUpData] = useState<{ level: number; upgrade: string } | null>(null);
+  const [levelUpData, setLevelUpData] = useState<{level: number;upgrade: string;} | null>(null);
   const [gameState, setGameState] = useState<{
     state: GameState;
     stats: GameStats;
@@ -64,12 +64,12 @@ export default function GamePage() {
 
       const gameLoop = () => {
         engine.update();
-        
+
         // Update player level display
         if (engine.player) {
           engine.player.level = engine.stats.level;
         }
-        
+
         engine.render();
 
         setGameState({
@@ -112,8 +112,8 @@ export default function GamePage() {
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}
-        className="absolute inset-0"
-      />
+        className="absolute inset-0" />
+
 
       <GameHUD stats={gameState.stats} />
 
@@ -121,19 +121,19 @@ export default function GamePage() {
         show={gameState.bossState.bossActive}
         health={gameState.bossState.bossHealth}
         maxHealth={gameState.bossState.bossMaxHealth}
-        phase={gameState.bossState.bossPhase}
-      />
+        phase={gameState.bossState.bossPhase} />
+
 
       <BossIntro show={gameState.state === 'bossIntro'} wave={gameState.stats.wave} />
 
       <AnimatePresence>
-        {levelUpData && (
-          <LevelUpCelebration
-            level={levelUpData.level}
-            upgrade={levelUpData.upgrade}
-            onComplete={() => setLevelUpData(null)}
-          />
-        )}
+        {levelUpData &&
+        <LevelUpCelebration
+          level={levelUpData.level}
+          upgrade={levelUpData.upgrade}
+          onComplete={() => setLevelUpData(null)} />
+
+        }
       </AnimatePresence>
 
       <GameOverlay
@@ -141,8 +141,8 @@ export default function GamePage() {
         stats={gameState.stats}
         onResume={handleResume}
         onRestart={handleRestart}
-        onMainMenu={handleMainMenu}
-      />
-    </div>
-  );
+        onMainMenu={handleMainMenu} />
+
+    </div>);
+
 }

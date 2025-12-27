@@ -26,7 +26,7 @@ export class GameEngine {
   touchX: number | null;
   autoFireInterval: number | null;
   assets?: SpriteAssets;
-  screenShake: { x: number; y: number; intensity: number };
+  screenShake: {x: number;y: number;intensity: number;};
   slowMotionActive: boolean;
   slowMotionDuration: number;
   lastPowerUpSpawn: number;
@@ -119,30 +119,30 @@ export class GameEngine {
 
     try {
       const [
-        playerShip,
-        alienBasic,
-        alienHeavy,
-        alienFast,
-        bossAlien,
-        explosion,
-        powerUpPlasma,
-        powerUpRapid,
-        powerUpShield,
-        powerUpSlowmo,
-        shieldEffect
-      ] = await Promise.all([
-        loadImage('/assets/f3b62150-4a75-4f79-a287-beb738d7988f.webp'),
-        loadImage('/assets/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
-        loadImage('/assets/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
-        loadImage('/assets/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
-        loadImage('/assets/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'),
-        loadImage('/assets/bf008940-7261-4765-8c6d-32086670999c.webp'),
-        loadImage('/assets/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
-        loadImage('/assets/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
-        loadImage('/assets/c52e69ca-3469-4246-88ce-38a9fde77993.webp'),
-        loadImage('/assets/f825721c-8221-4dff-919b-1365add27ab7.webp'),
-        loadImage('/assets/969a16ba-05c1-4406-8632-b5809c2e3b85.webp')
-      ]);
+      playerShip,
+      alienBasic,
+      alienHeavy,
+      alienFast,
+      bossAlien,
+      explosion,
+      powerUpPlasma,
+      powerUpRapid,
+      powerUpShield,
+      powerUpSlowmo,
+      shieldEffect] =
+      await Promise.all([
+      loadImage('/assets/f3b62150-4a75-4f79-a287-beb738d7988f.webp'),
+      loadImage('/assets/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
+      loadImage('/assets/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
+      loadImage('/assets/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
+      loadImage('/assets/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'),
+      loadImage('/assets/bf008940-7261-4765-8c6d-32086670999c.webp'),
+      loadImage('/assets/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
+      loadImage('/assets/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
+      loadImage('/assets/c52e69ca-3469-4246-88ce-38a9fde77993.webp'),
+      loadImage('/assets/f825721c-8221-4dff-919b-1365add27ab7.webp'),
+      loadImage('/assets/969a16ba-05c1-4406-8632-b5809c2e3b85.webp')]
+      );
 
       this.assets = {
         playerShip,
@@ -160,11 +160,11 @@ export class GameEngine {
 
       // Assign sprites to entities
       this.player.setImage(playerShip);
-      this.enemies.forEach(enemy => {
-        if (enemy.type === 'boss') enemy.setImage(bossAlien);
-        else if (enemy.type === 'heavy') enemy.setImage(alienHeavy);
-        else if (enemy.type === 'fast') enemy.setImage(alienFast);
-        else enemy.setImage(alienBasic);
+      this.enemies.forEach((enemy) => {
+        if (enemy.type === 'boss') enemy.setImage(bossAlien);else
+        if (enemy.type === 'heavy') enemy.setImage(alienHeavy);else
+        if (enemy.type === 'fast') enemy.setImage(alienFast);else
+        enemy.setImage(alienBasic);
       });
     } catch (error) {
       console.error('Failed to load assets:', error);
@@ -175,18 +175,18 @@ export class GameEngine {
     this.enemies = [];
     this.bossMinions = [];
     const wave = this.stats.wave;
-    
+
     // Boss wave every 5 waves
     if (wave % 5 === 0) {
       this.bossState.isBossWave = true;
-      this.bossState.bossIntroTimer = 180; // 3 seconds intro
+      this.bossState.bossIntroTimer = 90; // 1.5 seconds intro (auto-dismiss if not clicked)
       this.state = 'bossIntro';
       this.slowMotionActive = true;
-      this.slowMotionDuration = 180;
-      
+      this.slowMotionDuration = 90;
+
       this.boss = new Boss(this.canvas.width / 2 - 60, -150, wave);
       if (this.assets) this.boss.setImage(this.assets.bossAlien);
-      
+
       this.bossState.bossActive = true;
       this.bossState.bossHealth = this.boss.health;
       this.bossState.bossMaxHealth = this.boss.maxHealth;
@@ -212,17 +212,17 @@ export class GameEngine {
       for (let col = 0; col < cols; col++) {
         const x = offsetX + col * (enemyWidth + padding);
         const y = offsetY + row * (enemyHeight + padding);
-        
+
         let type: 'basic' | 'heavy' | 'fast' = 'basic';
         const rand = Math.random();
-        if (wave > 2 && rand < 0.15) type = 'heavy';
-        else if (wave > 1 && rand < 0.3) type = 'fast';
+        if (wave > 2 && rand < 0.15) type = 'heavy';else
+        if (wave > 1 && rand < 0.3) type = 'fast';
 
         const enemy = new Enemy(x, y, type, this.getEnemyDifficultyMultiplier());
         if (this.assets) {
-          if (type === 'heavy') enemy.setImage(this.assets.alienHeavy);
-          else if (type === 'fast') enemy.setImage(this.assets.alienFast);
-          else enemy.setImage(this.assets.alienBasic);
+          if (type === 'heavy') enemy.setImage(this.assets.alienHeavy);else
+          if (type === 'fast') enemy.setImage(this.assets.alienFast);else
+          enemy.setImage(this.assets.alienBasic);
         }
         this.enemies.push(enemy);
       }
@@ -311,7 +311,7 @@ export class GameEngine {
 
     if (this.player.plasmaActive) {
       // Spread shot
-      [-15, 0, 15].forEach(offset => {
+      [-15, 0, 15].forEach((offset) => {
         const projectile = new Projectile(
           this.player.position.x + this.player.size.width / 2 - 2 + offset,
           this.player.position.y,
@@ -395,9 +395,9 @@ export class GameEngine {
 
     // Boss attacks
     const now = Date.now();
-    const attackDelay = this.boss.phase === 'phase4' ? 800 : 
-                        this.boss.phase === 'phase3' ? 1200 : 
-                        this.boss.phase === 'phase2' ? 1600 : 2000;
+    const attackDelay = this.boss.phase === 'phase4' ? 800 :
+    this.boss.phase === 'phase3' ? 1200 :
+    this.boss.phase === 'phase2' ? 1600 : 2000;
 
     if (now - this.bossState.lastAttackTime > attackDelay) {
       this.bossState.lastAttackTime = now;
@@ -405,8 +405,8 @@ export class GameEngine {
     }
 
     // Update minions
-    this.bossMinions = this.bossMinions.filter(m => m.isAlive);
-    this.bossMinions.forEach(minion => {
+    this.bossMinions = this.bossMinions.filter((m) => m.isAlive);
+    this.bossMinions.forEach((minion) => {
       minion.update(this.enemySpeed * this.enemyDirection * 0.5, 0);
     });
 
@@ -421,7 +421,7 @@ export class GameEngine {
 
     // Choose attack pattern based on phase
     const patterns: Array<'spread' | 'laser' | 'teleport' | 'summon'> = ['spread'];
-    
+
     if (this.boss.phase === 'phase2' || this.boss.phase === 'phase3' || this.boss.phase === 'phase4') {
       patterns.push('laser');
     }
@@ -453,14 +453,14 @@ export class GameEngine {
 
   bossSpreadShot() {
     if (!this.boss) return;
-    
-    const angles = this.boss.phase === 'phase4' ? 9 : 
-                   this.boss.phase === 'phase3' ? 7 : 5;
+
+    const angles = this.boss.phase === 'phase4' ? 9 :
+    this.boss.phase === 'phase3' ? 7 : 5;
     const spread = Math.PI / 3;
     const startAngle = Math.PI / 2 - spread / 2;
 
     for (let i = 0; i < angles; i++) {
-      const angle = startAngle + (spread * i) / (angles - 1);
+      const angle = startAngle + spread * i / (angles - 1);
       const projectile = new Projectile(
         this.boss.position.x + this.boss.size.width / 2,
         this.boss.position.y + this.boss.size.height,
@@ -490,7 +490,7 @@ export class GameEngine {
       projectile.color = '#ff6600';
       this.projectiles.push(projectile);
     }
-    
+
     this.addScreenShake(6);
   }
 
@@ -524,7 +524,7 @@ export class GameEngine {
     if (this.bossMinions.length >= 6) return; // Max 6 minions
 
     const count = this.boss.phase === 'phase4' ? 3 : 2;
-    
+
     for (let i = 0; i < count; i++) {
       const side = Math.random() > 0.5 ? 1 : -1;
       const x = this.boss.position.x + side * (this.boss.size.width + 50);
@@ -591,11 +591,11 @@ export class GameEngine {
           if (!enemy.isAlive) {
             this.stats.score += enemy.points;
             this.stats.enemiesDestroyed++;
-            
+
             // Award XP based on enemy type
             const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
             this.awardXP(xpReward);
-            
+
             this.createExplosion(
               enemy.position.x + enemy.size.width / 2,
               enemy.position.y + enemy.size.height / 2
@@ -651,7 +651,7 @@ export class GameEngine {
             );
             this.addScreenShake(25);
             this.spawnDebrisParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#dc2626');
-            
+
             // Guaranteed power-up
             const types: Array<'plasma' | 'rapid' | 'shield' | 'slowmo'> = ['plasma', 'rapid', 'shield', 'slowmo'];
             const type = types[Math.floor(Math.random() * types.length)];
@@ -732,11 +732,11 @@ export class GameEngine {
 
   checkCollision(bounds1: any, bounds2: any): boolean {
     return !(
-      bounds1.right < bounds2.left ||
-      bounds1.left > bounds2.right ||
-      bounds1.bottom < bounds2.top ||
-      bounds1.top > bounds2.bottom
-    );
+    bounds1.right < bounds2.left ||
+    bounds1.left > bounds2.right ||
+    bounds1.bottom < bounds2.top ||
+    bounds1.top > bounds2.bottom);
+
   }
 
   addScreenShake(intensity: number) {
@@ -765,7 +765,7 @@ export class GameEngine {
 
   createImpactParticles(x: number, y: number, color: string) {
     for (let i = 0; i < 15; i++) {
-      const angle = (Math.PI * 2 * i) / 15;
+      const angle = Math.PI * 2 * i / 15;
       const speed = 2 + Math.random() * 3;
       this.particles.push({
         x,
@@ -834,7 +834,7 @@ export class GameEngine {
   checkWaveComplete() {
     // Boss wave completion
     if (this.bossState.isBossWave) {
-      if (this.boss && !this.boss.isAlive && this.bossMinions.filter(m => m.isAlive).length === 0) {
+      if (this.boss && !this.boss.isAlive && this.bossMinions.filter((m) => m.isAlive).length === 0) {
         if (this.bossState.bossVictoryTimer > 0) {
           this.bossState.bossVictoryTimer--;
           return;
@@ -884,8 +884,8 @@ export class GameEngine {
         this.bossState.bossVictoryTimer--;
       }
       this.player.update();
-      this.powerUps.forEach(p => p.update());
-      this.particles.forEach(p => {
+      this.powerUps.forEach((p) => p.update());
+      this.particles.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
         p.alpha -= p.decay;
@@ -893,7 +893,7 @@ export class GameEngine {
         p.size *= 0.97;
         p.vy += 0.1;
       });
-      this.particles = this.particles.filter(p => p.alpha > 0 && p.lifetime < p.maxLifetime);
+      this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
       this.updateScreenShake();
       this.checkCollisions();
       this.checkWaveComplete();
@@ -911,13 +911,13 @@ export class GameEngine {
 
     this.handleInput();
     this.player.update();
-    
+
     if (this.bossState.isBossWave) {
       this.updateBoss();
     } else {
       this.updateEnemies();
     }
-    
+
     this.enemyFire();
     this.spawnPowerUp();
     this.updateScreenShake();
@@ -930,7 +930,7 @@ export class GameEngine {
     });
 
     // Update power-ups
-    this.powerUps = this.powerUps.filter(p => {
+    this.powerUps = this.powerUps.filter((p) => {
       if (!p.isActive) return false;
       p.update();
       return p.position.y < this.canvas.height + 50;
@@ -941,7 +941,7 @@ export class GameEngine {
     this.explosions = this.explosions.filter((e) => !e.isDone());
 
     // Update particles
-    this.particles.forEach(p => {
+    this.particles.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= p.decay;
@@ -949,7 +949,7 @@ export class GameEngine {
       p.size *= 0.97;
       p.vy += 0.1; // Gravity
     });
-    this.particles = this.particles.filter(p => p.alpha > 0 && p.lifetime < p.maxLifetime);
+    this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
 
     this.checkCollisions();
     this.checkWaveComplete();
@@ -970,7 +970,7 @@ export class GameEngine {
     }
 
     // Render particles (background layer)
-    this.particles.forEach(p => {
+    this.particles.forEach((p) => {
       this.ctx.save();
       this.ctx.globalAlpha = p.alpha;
       this.ctx.fillStyle = p.color;
@@ -983,7 +983,7 @@ export class GameEngine {
     });
 
     // Render entities
-    this.powerUps.forEach(p => p.render(this.ctx));
+    this.powerUps.forEach((p) => p.render(this.ctx));
     this.player.render(this.ctx, this.assets?.shieldEffect);
     this.enemies.forEach((enemy) => enemy.render(this.ctx));
     this.bossMinions.forEach((minion) => minion.render(this.ctx));
@@ -1047,7 +1047,7 @@ export class GameEngine {
 
   awardXP(amount: number) {
     this.stats.xp += amount;
-    
+
     // Check for level up (500 XP per level)
     const xpPerLevel = 500;
     while (this.stats.xp >= xpPerLevel) {
@@ -1061,9 +1061,9 @@ export class GameEngine {
   applyLevelUpgrade() {
     const level = this.stats.level;
     const upgradeIndex = (level - 1) % 3;
-    
+
     let upgradeText = '';
-    
+
     switch (upgradeIndex) {
       case 0:
         // +5% fire rate
@@ -1103,7 +1103,7 @@ export class GameEngine {
 
   spawnLevelUpParticles(x: number, y: number) {
     for (let i = 0; i < 50; i++) {
-      const angle = (Math.PI * 2 * i) / 50;
+      const angle = Math.PI * 2 * i / 50;
       const speed = 3 + Math.random() * 5;
       this.particles.push({
         x,

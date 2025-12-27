@@ -7,8 +7,8 @@ interface BossHealthBarProps {
 }
 
 export default function BossHealthBar({ health, maxHealth, phase }: BossHealthBarProps) {
-  const healthPercent = (health / maxHealth) * 100;
-  
+  const healthPercent = health / maxHealth * 100;
+
   const phaseColors = {
     phase1: { bg: 'bg-red-600', glow: 'rgba(220, 38, 38, 0.8)', text: 'text-red-400' },
     phase2: { bg: 'bg-orange-600', glow: 'rgba(249, 115, 22, 0.8)', text: 'text-orange-400' },
@@ -19,26 +19,26 @@ export default function BossHealthBar({ health, maxHealth, phase }: BossHealthBa
   const colors = phaseColors[phase];
 
   return (
-    <motion.div 
+    <motion.div
       className="absolute top-16 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-4"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+      transition={{ duration: 0.5 }}>
+
       <div className="text-center mb-2">
-        <h3 
+        <h3
           className={`text-2xl font-black font-['Sora'] ${colors.text}`}
-          style={{ textShadow: `0 0 15px ${colors.glow}` }}
-        >
+          style={{ textShadow: `0 0 15px ${colors.glow}` }}>
+
           BOSS - {phase.toUpperCase()}
         </h3>
       </div>
       
       <div className="relative h-8 bg-black/60 rounded-full border-2 border-cyan-400 overflow-hidden"
-           style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.5)' }}>
-        <motion.div 
+      style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.5)' }}>
+        <motion.div
           className={`h-full ${colors.bg}`}
-          style={{ 
+          style={{
             width: `${healthPercent}%`,
             boxShadow: `0 0 20px ${colors.glow}`,
             transition: 'width 0.3s ease-out'
@@ -50,8 +50,8 @@ export default function BossHealthBar({ health, maxHealth, phase }: BossHealthBa
             duration: 1,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
-        />
+          }} />
+
         
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-white font-bold font-['Space_Grotesk'] text-sm drop-shadow-lg">
@@ -64,6 +64,6 @@ export default function BossHealthBar({ health, maxHealth, phase }: BossHealthBa
         <div className="absolute inset-y-0 left-[50%] w-0.5 bg-white/30" />
         <div className="absolute inset-y-0 left-[75%] w-0.5 bg-white/30" />
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 }

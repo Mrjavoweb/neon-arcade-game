@@ -76,19 +76,19 @@ export class Player {
     }
 
     // Update engine particles
-    this.engineParticles.forEach(p => {
+    this.engineParticles.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= p.decay;
       p.lifetime++;
       p.size *= 0.97;
     });
-    this.engineParticles = this.engineParticles.filter(p => p.alpha > 0 && p.lifetime < p.maxLifetime);
+    this.engineParticles = this.engineParticles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
   }
 
   render(ctx: CanvasRenderingContext2D, shieldImage?: HTMLImageElement) {
     // Render engine particles first
-    this.engineParticles.forEach(p => {
+    this.engineParticles.forEach((p) => {
       ctx.save();
       ctx.globalAlpha = p.alpha;
       ctx.fillStyle = p.color;
@@ -103,10 +103,10 @@ export class Player {
     ctx.save();
 
     // Level glow indicator
-    const glowIntensity = 15 + (this.level * 2);
-    const glowColor = this.level >= 10 ? '#a855f7' : 
-                      this.level >= 7 ? '#f59e0b' : 
-                      this.level >= 4 ? '#22d3ee' : '#10b981';
+    const glowIntensity = 15 + this.level * 2;
+    const glowColor = this.level >= 10 ? '#a855f7' :
+    this.level >= 7 ? '#f59e0b' :
+    this.level >= 4 ? '#22d3ee' : '#10b981';
 
     if (this.image) {
       // Draw sprite with level-based glow
@@ -139,7 +139,7 @@ export class Player {
       ctx.beginPath();
       ctx.arc(this.position.x + this.size.width - 10, this.position.y + 10, 10, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.fillStyle = glowColor;
       ctx.shadowBlur = 5;
       ctx.shadowColor = glowColor;
@@ -251,23 +251,23 @@ export class Boss {
   update(canvasWidth: number) {
     // Horizontal movement
     this.position.x += this.moveSpeed * this.moveDirection;
-    
+
     // Bounce at edges
     if (this.position.x <= 0 || this.position.x + this.size.width >= canvasWidth) {
       this.moveDirection *= -1;
     }
 
     this.wobbleOffset += this.wobbleSpeed;
-    
+
     if (this.flashTimer > 0) {
       this.flashTimer--;
     }
 
     // Update phase based on health
     const healthPercent = this.health / this.maxHealth;
-    if (healthPercent <= 0.25) this.phase = 'phase4';
-    else if (healthPercent <= 0.5) this.phase = 'phase3';
-    else if (healthPercent <= 0.75) this.phase = 'phase2';
+    if (healthPercent <= 0.25) this.phase = 'phase4';else
+    if (healthPercent <= 0.5) this.phase = 'phase3';else
+    if (healthPercent <= 0.75) this.phase = 'phase2';
   }
 
   render(ctx: CanvasRenderingContext2D) {
@@ -294,7 +294,7 @@ export class Boss {
     if (this.image) {
       ctx.shadowBlur = 30 + Math.sin(Date.now() / 100) * 10;
       ctx.shadowColor = phaseColors[this.phase];
-      
+
       ctx.drawImage(
         this.image,
         this.position.x,
@@ -399,7 +399,7 @@ export class Enemy {
     if (this.image) {
       ctx.shadowBlur = 20;
       ctx.shadowColor = this.color;
-      
+
       // Flash red if damaged
       if (this.health < this.maxHealth) {
         ctx.globalAlpha = 0.7 + Math.sin(Date.now() / 50) * 0.3;
@@ -490,21 +490,21 @@ export class Projectile {
       });
     }
 
-    this.trailParticles.forEach(p => {
+    this.trailParticles.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= p.decay;
       p.lifetime++;
       p.size *= 0.95;
     });
-    this.trailParticles = this.trailParticles.filter(p => p.alpha > 0 && p.lifetime < p.maxLifetime);
+    this.trailParticles = this.trailParticles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
   }
 
   render(ctx: CanvasRenderingContext2D) {
     if (!this.isActive) return;
 
     // Render trail
-    this.trailParticles.forEach(p => {
+    this.trailParticles.forEach((p) => {
       ctx.save();
       ctx.globalAlpha = p.alpha;
       ctx.fillStyle = p.color;
@@ -522,7 +522,7 @@ export class Projectile {
     ctx.shadowBlur = 15;
     ctx.shadowColor = this.color;
     ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-    
+
     // Bright core
     ctx.fillStyle = 'white';
     ctx.globalAlpha = 0.6;
