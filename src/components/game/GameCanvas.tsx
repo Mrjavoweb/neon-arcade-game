@@ -6,6 +6,8 @@ import GameHUD from './GameHUD';
 import GameOverlay from './GameOverlay';
 import BossHealthBar from './BossHealthBar';
 import BossIntro from './BossIntro';
+import LevelUpCelebration from './LevelUpCelebration';
+import { AnimatePresence } from 'framer-motion';
 
 interface GameCanvasProps {
   isMobile: boolean;
@@ -22,8 +24,15 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     score: 0,
     lives: 3,
     wave: 1,
-    enemiesDestroyed: 0
+    enemiesDestroyed: 0,
+    xp: 0,
+    level: 1,
+    maxHealth: 3,
+    fireRateBonus: 0,
+    movementSpeedBonus: 0
   });
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpData, setLevelUpData] = useState({ level: 1, upgrade: '' });
   const [bossState, setBossState] = useState<BossState>({
     isBossWave: false,
     bossActive: false,
@@ -67,6 +76,13 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     // Initialize game engine with assets
     const initGame = async () => {
       gameEngineRef.current = new GameEngine(canvas, isMobile);
+      
+      // Set level up callback
+      gameEngineRef.current.setLevelUpCallback((level: number, upgrade: string) => {
+        setLevelUpData({ level, upgrade });
+        setShowLevelUp(true);
+      });
+      
       await gameEngineRef.current.loadAssets();
 
       if (!mounted) return;
@@ -157,6 +173,17 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       {gameState === 'bossIntro' &&
       <BossIntro wave={stats.wave} onSkip={handleSkipBossIntro} />
       }
+
+      {/* Level Up Celebration */}
+      <AnimatePresence>
+        {showLevelUp && (
+          <LevelUpCelebration
+            level={levelUpData.level}
+            upgrade={levelUpData.upgrade}
+            onComplete={() => setShowLevelUp(false)}
+          />
+        )}
+      </AnimatePresence>
       
       <GameOverlay
         state={gameState}

@@ -42,7 +42,7 @@ export default function BossIntro({ wave, show }: BossIntroProps) {
         
         <motion.div
           className="text-2xl md:text-3xl font-bold font-['Space_Grotesk'] text-cyan-400"
-          style={{ 
+          style={{
             textShadow: '0 0 20px rgba(34, 211, 238, 0.8)',
             filter: 'drop-shadow(0 0 15px rgba(34, 211, 238, 0.6))'
           }}>
@@ -61,6 +61,6 @@ export default function BossIntro({ wave, show }: BossIntroProps) {
         animate={{ x: ['200%', '-100%'] }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }} />
 
-    </motion.div>
-  );
+    </motion.div>);
+
 }

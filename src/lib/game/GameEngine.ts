@@ -131,17 +131,17 @@ export class GameEngine {
       powerUpSlowmo,
       shieldEffect] =
       await Promise.all([
-      loadImage('/assets/f3b62150-4a75-4f79-a287-beb738d7988f.webp'),
-      loadImage('/assets/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
-      loadImage('/assets/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
-      loadImage('/assets/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
-      loadImage('/assets/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'),
-      loadImage('/assets/bf008940-7261-4765-8c6d-32086670999c.webp'),
-      loadImage('/assets/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
-      loadImage('/assets/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
-      loadImage('/assets/c52e69ca-3469-4246-88ce-38a9fde77993.webp'),
-      loadImage('/assets/f825721c-8221-4dff-919b-1365add27ab7.webp'),
-      loadImage('/assets/969a16ba-05c1-4406-8632-b5809c2e3b85.webp')]
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/969a16ba-05c1-4406-8632-b5809c2e3b85.webp')]
       );
 
       this.assets = {
@@ -761,58 +761,65 @@ export class GameEngine {
   }
 
   createImpactParticles(x: number, y: number, color: string) {
-    for (let i = 0; i < 15; i++) {
-      const angle = Math.PI * 2 * i / 15;
-      const speed = 2 + Math.random() * 3;
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 2 + Math.random() * 3,
-        color,
-        alpha: 1,
-        decay: 0.05,
-        lifetime: 0,
-        maxLifetime: 30
-      });
-    }
-  }
-
-  spawnDebrisParticles(x: number, y: number, color: string) {
-    for (let i = 0; i < 30; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1 + Math.random() * 5;
+    // Create burst with multiple layers
+    for (let i = 0; i < 25; i++) {
+      const angle = Math.PI * 2 * i / 25;
+      const speed = 2 + Math.random() * 5;
+      const particleColor = i % 3 === 0 ? '#ffffff' : color;
       this.particles.push({
         x,
         y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         size: 2 + Math.random() * 4,
-        color,
+        color: particleColor,
         alpha: 1,
-        decay: 0.02,
+        decay: 0.04,
         lifetime: 0,
-        maxLifetime: 60
+        maxLifetime: 35
+      });
+    }
+  }
+
+  spawnDebrisParticles(x: number, y: number, color: string) {
+    // Multi-colored explosion debris
+    const colors = [color, '#ffffff', '#ff6600', '#ffaa00', '#ff0000'];
+    for (let i = 0; i < 50; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 6;
+      const particleColor = colors[Math.floor(Math.random() * colors.length)];
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2, // Add upward bias
+        size: 2 + Math.random() * 5,
+        color: particleColor,
+        alpha: 1,
+        decay: 0.015,
+        lifetime: 0,
+        maxLifetime: 80
       });
     }
   }
 
   createCollectParticles(x: number, y: number) {
-    for (let i = 0; i < 20; i++) {
+    // Sparkle effect with multiple colors
+    const colors = ['#10b981', '#22d3ee', '#fbbf24', '#ffffff'];
+    for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2 + Math.random() * 4;
+      const speed = 2 + Math.random() * 5;
       this.particles.push({
         x,
         y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 3 + Math.random() * 3,
-        color: '#10b981',
+        vy: Math.sin(angle) * speed - 1,
+        size: 2 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1,
-        decay: 0.04,
+        decay: 0.03,
         lifetime: 0,
-        maxLifetime: 40
+        maxLifetime: 50
       });
     }
   }
@@ -938,30 +945,53 @@ export class GameEngine {
     this.ctx.save();
     this.ctx.translate(this.screenShake.x, this.screenShake.y);
 
-    // Clear canvas
-    this.ctx.fillStyle = '#0a0014';
+    // Clear canvas with gradient background
+    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+    gradient.addColorStop(0, '#0a0014');
+    gradient.addColorStop(0.5, '#0d001a');
+    gradient.addColorStop(1, '#150028');
+    this.ctx.fillStyle = gradient;
     this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
 
-    // Slow-mo overlay
+    // Slow-mo overlay with enhanced effect
     if (this.slowMotionActive) {
-      this.ctx.fillStyle = 'rgba(100, 50, 200, 0.1)';
+      this.ctx.fillStyle = 'rgba(100, 50, 200, 0.15)';
       this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
+      
+      // Add scanlines effect for slow-mo
+      this.ctx.strokeStyle = 'rgba(100, 50, 200, 0.1)';
+      this.ctx.lineWidth = 2;
+      for (let y = 0; y < this.canvas.height; y += 4) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, y);
+        this.ctx.lineTo(this.canvas.width, y);
+        this.ctx.stroke();
+      }
     }
 
-    // Render particles (background layer)
+    // Render particles (background layer) with enhanced glow
     this.particles.forEach((p) => {
       this.ctx.save();
       this.ctx.globalAlpha = p.alpha;
       this.ctx.fillStyle = p.color;
-      this.ctx.shadowBlur = 10;
+      this.ctx.shadowBlur = 15 + p.size * 2;
       this.ctx.shadowColor = p.color;
       this.ctx.beginPath();
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
+      
+      // Add bright core to particles
+      if (p.alpha > 0.5) {
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.globalAlpha = (p.alpha - 0.5) * 0.6;
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
       this.ctx.restore();
     });
 
-    // Render entities
+    // Render entities with layering
     this.powerUps.forEach((p) => p.render(this.ctx));
     this.player.render(this.ctx, this.assets?.shieldEffect);
     this.enemies.forEach((enemy) => enemy.render(this.ctx));
@@ -1081,21 +1111,25 @@ export class GameEngine {
   }
 
   spawnLevelUpParticles(x: number, y: number) {
-    for (let i = 0; i < 50; i++) {
-      const angle = Math.PI * 2 * i / 50;
-      const speed = 3 + Math.random() * 5;
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 3 + Math.random() * 4,
-        color: ['#fbbf24', '#f59e0b', '#a855f7', '#22d3ee'][Math.floor(Math.random() * 4)],
-        alpha: 1,
-        decay: 0.02,
-        lifetime: 0,
-        maxLifetime: 80
-      });
+    // Epic level up burst with multiple rings
+    for (let ring = 0; ring < 3; ring++) {
+      const particlesInRing = 30 + ring * 10;
+      for (let i = 0; i < particlesInRing; i++) {
+        const angle = Math.PI * 2 * i / particlesInRing;
+        const speed = (3 + ring * 2) + Math.random() * 4;
+        this.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 1,
+          size: 3 + Math.random() * 5,
+          color: ['#fbbf24', '#f59e0b', '#a855f7', '#22d3ee', '#ffffff'][Math.floor(Math.random() * 5)],
+          alpha: 1,
+          decay: 0.015,
+          lifetime: 0,
+          maxLifetime: 100
+        });
+      }
     }
   }
 

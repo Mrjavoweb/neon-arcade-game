@@ -19,13 +19,15 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
     }));
     setParticles(newParticles);
 
-    const timer = setTimeout(onComplete, 2000);
+    // Auto-dismiss after 2.5 seconds
+    const timer = setTimeout(onComplete, 2500);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
     <motion.div
-      className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center"
+      onClick={onComplete}
+      className="absolute inset-0 z-30 pointer-events-auto flex items-center justify-center cursor-pointer"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}>
@@ -92,6 +94,9 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
             </div>
             <div className="text-lg md:text-xl text-white font-['Space_Grotesk']">
               {upgrade}
+            </div>
+            <div className="text-sm text-white/80 font-['Space_Grotesk'] mt-2 animate-pulse">
+              Click anywhere to continue
             </div>
           </motion.div>
         </div>
