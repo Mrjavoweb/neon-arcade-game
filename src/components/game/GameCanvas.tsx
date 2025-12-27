@@ -28,7 +28,14 @@ export default function GameCanvas({ isMobile, assets }: GameCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Set canvas size
+    // Set canvas size first
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Initialize game engine after canvas has proper dimensions
+    gameEngineRef.current = new GameEngine(canvas, isMobile, assets);
+
+    // Set canvas size handler
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -45,11 +52,7 @@ export default function GameCanvas({ isMobile, assets }: GameCanvasProps) {
       }
     };
 
-    resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-
-    // Initialize game engine
-    gameEngineRef.current = new GameEngine(canvas, isMobile, assets);
 
     // Game loop
     const gameLoop = () => {

@@ -94,9 +94,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 6,
       projectileSpeed: 8,
-      enemySpeed: 0.5,
-      enemyFireRate: 2000,
-      enemyDescendAmount: 15,
+      enemySpeed: 1.0,
+      enemyFireRate: 2500,
+      enemyDescendAmount: 20,
       initialLives: 3
     };
 
@@ -121,7 +121,8 @@ export class GameEngine {
     const enemyHeight = 45;
     const padding = 15;
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    const offsetY = 100;
+    // Start aliens higher up to ensure they don't immediately trigger game over
+    const offsetY = 50;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -274,9 +275,11 @@ export class GameEngine {
       }
     }
 
-    // Check if enemies reached player
+    // Check if enemies reached player - with margin for actual collision
+    // Only trigger game over if aliens are actually overlapping with player
+    const gameOverThreshold = this.player.position.y - 20; // 20px margin
     for (const enemy of this.enemies) {
-      if (enemy.isAlive && enemy.position.y + enemy.size.height >= this.player.position.y) {
+      if (enemy.isAlive && enemy.position.y + enemy.size.height >= gameOverThreshold) {
         this.gameOver();
         break;
       }
