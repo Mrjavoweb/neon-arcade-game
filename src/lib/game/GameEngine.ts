@@ -72,9 +72,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 7,
       projectileSpeed: 10,
-      enemySpeed: isMobile ? 0.16 : 0.8, // 80% slower on mobile (5x slower)
-      enemyFireRate: isMobile ? 3500 : 2000, // 75% slower fire rate on mobile
-      enemyDescendAmount: isMobile ? 4 : 20, // 5x slower descent on mobile
+      enemySpeed: isMobile ? 0.25 : 0.8, // Increased mobile speed for more horizontal movement
+      enemyFireRate: isMobile ? 5000 : 2000, // Slower fire rate on mobile for longer gameplay
+      enemyDescendAmount: isMobile ? 1 : 20, // 20x slower descent on mobile
       initialLives: 3
     };
 
@@ -206,7 +206,7 @@ export class GameEngine {
     const enemyHeight = 40;
     const padding = 15;
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    const offsetY = this.isMobile ? this.canvas.height * 0.05 : Math.max(80, this.canvas.height * 0.1);
+    const offsetY = this.isMobile ? this.canvas.height * 0.02 : Math.max(80, this.canvas.height * 0.1);
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
