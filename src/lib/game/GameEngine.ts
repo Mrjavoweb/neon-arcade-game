@@ -184,7 +184,7 @@ export class GameEngine {
       this.slowMotionActive = false; // Don't slow down during intro
       this.slowMotionDuration = 0;
 
-      this.boss = new Boss(this.canvas.width / 2 - 60, -150, wave);
+      this.boss = new Boss(this.canvas.width / 2 - 60, 80, wave);
       if (this.assets) this.boss.setImage(this.assets.bossAlien);
 
       this.bossState.bossActive = true;
@@ -380,9 +380,9 @@ export class GameEngine {
     // Boss intro - descend slowly (non-blocking)
     if (this.bossState.bossIntroTimer > 0) {
       this.bossState.bossIntroTimer--;
-      if (this.boss.position.y < 80) {
-        this.boss.position.y += 0.7;
-      }
+      // if (this.boss.position.y < 80) {
+      //   this.boss.position.y += 0.7;
+      // }
       // Don't return - allow boss to start attacking during descent
     }
 

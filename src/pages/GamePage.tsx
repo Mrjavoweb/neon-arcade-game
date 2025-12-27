@@ -116,7 +116,7 @@ export default function GamePage() {
         phase={gameState.bossState.bossPhase} />
 
 
-      <BossIntro show={gameState.bossState.bossIntroTimer > 0} wave={gameState.stats.wave} />
+      {/* <BossIntro show={gameState.bossState.bossIntroTimer > 0} wave={gameState.stats.wave} /> */}
 
       <GameOverlay
         state={gameState.state}
