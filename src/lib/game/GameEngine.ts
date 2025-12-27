@@ -74,7 +74,7 @@ export class GameEngine {
       projectileSpeed: 10,
       enemySpeed: isMobile ? 0.8 : 0.8, // Increased mobile speed for more horizontal movement
       enemyFireRate: isMobile ? 5000 : 2000, // Slower fire rate on mobile for longer gameplay
-      enemyDescendAmount: isMobile ? 15 : 20, // 20x slower descent on mobile
+      enemyDescendAmount: isMobile ? 5 : 20, // Much slower descent on mobile (5 units vs 20) for easier gameplay
       initialLives: 3
     };
 
