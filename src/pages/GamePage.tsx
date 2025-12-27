@@ -2,12 +2,10 @@ import GameHUD from '@/components/game/GameHUD';
 import GameOverlay from '@/components/game/GameOverlay';
 import BossHealthBar from '@/components/game/BossHealthBar';
 import BossIntro from '@/components/game/BossIntro';
-import LevelUpCelebration from '@/components/game/LevelUpCelebration';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
-import { AnimatePresence } from 'framer-motion';
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -15,7 +13,6 @@ export default function GamePage() {
   const engineRef = useRef<GameEngine | null>(null);
   const animationFrameRef = useRef<number>();
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  const [levelUpData, setLevelUpData] = useState<{level: number;upgrade: string;} | null>(null);
   const [gameState, setGameState] = useState<{
     state: GameState;
     stats: GameStats;
@@ -56,11 +53,6 @@ export default function GamePage() {
 
     const init = async () => {
       await engine.loadAssets();
-
-      // Set level up callback
-      engine.setLevelUpCallback((level: number, upgrade: string) => {
-        setLevelUpData({ level, upgrade });
-      });
 
       const gameLoop = () => {
         engine.update();
@@ -125,16 +117,6 @@ export default function GamePage() {
 
 
       <BossIntro show={gameState.bossState.bossIntroTimer > 0} wave={gameState.stats.wave} />
-
-      <AnimatePresence>
-        {levelUpData &&
-        <LevelUpCelebration
-          level={levelUpData.level}
-          upgrade={levelUpData.upgrade}
-          onComplete={() => setLevelUpData(null)} />
-
-        }
-      </AnimatePresence>
 
       <GameOverlay
         state={gameState.state}
