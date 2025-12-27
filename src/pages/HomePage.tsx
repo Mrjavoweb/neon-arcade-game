@@ -19,8 +19,8 @@ export default function HomePage() {
           className="text-center mb-12"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-        >
+          transition={{ duration: 1, ease: 'easeOut' }}>
+
           {/* Game Title */}
           <motion.h1
             className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black mb-6"
@@ -31,21 +31,21 @@ export default function HomePage() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               textShadow: '0 0 80px rgba(34, 211, 238, 0.5)',
-              filter: 'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
+              filter: 'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))'
             }}
             animate={{
               filter: [
-                'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
-                'drop-shadow(0 0 50px rgba(34, 211, 238, 1)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.6))',
-                'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
-              ],
+              'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
+              'drop-shadow(0 0 50px rgba(34, 211, 238, 1)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.6))',
+              'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))']
+
             }}
             transition={{
               duration: 3,
               repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          >
+              ease: 'easeInOut'
+            }}>
+
             NEON INVADERS
           </motion.h1>
 
@@ -54,12 +54,12 @@ export default function HomePage() {
             className="text-xl sm:text-2xl md:text-3xl text-cyan-300 mb-4"
             style={{
               fontFamily: "'Space Grotesk', sans-serif",
-              textShadow: '0 0 20px rgba(34, 211, 238, 0.6)',
+              textShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-          >
+            transition={{ duration: 1, delay: 0.3 }}>
+
             Defend Earth Against the Alien Horde
           </motion.p>
 
@@ -69,8 +69,8 @@ export default function HomePage() {
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5 }}
-          >
+            transition={{ duration: 1, delay: 0.5 }}>
+
             Experience the classic arcade action reimagined with cinematic visuals,
             intense combat, and addictive gameplay.
           </motion.p>
@@ -79,12 +79,12 @@ export default function HomePage() {
             className="text-sm sm:text-base text-pink-300"
             style={{
               fontFamily: "'Space Grotesk', sans-serif",
-              textShadow: '0 0 10px rgba(236, 72, 153, 0.5)',
+              textShadow: '0 0 10px rgba(236, 72, 153, 0.5)'
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}
-          >
+            transition={{ duration: 1, delay: 0.6 }}>
+
             Fast-paced • Power-ups • Boss Battles • High Scores
           </motion.p>
         </motion.div>
@@ -93,8 +93,8 @@ export default function HomePage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
+          transition={{ duration: 0.8, delay: 0.8 }}>
+
           <NeonButton onClick={() => navigate('/game')}>
             ▶ PLAY GAME
           </NeonButton>
@@ -108,12 +108,12 @@ export default function HomePage() {
           className="mt-16 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
-        >
-          <p 
+          transition={{ duration: 1, delay: 1 }}>
+
+          <p
             className="text-sm text-gray-500"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+
             Built with React • Optimized for 60fps • Desktop & Mobile
           </p>
         </motion.div>
@@ -121,19 +121,19 @@ export default function HomePage() {
 
       {/* Ambient gradient overlays */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div 
+        <div
           className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px]"
           style={{
-            animation: 'pulse 8s ease-in-out infinite',
-          }}
-        />
-        <div 
+            animation: 'pulse 8s ease-in-out infinite'
+          }} />
+
+        <div
           className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-[100px]"
           style={{
-            animation: 'pulse 8s ease-in-out infinite 4s',
-          }}
-        />
+            animation: 'pulse 8s ease-in-out infinite 4s'
+          }} />
+
       </div>
-    </div>
-  );
+    </div>);
+
 }

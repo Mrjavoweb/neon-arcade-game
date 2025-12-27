@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameEngine } from '@/lib/game/GameEngine';
-import { GameState, GameStats } from '@/lib/game/types';
+import { GameState, GameStats, BossState } from '@/lib/game/types';
 import GameHUD from './GameHUD';
 import GameOverlay from './GameOverlay';
+import BossHealthBar from './BossHealthBar';
+import BossIntro from './BossIntro';
 
 interface GameCanvasProps {
   isMobile: boolean;
@@ -22,52 +24,76 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     wave: 1,
     enemiesDestroyed: 0
   });
+  const [bossState, setBossState] = useState<BossState>({
+    isBossWave: false,
+    bossActive: false,
+    bossHealth: 0,
+    bossMaxHealth: 0,
+    bossPhase: 'phase1',
+    bossIntroTimer: 0,
+    bossVictoryTimer: 0,
+    lastAttackTime: 0,
+    attackPattern: 'spread',
+    teleportCooldown: 0
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    let mounted = true;
+
     // Set canvas size
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      
+
       // Reinitialize game engine if it exists
       if (gameEngineRef.current) {
         const oldStats = gameEngineRef.current.stats;
         const oldState = gameEngineRef.current.state;
         gameEngineRef.current.cleanup();
-        
+
         gameEngineRef.current = new GameEngine(canvas, isMobile);
         gameEngineRef.current.stats = oldStats;
         gameEngineRef.current.state = oldState;
+        gameEngineRef.current.loadAssets();
       }
     };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Initialize game engine
-    gameEngineRef.current = new GameEngine(canvas, isMobile);
+    // Initialize game engine with assets
+    const initGame = async () => {
+      gameEngineRef.current = new GameEngine(canvas, isMobile);
+      await gameEngineRef.current.loadAssets();
 
-    // Game loop
-    const gameLoop = () => {
-      const engine = gameEngineRef.current;
-      if (!engine) return;
+      if (!mounted) return;
 
-      engine.update();
-      engine.render();
+      // Game loop
+      const gameLoop = () => {
+        const engine = gameEngineRef.current;
+        if (!engine) return;
 
-      // Update React state
-      setGameState(engine.state);
-      setStats({ ...engine.stats });
+        engine.update();
+        engine.render();
 
-      animationFrameRef.current = requestAnimationFrame(gameLoop);
+        // Update React state
+        setGameState(engine.state);
+        setStats({ ...engine.stats });
+        setBossState({ ...engine.bossState });
+
+        animationFrameRef.current = requestAnimationFrame(gameLoop);
+      };
+
+      gameLoop();
     };
 
-    gameLoop();
+    initGame();
 
     return () => {
+      mounted = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -105,36 +131,50 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       <canvas
         ref={canvasRef}
         className="block w-full h-full"
-        style={{ touchAction: 'none' }}
-      />
+        style={{ touchAction: 'none' }} />
+
       
       <GameHUD stats={stats} />
+      
+      {/* Boss health bar */}
+      {bossState.bossActive && (
+        <BossHealthBar 
+          health={bossState.bossHealth}
+          maxHealth={bossState.bossMaxHealth}
+          phase={bossState.bossPhase}
+        />
+      )}
+
+      {/* Boss intro */}
+      {gameState === 'bossIntro' && (
+        <BossIntro wave={stats.wave} />
+      )}
       
       <GameOverlay
         state={gameState}
         stats={stats}
         onResume={handleResume}
         onRestart={handleRestart}
-        onMainMenu={handleMainMenu}
-      />
+        onMainMenu={handleMainMenu} />
+
 
       {/* Mobile pause button */}
-      {isMobile && gameState === 'playing' && (
-        <button
-          onClick={handlePause}
-          className="absolute top-4 right-4 z-10 px-4 py-2 bg-cyan-500/30 border border-cyan-500 rounded-lg text-cyan-300 font-['Space_Grotesk'] font-bold"
-          style={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.4)' }}
-        >
+      {isMobile && gameState === 'playing' &&
+      <button
+        onClick={handlePause}
+        className="absolute top-4 right-4 z-10 px-4 py-2 bg-cyan-500/30 border border-cyan-500 rounded-lg text-cyan-300 font-['Space_Grotesk'] font-bold"
+        style={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.4)' }}>
+
           PAUSE
         </button>
-      )}
+      }
 
       {/* Desktop controls hint */}
-      {!isMobile && gameState === 'playing' && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-center text-sm text-blue-300/60 font-['Space_Grotesk']">
+      {!isMobile && gameState === 'playing' &&
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-center text-sm text-blue-300/60 font-['Space_Grotesk']">
           <div>← → Move | SPACE Fire | P Pause</div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
