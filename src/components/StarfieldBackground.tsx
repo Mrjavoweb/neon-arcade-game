@@ -36,7 +36,7 @@ export default function StarfieldBackground() {
         y: Math.random() * canvas.height,
         size: Math.random() * 2,
         speed: Math.random() * 0.5 + 0.1,
-        opacity: Math.random() * 0.5 + 0.5,
+        opacity: Math.random() * 0.5 + 0.5
       });
     }
 
@@ -82,7 +82,7 @@ export default function StarfieldBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full bg-gradient-to-b from-[#050014] via-[#0a0028] to-[#1a0040]"
-      style={{ zIndex: 0 }}
-    />
-  );
+      style={{ zIndex: 0 }} />);
+
+
 }
