@@ -9,7 +9,7 @@ interface BossHealthBarProps {
 
 export default function BossHealthBar({ show, health, maxHealth, phase }: BossHealthBarProps) {
   if (!show) return null;
-  
+
   const healthPercent = health / maxHealth * 100;
 
   const phaseColors = {
