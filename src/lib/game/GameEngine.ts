@@ -72,9 +72,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 7,
       projectileSpeed: 10,
-      enemySpeed: isMobile ? 0.5 : 0.8,
-      enemyFireRate: 2000,
-      enemyDescendAmount: isMobile ? 15 : 20,
+      enemySpeed: isMobile ? 0.16 : 0.8, // 80% slower on mobile (5x slower)
+      enemyFireRate: isMobile ? 3500 : 2000, // 75% slower fire rate on mobile
+      enemyDescendAmount: isMobile ? 4 : 20, // 5x slower descent on mobile
       initialLives: 3
     };
 
