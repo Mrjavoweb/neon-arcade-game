@@ -72,9 +72,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 7,
       projectileSpeed: 10,
-      enemySpeed: 0.8,
+      enemySpeed: isMobile ? 0.5 : 0.8,
       enemyFireRate: 2000,
-      enemyDescendAmount: 20,
+      enemyDescendAmount: isMobile ? 15 : 20,
       initialLives: 3
     };
 
@@ -206,7 +206,7 @@ export class GameEngine {
     const enemyHeight = 40;
     const padding = 15;
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    const offsetY = Math.max(80, this.canvas.height * 0.1);
+    const offsetY = this.isMobile ? this.canvas.height * 0.05 : Math.max(80, this.canvas.height * 0.1);
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
