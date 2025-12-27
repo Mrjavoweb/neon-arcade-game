@@ -179,10 +179,10 @@ export class GameEngine {
     // Boss wave every 5 waves
     if (wave % 5 === 0) {
       this.bossState.isBossWave = true;
-      this.bossState.bossIntroTimer = 90; // 1.5 seconds intro (auto-dismiss if not clicked)
-      this.state = 'bossIntro';
-      this.slowMotionActive = true;
-      this.slowMotionDuration = 90;
+      this.bossState.bossIntroTimer = 120; // 2 seconds intro (auto-dismiss)
+      // Keep game state as 'playing' - don't block gameplay
+      this.slowMotionActive = false; // Don't slow down during intro
+      this.slowMotionDuration = 0;
 
       this.boss = new Boss(this.canvas.width / 2 - 60, -150, wave);
       if (this.assets) this.boss.setImage(this.assets.bossAlien);
@@ -377,16 +377,13 @@ export class GameEngine {
   updateBoss() {
     if (!this.boss || !this.boss.isAlive) return;
 
-    // Boss intro - descend slowly
+    // Boss intro - descend slowly (non-blocking)
     if (this.bossState.bossIntroTimer > 0) {
       this.bossState.bossIntroTimer--;
       if (this.boss.position.y < 80) {
-        this.boss.position.y += 0.5;
+        this.boss.position.y += 0.7;
       }
-      if (this.bossState.bossIntroTimer === 0) {
-        this.state = 'playing';
-      }
-      return;
+      // Don't return - allow boss to start attacking during descent
     }
 
     this.boss.update(this.canvas.width);
@@ -860,24 +857,6 @@ export class GameEngine {
   }
 
   update() {
-    // Handle boss intro state
-    if (this.state === 'bossIntro') {
-      if (this.bossState.bossIntroTimer > 0) {
-        this.bossState.bossIntroTimer--;
-        if (this.boss) {
-          if (this.boss.position.y < 80) {
-            this.boss.position.y += 0.5;
-          }
-        }
-        if (this.bossState.bossIntroTimer === 0) {
-          this.state = 'playing';
-          this.slowMotionActive = false;
-        }
-      }
-      this.updateScreenShake();
-      return;
-    }
-
     // Handle boss victory state
     if (this.state === 'bossVictory') {
       if (this.bossState.bossVictoryTimer > 0) {

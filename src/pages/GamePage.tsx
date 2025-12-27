@@ -124,7 +124,7 @@ export default function GamePage() {
         phase={gameState.bossState.bossPhase} />
 
 
-      <BossIntro show={gameState.state === 'bossIntro'} wave={gameState.stats.wave} />
+      <BossIntro show={gameState.bossState.bossIntroTimer > 0} wave={gameState.stats.wave} />
 
       <AnimatePresence>
         {levelUpData &&
