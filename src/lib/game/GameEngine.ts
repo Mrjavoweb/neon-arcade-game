@@ -215,9 +215,9 @@ export class GameEngine {
       this.slowMotionActive = false; // Don't slow down during intro
       this.slowMotionDuration = 0;
 
-      // Boss position: much higher in landscape to avoid spaceship collision
+      // Boss position: adjusted for better visibility
       const isLandscape = this.canvas.width > this.canvas.height;
-      const bossY = this.isMobile ? (isLandscape ? 20 : 130) : 80;
+      const bossY = this.isMobile ? (isLandscape ? 20 : 180) : 80; // Lowered from 130 to 180 in portrait
       this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
       if (this.assets) this.boss.setImage(this.assets.bossAlien);
 
