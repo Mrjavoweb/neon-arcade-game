@@ -283,8 +283,10 @@ export class GameEngine {
         if (this.state === 'playing') {
           console.log('🎮 CHEAT: Skipping ahead 5 waves!');
           this.stats.wave = Math.min(95, this.stats.wave + 5);
-          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
-          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          // Use new balanced difficulty formula
+          const wave = this.stats.wave;
+          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
+          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
           this.initEnemies();
         }
       }
@@ -293,8 +295,10 @@ export class GameEngine {
         if (this.state === 'playing') {
           console.log('🎮 CHEAT: Going back 5 waves!');
           this.stats.wave = Math.max(1, this.stats.wave - 5);
-          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
-          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          // Use new balanced difficulty formula
+          const wave = this.stats.wave;
+          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
+          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
           this.initEnemies();
         }
       }
@@ -350,8 +354,10 @@ export class GameEngine {
         if (this.tapCount >= 3 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Skipping ahead 5 waves!');
           this.stats.wave = Math.min(95, this.stats.wave + 5);
-          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
-          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          // Use new balanced difficulty formula
+          const wave = this.stats.wave;
+          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
+          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
           this.initEnemies();
           this.tapCount = 0;
         }
@@ -370,8 +376,10 @@ export class GameEngine {
         if (this.tapCount >= 3 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Going back 5 waves!');
           this.stats.wave = Math.max(1, this.stats.wave - 5);
-          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
-          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          // Use new balanced difficulty formula
+          const wave = this.stats.wave;
+          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
+          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
           this.initEnemies();
           this.tapCount = 0;
         }
@@ -458,44 +466,40 @@ export class GameEngine {
     const aliveEnemies = this.enemies.filter((e) => e.isAlive);
     if (aliveEnemies.length === 0) return;
 
-    // Progressive difficulty: More simultaneous shooters as waves increase
-    // Mobile gets much gentler scaling for playability
+    // BALANCED Progressive difficulty - Much gentler scaling for all devices
     const wave = this.stats.wave;
     let simultaneousShooters = 1;
     let burstFire = false;
     let columnAttack = false;
 
     if (this.isMobile) {
-      // MOBILE: Much gentler difficulty curve
-      if (wave >= 21) {
-        simultaneousShooters = 3; // Max 3 on mobile (vs 5 on desktop)
-        burstFire = Math.random() < 0.2; // 20% chance (vs 60% desktop)
-        // No column attacks on mobile - too overwhelming
-      } else if (wave >= 16) {
+      // MOBILE: Very gentle curve - prioritize fun over challenge
+      if (wave >= 31) {
+        simultaneousShooters = 3; // Max 3 on mobile after wave 31
+        burstFire = Math.random() < 0.15; // 15% chance
+      } else if (wave >= 21) {
         simultaneousShooters = 2;
-        burstFire = Math.random() < 0.12; // 12% chance (vs 40% desktop)
+        burstFire = Math.random() < 0.10; // 10% chance
       } else if (wave >= 11) {
         simultaneousShooters = 2;
-        burstFire = Math.random() < 0.05; // 5% chance (vs 25% desktop) - very rare
-      } else if (wave >= 6) {
-        simultaneousShooters = 2;
+        burstFire = Math.random() < 0.05; // 5% chance - very rare
       }
+      // No column attacks on mobile - too overwhelming
     } else {
-      // DESKTOP: Original challenging difficulty
-      if (wave >= 21) {
-        simultaneousShooters = 5;
-        burstFire = Math.random() < 0.6; // 60% chance burst fire
-        columnAttack = Math.random() < 0.3; // 30% chance column attack
-      } else if (wave >= 16) {
-        simultaneousShooters = 4;
-        burstFire = Math.random() < 0.4; // 40% chance burst fire
-        columnAttack = Math.random() < 0.2; // 20% chance column attack
-      } else if (wave >= 11) {
+      // DESKTOP: Balanced difficulty curve
+      if (wave >= 31) {
         simultaneousShooters = 3;
         burstFire = Math.random() < 0.25; // 25% chance burst fire
-      } else if (wave >= 6) {
+        columnAttack = Math.random() < 0.10; // 10% chance column attack
+      } else if (wave >= 21) {
         simultaneousShooters = 2;
+        burstFire = Math.random() < 0.20; // 20% chance burst fire
+        columnAttack = Math.random() < 0.05; // 5% chance column attack
+      } else if (wave >= 11) {
+        simultaneousShooters = 2;
+        burstFire = Math.random() < 0.10; // 10% chance burst fire
       }
+      // Waves 1-10: Always 1 shooter, no burst fire - Learn the game!
     }
 
     // Column attack: All aliens in a random column fire together (desktop only)
@@ -1145,8 +1149,18 @@ export class GameEngine {
     this.bossState.bossVictoryTimer = 0;
 
     this.stats.wave++;
-    this.enemySpeed += 0.3;
-    this.enemyFireRate = Math.max(1000, this.enemyFireRate - 200);
+
+    // BALANCED DIFFICULTY CURVE - Much gentler scaling
+    // Enemy speed: +0.05 per wave with soft cap at wave 30
+    if (this.stats.wave <= 30) {
+      this.enemySpeed += 0.05; // Gentle increase (was 0.3)
+    } else {
+      this.enemySpeed += 0.02; // Very slow increase after wave 30
+    }
+
+    // Fire rate: -50ms per wave with floor at 1500ms (was -200ms with floor at 1000ms)
+    this.enemyFireRate = Math.max(1500, this.enemyFireRate - 50);
+
     this.initEnemies();
     this.projectiles = [];
   }
@@ -1325,9 +1339,9 @@ export class GameEngine {
     this.fireDelay = 300;
     this.config.playerSpeed = 7;
 
-    // Restore enemy difficulty for the checkpoint wave
-    this.enemySpeed = this.config.enemySpeed + (startWave - 1) * 0.3;
-    this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (startWave - 1) * 200);
+    // Restore enemy difficulty for the checkpoint wave using balanced formula
+    this.enemySpeed = this.config.enemySpeed + Math.min(startWave - 1, 30) * 0.05 + Math.max(0, startWave - 31) * 0.02;
+    this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (startWave - 1) * 50);
 
     this.state = 'playing';
     this.projectiles = [];
