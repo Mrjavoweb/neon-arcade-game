@@ -1391,56 +1391,73 @@ export class GameEngine {
     this.projectiles.forEach((projectile) => projectile.render(this.ctx));
     this.explosions.forEach((explosion) => explosion.render(this.ctx));
 
-    // Render combo notifications (on top of everything)
+    // Render combo notifications (small, top-right corner, non-intrusive)
     this.comboNotifications.forEach(notif => {
       this.ctx.save();
       this.ctx.globalAlpha = notif.alpha;
-      this.ctx.font = `bold ${32 * notif.scale}px 'Sora', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
 
-      // Glow effect
-      this.ctx.shadowBlur = 20;
+      // Much smaller font, positioned at top-right
+      const fontSize = this.isMobile ? 14 : 18;
+      this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+
+      // Position: top-right corner with padding
+      const x = this.canvas.width - 10;
+      const y = this.isMobile ? 45 : 55; // Below HUD
+
+      // Subtle glow
+      this.ctx.shadowBlur = 10;
       this.ctx.shadowColor = notif.color;
 
-      // Draw text with stroke for visibility
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      this.ctx.lineWidth = 4;
-      this.ctx.strokeText(notif.message, this.canvas.width / 2, this.canvas.height * 0.3);
+      // Thin stroke for readability
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeText(notif.message, x, y);
 
       this.ctx.fillStyle = notif.color;
-      this.ctx.fillText(notif.message, this.canvas.width / 2, this.canvas.height * 0.3);
+      this.ctx.fillText(notif.message, x, y);
 
       this.ctx.restore();
     });
 
-    // Show current combo counter (persistent, top right)
+    // Show current combo counter (small, top-right, below wave)
     if (this.stats.combo >= 3) {
       this.ctx.save();
-      const comboY = this.canvas.height * 0.15;
-      const comboX = this.canvas.width / 2;
 
-      this.ctx.font = `bold 24px 'Space Grotesk', monospace`;
-      this.ctx.textAlign = 'center';
+      // Position: top-right, very compact
+      const fontSize = this.isMobile ? 11 : 14;
+      const x = this.canvas.width - 10;
+      const y = this.isMobile ? 65 : 75;
 
-      // Pulse effect based on combo size
-      const pulse = 1 + Math.sin(Date.now() / 200) * 0.1 * Math.min(this.stats.combo / 10, 1);
+      this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+
+      // Subtle pulse
+      const pulse = 1 + Math.sin(Date.now() / 300) * 0.05;
       this.ctx.save();
-      this.ctx.translate(comboX, comboY);
+      this.ctx.translate(x, y);
       this.ctx.scale(pulse, pulse);
+      this.ctx.translate(-x, -y);
 
-      // Glow
-      this.ctx.shadowBlur = 15;
+      // Subtle glow
+      this.ctx.shadowBlur = 8;
       this.ctx.shadowColor = '#fbbf24';
 
       // Stroke
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      this.ctx.lineWidth = 3;
-      this.ctx.strokeText(`${this.stats.combo}x COMBO`, 0, 0);
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeText(`${this.stats.combo}x`, x, y);
 
-      // Fill
-      this.ctx.fillStyle = '#fbbf24';
-      this.ctx.fillText(`${this.stats.combo}x COMBO`, 0, 0);
+      // Fill with color based on combo size
+      let color = '#fbbf24'; // Default yellow
+      if (this.stats.combo >= 50) color = '#a855f7'; // Purple for legendary
+      else if (this.stats.combo >= 20) color = '#ec4899'; // Pink for amazing
+      else if (this.stats.combo >= 10) color = '#fbbf24'; // Yellow for great
+
+      this.ctx.fillStyle = color;
+      this.ctx.fillText(`${this.stats.combo}x`, x, y);
 
       this.ctx.restore();
       this.ctx.restore();
