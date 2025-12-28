@@ -458,7 +458,65 @@ export class GameEngine {
     const aliveEnemies = this.enemies.filter((e) => e.isAlive);
     if (aliveEnemies.length === 0) return;
 
-    const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+    // Progressive difficulty: More simultaneous shooters as waves increase
+    const wave = this.stats.wave;
+    let simultaneousShooters = 1;
+    let burstFire = false;
+    let columnAttack = false;
+
+    if (wave >= 21) {
+      simultaneousShooters = 5;
+      burstFire = Math.random() < 0.6; // 60% chance burst fire
+      columnAttack = Math.random() < 0.3; // 30% chance column attack
+    } else if (wave >= 16) {
+      simultaneousShooters = 4;
+      burstFire = Math.random() < 0.4; // 40% chance burst fire
+      columnAttack = Math.random() < 0.2; // 20% chance column attack
+    } else if (wave >= 11) {
+      simultaneousShooters = 3;
+      burstFire = Math.random() < 0.25; // 25% chance burst fire
+    } else if (wave >= 6) {
+      simultaneousShooters = 2;
+    }
+
+    // Column attack: All aliens in a random column fire together
+    if (columnAttack) {
+      this.enemyColumnAttack(aliveEnemies);
+      return;
+    }
+
+    // Select random shooters (ensure unique aliens)
+    const shooters: typeof aliveEnemies = [];
+    const usedIndices = new Set<number>();
+
+    for (let i = 0; i < Math.min(simultaneousShooters, aliveEnemies.length); i++) {
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * aliveEnemies.length);
+      } while (usedIndices.has(randomIndex));
+
+      usedIndices.add(randomIndex);
+      shooters.push(aliveEnemies[randomIndex]);
+    }
+
+    // Fire projectiles from selected shooters
+    shooters.forEach(shooter => {
+      this.createEnemyProjectile(shooter);
+
+      // Burst fire: Fire 2-3 rapid shots with slight delay
+      if (burstFire) {
+        setTimeout(() => this.createEnemyProjectile(shooter), 150);
+        if (wave >= 16) {
+          setTimeout(() => this.createEnemyProjectile(shooter), 300);
+        }
+      }
+    });
+  }
+
+  // Helper method to create enemy projectile
+  createEnemyProjectile(shooter: any) {
+    if (!shooter.isAlive) return;
+
     const projectile = new Projectile(
       shooter.position.x + shooter.size.width / 2 - 2,
       shooter.position.y + shooter.size.height,
@@ -467,6 +525,35 @@ export class GameEngine {
       1  // 1 damage = lose 1 life (not instant kill)
     );
     this.projectiles.push(projectile);
+  }
+
+  // Column attack: All aliens in a vertical column fire
+  enemyColumnAttack(aliveEnemies: any[]) {
+    // Group enemies by column (approximate X position)
+    const columns = new Map<number, any[]>();
+
+    aliveEnemies.forEach(enemy => {
+      const columnKey = Math.floor(enemy.position.x / 50); // Group by ~50px columns
+      if (!columns.has(columnKey)) {
+        columns.set(columnKey, []);
+      }
+      columns.get(columnKey)!.push(enemy);
+    });
+
+    // Pick a random column with at least 2 aliens
+    const validColumns = Array.from(columns.entries()).filter(([_, enemies]) => enemies.length >= 2);
+    if (validColumns.length === 0) {
+      // Fallback to regular attack
+      this.createEnemyProjectile(aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)]);
+      return;
+    }
+
+    const [_, columnEnemies] = validColumns[Math.floor(Math.random() * validColumns.length)];
+
+    // All enemies in column fire with slight stagger for visual effect
+    columnEnemies.forEach((enemy, index) => {
+      setTimeout(() => this.createEnemyProjectile(enemy), index * 50);
+    });
   }
 
   spawnPowerUp() {
