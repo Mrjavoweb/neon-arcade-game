@@ -98,7 +98,7 @@ export class GameEngine {
       projectileSpeed: 10,
       enemySpeed: isMobile ? 0.8 : 0.8,
       enemyFireRate: isMobile ? 5000 : 2000,
-      enemyDescendAmount: isMobile ? 5 : 20, // Increased from 3 to 5 for better portrait pacing
+      enemyDescendAmount: 15, // Base descent amount (overridden per-device in movement logic)
       initialLives: 3
     };
 
@@ -824,15 +824,17 @@ export class GameEngine {
       this.enemyDirection *= -1;
       for (const enemy of this.enemies) {
         if (enemy.isAlive) {
-          // Very small descent in landscape to prevent rapid game-over
-          const descentAmount = this.isMobile && isLandscape ? 1 : this.config.enemyDescendAmount;
+          // Improved descent amounts for better pacing
+          const descentAmount = this.isMobile && isLandscape ? 2 : (this.isMobile ? 8 : 15);
           enemy.update(0, descentAmount);
         }
       }
     } else {
       for (const enemy of this.enemies) {
         if (enemy.isAlive) {
-          enemy.update(adjustedSpeed * this.enemyDirection * deltaTime, 0);
+          // Apply individual enemy speed multiplier
+          const enemySpeed = adjustedSpeed * enemy.speedMultiplier * this.enemyDirection * deltaTime;
+          enemy.update(enemySpeed, 0);
         }
       }
     }

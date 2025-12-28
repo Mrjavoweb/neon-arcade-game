@@ -381,6 +381,7 @@ export class Enemy {
   maxHealth: number;
   wobbleOffset: number;
   wobbleSpeed: number;
+  speedMultiplier: number; // Movement speed modifier based on type
 
   constructor(x: number, y: number, type: 'basic' | 'heavy' | 'fast' = 'basic', difficultyMultiplier: number = 1) {
     this.position = { x, y };
@@ -396,6 +397,7 @@ export class Enemy {
         this.points = Math.floor(30 * difficultyMultiplier);
         this.health = Math.ceil(2 * difficultyMultiplier);
         this.maxHealth = this.health;
+        this.speedMultiplier = 0.7; // Heavy enemies move 30% slower
         break;
       case 'fast':
         this.size = { width: 32, height: 32 };
@@ -403,6 +405,7 @@ export class Enemy {
         this.points = Math.floor(20 * difficultyMultiplier);
         this.health = Math.max(1, Math.floor(1 * difficultyMultiplier));
         this.maxHealth = this.health;
+        this.speedMultiplier = 1.4; // Fast enemies move 40% faster
         break;
       default:
         this.size = { width: 40, height: 40 };
@@ -410,6 +413,7 @@ export class Enemy {
         this.points = Math.floor(10 * difficultyMultiplier);
         this.health = Math.max(1, Math.floor(1 * difficultyMultiplier));
         this.maxHealth = this.health;
+        this.speedMultiplier = 1.0; // Basic enemies move at base speed
     }
   }
 
