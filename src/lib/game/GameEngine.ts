@@ -1337,7 +1337,7 @@ export class GameEngine {
 
     // Update wave transition
     if (this.waveTransition && this.waveTransition.active) {
-      this.waveTransition.progress += clampedDelta / 120; // 2 second transition
+      this.waveTransition.progress += clampedDelta / 150; // 2.5 second transition
 
       // Complete transition and start next wave
       if (this.waveTransition.progress >= 1) {
@@ -1411,13 +1411,13 @@ export class GameEngine {
     this.projectiles.forEach((projectile) => projectile.render(this.ctx));
     this.explosions.forEach((explosion) => explosion.render(this.ctx));
 
-    // Render combo notifications (centered top, alongside wave indicator)
+    // Render combo notifications (centered top, smaller size)
     this.comboNotifications.forEach(notif => {
       this.ctx.save();
       this.ctx.globalAlpha = notif.alpha;
 
-      // Larger font, centered at top
-      const fontSize = this.isMobile ? 20 : 28;
+      // Smaller font size
+      const fontSize = this.isMobile ? 16 : 22;
       this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'top';
@@ -1426,13 +1426,13 @@ export class GameEngine {
       const x = this.canvas.width / 2;
       const y = this.isMobile ? 55 : 70; // Just below wave
 
-      // Stronger glow
-      this.ctx.shadowBlur = 15;
+      // Reduced glow
+      this.ctx.shadowBlur = 12;
       this.ctx.shadowColor = notif.color;
 
       // Stroke for readability
       this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      this.ctx.lineWidth = 3;
+      this.ctx.lineWidth = 2;
       this.ctx.strokeText(notif.message, x, y);
 
       this.ctx.fillStyle = notif.color;
@@ -1441,21 +1441,21 @@ export class GameEngine {
       this.ctx.restore();
     });
 
-    // Show current combo counter (centered top, below notifications)
+    // Show current combo counter (smaller, centered top)
     if (this.stats.combo >= 3) {
       this.ctx.save();
 
       // Position: top-center, below wave
-      const fontSize = this.isMobile ? 16 : 22;
+      const fontSize = this.isMobile ? 13 : 18;
       const x = this.canvas.width / 2;
-      const y = this.isMobile ? 75 : 95;
+      const y = this.isMobile ? 72 : 90;
 
       this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'top';
 
-      // Stronger pulse
-      const pulse = 1 + Math.sin(Date.now() / 300) * 0.08;
+      // Reduced pulse
+      const pulse = 1 + Math.sin(Date.now() / 300) * 0.05;
       this.ctx.save();
       this.ctx.translate(x, y);
       this.ctx.scale(pulse, pulse);
@@ -1467,13 +1467,13 @@ export class GameEngine {
       else if (this.stats.combo >= 20) color = '#ec4899'; // Pink for amazing
       else if (this.stats.combo >= 10) color = '#fbbf24'; // Yellow for great
 
-      // Stronger glow
-      this.ctx.shadowBlur = 12;
+      // Reduced glow
+      this.ctx.shadowBlur = 10;
       this.ctx.shadowColor = color;
 
       // Stroke
       this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      this.ctx.lineWidth = 3;
+      this.ctx.lineWidth = 2;
       this.ctx.strokeText(`COMBO ${this.stats.combo}x`, x, y);
 
       this.ctx.fillStyle = color;
