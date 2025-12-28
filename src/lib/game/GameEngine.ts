@@ -1168,6 +1168,72 @@ export class GameEngine {
     });
   }
 
+  // WAVE COMPLETION EFFECTS - Celebration when clearing a wave
+  triggerWaveCompletionEffects(isMilestone: boolean) {
+    // Screen shake - stronger for milestones
+    this.addScreenShake(isMilestone ? 20 : 12);
+
+    // Particle burst from screen edges
+    const particleCount = this.isMobile ? (isMilestone ? 40 : 25) : (isMilestone ? 80 : 50);
+    const colors = isMilestone
+      ? ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
+      : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
+
+    // Burst from all four corners
+    const corners = [
+      { x: 0, y: 0 }, // Top-left
+      { x: this.canvas.width, y: 0 }, // Top-right
+      { x: 0, y: this.canvas.height }, // Bottom-left
+      { x: this.canvas.width, y: this.canvas.height } // Bottom-right
+    ];
+
+    corners.forEach(corner => {
+      for (let i = 0; i < particleCount / 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3 + Math.random() * (isMilestone ? 10 : 7);
+        const particleColor = colors[Math.floor(Math.random() * colors.length)];
+
+        this.particles.push({
+          x: corner.x,
+          y: corner.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 2 + Math.random() * (isMilestone ? 6 : 4),
+          color: particleColor,
+          alpha: 1,
+          decay: this.isMobile ? 0.04 : 0.02,
+          lifetime: 0,
+          maxLifetime: isMilestone ? 80 : 60
+        });
+      }
+    });
+
+    // Center burst for milestones
+    if (isMilestone) {
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+
+      for (let i = 0; i < (this.isMobile ? 30 : 60); i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 4 + Math.random() * 12;
+        const particleColor = colors[Math.floor(Math.random() * colors.length)];
+
+        this.particles.push({
+          x: centerX,
+          y: centerY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 3 + Math.random() * 7,
+          color: particleColor,
+          alpha: 1,
+          decay: 0.015,
+          lifetime: 0,
+          maxLifetime: 100
+        });
+      }
+    }
+  }
+
   hitPlayer() {
     this.stats.lives--;
     if (this.stats.lives <= 0) {
@@ -1194,7 +1260,7 @@ export class GameEngine {
       return;
     }
 
-    // Normal wave completion - add transition delay
+    // Normal wave completion - add transition delay with celebration effects
     const aliveEnemies = this.enemies.filter((e) => e.isAlive);
     if (aliveEnemies.length === 0) {
       // Start wave transition if not already active
@@ -1206,6 +1272,9 @@ export class GameEngine {
           waveNumber: this.stats.wave + 1,
           isMilestone
         };
+
+        // Celebration effects when wave completes
+        this.triggerWaveCompletionEffects(isMilestone);
       }
     }
   }
@@ -1487,6 +1556,20 @@ export class GameEngine {
     if (this.waveTransition && this.waveTransition.active) {
       this.ctx.save();
 
+      // Screen flash effect - bright flash at the start that fades quickly
+      if (this.waveTransition.progress < 0.3) {
+        const flashAlpha = this.waveTransition.isMilestone
+          ? (0.3 - this.waveTransition.progress) / 0.3 * 0.4 // Brighter flash for milestones
+          : (0.3 - this.waveTransition.progress) / 0.3 * 0.25; // Subtle flash for normal waves
+
+        const flashColor = this.waveTransition.isMilestone
+          ? `rgba(251, 191, 36, ${flashAlpha})` // Golden flash for milestones
+          : `rgba(34, 211, 238, ${flashAlpha})`; // Cyan flash for normal waves
+
+        this.ctx.fillStyle = flashColor;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+
       // Dimmed background
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1518,7 +1601,16 @@ export class GameEngine {
       // "Next wave starting..." message
       const smallFont = this.isMobile ? 18 : 24;
       this.ctx.font = `${smallFont}px 'Space Grotesk', monospace`;
-      this.ctx.shadowBlur = 10;
+
+      // Enhanced glow for milestone waves
+      if (this.waveTransition.isMilestone) {
+        const pulse = 1 + Math.sin(this.waveTransition.progress * Math.PI * 4) * 0.3;
+        this.ctx.shadowBlur = 10 + pulse * 15;
+        this.ctx.shadowColor = '#fbbf24';
+      } else {
+        this.ctx.shadowBlur = 10;
+      }
+
       this.ctx.fillStyle = '#fbbf24';
       this.ctx.fillText(
         this.waveTransition.isMilestone ? 'BOSS WAVE INCOMING...' : 'Get ready...',
