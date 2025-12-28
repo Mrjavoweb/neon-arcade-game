@@ -1174,7 +1174,7 @@ export class GameEngine {
     this.addScreenShake(isMilestone ? 20 : 12);
 
     // Particle burst from screen edges
-    const particleCount = this.isMobile ? (isMilestone ? 40 : 25) : (isMilestone ? 80 : 50);
+    const particleCount = this.isMobile ? (isMilestone ? 60 : 40) : (isMilestone ? 120 : 80);
     const colors = isMilestone
       ? ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
       : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
@@ -1198,12 +1198,12 @@ export class GameEngine {
           y: corner.y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          size: 2 + Math.random() * (isMilestone ? 6 : 4),
+          size: 3 + Math.random() * (isMilestone ? 8 : 5), // Larger particles
           color: particleColor,
           alpha: 1,
-          decay: this.isMobile ? 0.04 : 0.02,
+          decay: this.isMobile ? 0.01 : 0.005, // Even slower decay for 2-3 second lifetime
           lifetime: 0,
-          maxLifetime: isMilestone ? 80 : 60
+          maxLifetime: isMilestone ? 180 : 150 // 2.5-3 seconds at 60fps
         });
       }
     });
@@ -1213,7 +1213,7 @@ export class GameEngine {
       const centerX = this.canvas.width / 2;
       const centerY = this.canvas.height / 2;
 
-      for (let i = 0; i < (this.isMobile ? 30 : 60); i++) {
+      for (let i = 0; i < (this.isMobile ? 50 : 100); i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 4 + Math.random() * 12;
         const particleColor = colors[Math.floor(Math.random() * colors.length)];
@@ -1223,12 +1223,12 @@ export class GameEngine {
           y: centerY,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          size: 3 + Math.random() * 7,
+          size: 4 + Math.random() * 9, // Larger particles
           color: particleColor,
           alpha: 1,
-          decay: 0.015,
+          decay: 0.004, // Even slower decay for milestones
           lifetime: 0,
-          maxLifetime: 100
+          maxLifetime: 200 // ~3.3 seconds at 60fps
         });
       }
     }
@@ -1557,10 +1557,10 @@ export class GameEngine {
       this.ctx.save();
 
       // Screen flash effect - bright flash at the start that fades quickly
-      if (this.waveTransition.progress < 0.3) {
+      if (this.waveTransition.progress < 0.4) {
         const flashAlpha = this.waveTransition.isMilestone
-          ? (0.3 - this.waveTransition.progress) / 0.3 * 0.4 // Brighter flash for milestones
-          : (0.3 - this.waveTransition.progress) / 0.3 * 0.25; // Subtle flash for normal waves
+          ? (0.4 - this.waveTransition.progress) / 0.4 * 0.6 // Much brighter flash for milestones
+          : (0.4 - this.waveTransition.progress) / 0.4 * 0.45; // More visible flash for normal waves
 
         const flashColor = this.waveTransition.isMilestone
           ? `rgba(251, 191, 36, ${flashAlpha})` // Golden flash for milestones
