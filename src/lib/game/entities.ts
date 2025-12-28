@@ -249,12 +249,12 @@ export class Boss {
     this.phase = 'phase1';
     this.flashTimer = 0;
 
-    // Scale with wave difficulty
-    const healthMultiplier = 1 + Math.floor(wave / 5) * 0.5;
+    // Scale with wave difficulty (reduced for beginners)
+    const healthMultiplier = 1 + Math.floor(wave / 5) * 0.3;
     this.size = { width: 120, height: 120 }; // 2.5-3x normal alien
     this.color = '#dc2626';
     this.points = 500;
-    this.health = Math.floor(100 * healthMultiplier); // Scaled for 60-90s fight
+    this.health = Math.floor(60 * healthMultiplier); // Reduced from 100 for easier fights
     this.maxHealth = this.health;
   }
 
@@ -312,21 +312,9 @@ export class Boss {
       phase4: 55
     };
 
-    // Outer glow aura
+    // Removed outer glow rectangle frame to keep boss image clean
     ctx.shadowBlur = phaseGlowIntensity[this.phase] + Math.sin(Date.now() / 80) * 15;
     ctx.shadowColor = phaseColors[this.phase];
-    ctx.strokeStyle = phaseColors[this.phase];
-    ctx.lineWidth = 4;
-    ctx.globalAlpha = 0.3;
-    ctx.beginPath();
-    ctx.rect(
-      this.position.x - 10,
-      this.position.y - 10,
-      this.size.width + 20,
-      this.size.height + 20
-    );
-    ctx.stroke();
-    ctx.globalAlpha = 1;
 
     // Flash effect when hit
     if (this.flashTimer > 0 && Math.floor(this.flashTimer / 3) % 2 === 0) {
@@ -527,8 +515,9 @@ export class Projectile {
   isActive: boolean;
   isPlayerProjectile: boolean;
   trailParticles: Particle[];
+  damage: number; // 1 = 1 life, 2 = 2 lives, 999 = instant kill
 
-  constructor(x: number, y: number, isPlayerProjectile: boolean, speed: number) {
+  constructor(x: number, y: number, isPlayerProjectile: boolean, speed: number, damage: number = 999) {
     this.position = { x, y };
     this.size = { width: 4, height: 15 };
     this.velocity = { x: 0, y: isPlayerProjectile ? -speed : speed };
@@ -536,6 +525,7 @@ export class Projectile {
     this.isActive = true;
     this.isPlayerProjectile = isPlayerProjectile;
     this.trailParticles = [];
+    this.damage = damage;
   }
 
   update() {

@@ -23,49 +23,52 @@ export default function BossHealthBar({ show, health, maxHealth, phase }: BossHe
 
   return (
     <motion.div
-      className="absolute top-16 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-4"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="absolute top-4 right-4 z-10 w-64"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}>
 
-      <div className="text-center mb-2">
-        <h3
-          className={`text-2xl font-black font-['Sora'] ${colors.text}`}
-          style={{ textShadow: `0 0 15px ${colors.glow}` }}>
+      <div className="bg-black/80 rounded-lg border-2 border-cyan-400/60 p-3"
+      style={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.3)' }}>
 
-          BOSS - {phase.toUpperCase()}
-        </h3>
-      </div>
-      
-      <div className="relative h-8 bg-black/60 rounded-full border-2 border-cyan-400 overflow-hidden"
-      style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.5)' }}>
-        <motion.div
-          className={`h-full ${colors.bg}`}
-          style={{
-            width: `${healthPercent}%`,
-            boxShadow: `0 0 20px ${colors.glow}`,
-            transition: 'width 0.3s ease-out'
-          }}
-          animate={{
-            opacity: [0.8, 1, 0.8]
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }} />
-
-        
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white font-bold font-['Space_Grotesk'] text-sm drop-shadow-lg">
-            {Math.ceil(health)} / {maxHealth}
-          </span>
+        <div className="flex items-center justify-between mb-2">
+          <h3
+            className={`text-sm font-black font-['Sora'] ${colors.text}`}
+            style={{ textShadow: `0 0 10px ${colors.glow}` }}>
+            BOSS
+          </h3>
+          <span className={`text-xs font-bold ${colors.text}`}>{phase.replace('phase', 'P')}</span>
         </div>
 
-        {/* Phase markers */}
-        <div className="absolute inset-y-0 left-[25%] w-0.5 bg-white/30" />
-        <div className="absolute inset-y-0 left-[50%] w-0.5 bg-white/30" />
-        <div className="absolute inset-y-0 left-[75%] w-0.5 bg-white/30" />
+        <div className="relative h-4 bg-black/60 rounded-full border border-cyan-400/40 overflow-hidden">
+          <motion.div
+            className={`h-full ${colors.bg}`}
+            style={{
+              width: `${healthPercent}%`,
+              boxShadow: `0 0 10px ${colors.glow}`,
+              transition: 'width 0.3s ease-out'
+            }}
+            animate={{
+              opacity: [0.8, 1, 0.8]
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }} />
+
+
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-white font-bold font-['Space_Grotesk'] text-xs drop-shadow-lg">
+              {Math.ceil(health)} / {maxHealth}
+            </span>
+          </div>
+
+          {/* Phase markers */}
+          <div className="absolute inset-y-0 left-[25%] w-px bg-white/20" />
+          <div className="absolute inset-y-0 left-[50%] w-px bg-white/20" />
+          <div className="absolute inset-y-0 left-[75%] w-px bg-white/20" />
+        </div>
       </div>
     </motion.div>);
 

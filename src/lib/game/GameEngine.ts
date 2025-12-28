@@ -34,6 +34,13 @@ export class GameEngine {
   bossState: BossState;
   levelUpCallback?: (level: number, upgrade: string) => void;
   pendingLevelUp: boolean;
+  lastCheckpoint: number; // Save last boss wave completed
+  lastFrameTime: number;
+  targetFPS: number;
+  lastDescentTime: number;
+  tapCount: number;
+  lastTapTime: number;
+  tapTimer: number | null;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
@@ -56,6 +63,13 @@ export class GameEngine {
     this.lastPowerUpSpawn = 0;
     this.powerUpSpawnRate = 15000; // 15 seconds
     this.pendingLevelUp = false;
+    this.lastCheckpoint = 0; // No checkpoint initially
+    this.lastFrameTime = performance.now();
+    this.targetFPS = 60;
+    this.lastDescentTime = 0;
+    this.tapCount = 0;
+    this.lastTapTime = 0;
+    this.tapTimer = null;
 
     this.stats = {
       score: 0,
@@ -72,9 +86,9 @@ export class GameEngine {
     this.config = {
       playerSpeed: 7,
       projectileSpeed: 10,
-      enemySpeed: isMobile ? 0.8 : 0.8, // Increased mobile speed for more horizontal movement
-      enemyFireRate: isMobile ? 5000 : 2000, // Slower fire rate on mobile for longer gameplay
-      enemyDescendAmount: isMobile ? 2 : 20, // Much slower descent on mobile (2 units vs 20) for easier gameplay
+      enemySpeed: isMobile ? 0.8 : 0.8,
+      enemyFireRate: isMobile ? 5000 : 2000,
+      enemyDescendAmount: isMobile ? 5 : 20, // Increased from 3 to 5 for better portrait pacing
       initialLives: 3
     };
 
@@ -82,6 +96,12 @@ export class GameEngine {
     this.enemyFireRate = this.config.enemyFireRate;
 
     this.player = new Player(canvas.width, canvas.height, this.config.playerSpeed);
+
+    // Move spaceship up in portrait mode for better visibility
+    if (this.isMobile && canvas.height > canvas.width) {
+      this.player.position.y = canvas.height - this.player.size.height - 50; // 50px from bottom instead of 30px
+    }
+
     this.enemies = [];
     this.boss = null;
     this.bossMinions = [];
@@ -179,12 +199,16 @@ export class GameEngine {
     // Boss wave every 5 waves
     if (wave % 5 === 0) {
       this.bossState.isBossWave = true;
-      this.bossState.bossIntroTimer = 120; // 2 seconds intro (auto-dismiss)
+      // Shorter intro on mobile for immediate engagement, disable on desktop
+      this.bossState.bossIntroTimer = this.isMobile ? 0 : 60; // Instant on mobile, 1 sec on desktop
       // Keep game state as 'playing' - don't block gameplay
       this.slowMotionActive = false; // Don't slow down during intro
       this.slowMotionDuration = 0;
 
-      this.boss = new Boss(this.canvas.width / 2 - 60, 80, wave);
+      // Boss position: much higher in landscape to avoid spaceship collision
+      const isLandscape = this.canvas.width > this.canvas.height;
+      const bossY = this.isMobile ? (isLandscape ? 20 : 130) : 80;
+      this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
       if (this.assets) this.boss.setImage(this.assets.bossAlien);
 
       this.bossState.bossActive = true;
@@ -200,13 +224,24 @@ export class GameEngine {
     this.bossState.bossActive = false;
     this.boss = null;
 
-    const rows = Math.min(5 + Math.floor(wave / 3), 7);
-    const cols = 8;
-    const enemyWidth = 40;
-    const enemyHeight = 40;
-    const padding = 15;
+    // Adjust grid based on orientation for mobile
+    const isLandscape = this.canvas.width > this.canvas.height;
+    const rows = this.isMobile && isLandscape
+      ? Math.min(4 + Math.floor(wave / 3), 4)  // 4 rows max in landscape
+      : Math.min(5 + Math.floor(wave / 3), 7); // Normal rows in portrait
+    const cols = this.isMobile && isLandscape ? 10 : 8;  // 10 cols in landscape, 8 in portrait
+
+    // Optimized sizing and spacing for mobile
+    const enemyWidth = this.isMobile ? (isLandscape ? 16 : 20) : 40;
+    const enemyHeight = this.isMobile ? (isLandscape ? 16 : 20) : 40;
+    const padding = this.isMobile ? (isLandscape ? 28 : 29) : 15;
+
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
-    const offsetY = this.isMobile ? this.canvas.height * 0.02 : Math.max(80, this.canvas.height * 0.1);
+
+    // Adjusted positioning - ensure spaceship is visible in landscape
+    const offsetY = this.isMobile
+      ? (isLandscape ? 30 : 65)  // Moved down in landscape so HUD and top row are visible
+      : Math.max(80, this.canvas.height * 0.1);
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -233,6 +268,40 @@ export class GameEngine {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'p' || e.key === 'P') {
         this.togglePause();
+      }
+      // Cheat codes for testing
+      if (e.key === 'b' || e.key === 'B') {
+        // Skip to next boss wave
+        if (this.state === 'playing' && !this.bossState.isBossWave) {
+          console.log('🎮 CHEAT: Skipping to Next Boss Wave!');
+          this.stats.wave = 4; // Will become wave 5 on nextWave()
+          this.nextWave();
+        }
+      }
+      if (e.key === '+' || e.key === '=') {
+        // Skip ahead 5 waves
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Skipping ahead 5 waves!');
+          this.stats.wave = Math.min(95, this.stats.wave + 5);
+          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
+          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          this.initEnemies();
+        }
+      }
+      if (e.key === '-' || e.key === '_') {
+        // Go back 5 waves
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Going back 5 waves!');
+          this.stats.wave = Math.max(1, this.stats.wave - 5);
+          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
+          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          this.initEnemies();
+        }
+      }
+      if (e.key === 'h' || e.key === 'H') {
+        // Add a life
+        console.log('🎮 CHEAT: +1 Life!');
+        this.stats.lives = Math.min(this.stats.maxHealth, this.stats.lives + 1);
       }
       this.keys.add(e.key);
     });
@@ -261,7 +330,56 @@ export class GameEngine {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = this.canvas.getBoundingClientRect();
-    this.touchX = touch.clientX - rect.left;
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+
+    // Triple-tap cheat codes in top corners (for testing)
+    const cornerSize = 100; // 100px corner area
+    const now = Date.now();
+
+    if (touchY < cornerSize) {
+      // Top-left corner: Skip ahead 5 waves
+      if (touchX < cornerSize) {
+        if (now - this.lastTapTime < 500) {
+          this.tapCount++;
+        } else {
+          this.tapCount = 1;
+        }
+        this.lastTapTime = now;
+
+        if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Skipping ahead 5 waves!');
+          this.stats.wave = Math.min(95, this.stats.wave + 5);
+          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
+          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          this.initEnemies();
+          this.tapCount = 0;
+        }
+        return; // Don't move player when activating cheat
+      }
+
+      // Top-right corner: Go back 5 waves
+      if (touchX > this.canvas.width - cornerSize) {
+        if (now - this.lastTapTime < 500) {
+          this.tapCount++;
+        } else {
+          this.tapCount = 1;
+        }
+        this.lastTapTime = now;
+
+        if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Going back 5 waves!');
+          this.stats.wave = Math.max(1, this.stats.wave - 5);
+          this.enemySpeed = this.config.enemySpeed + (this.stats.wave - 1) * 0.3;
+          this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (this.stats.wave - 1) * 200);
+          this.initEnemies();
+          this.tapCount = 0;
+        }
+        return; // Don't move player when activating cheat
+      }
+    }
+
+    this.touchX = touchX;
     this.player.setPosition(this.touchX);
   }
 
@@ -345,7 +463,8 @@ export class GameEngine {
       shooter.position.x + shooter.size.width / 2 - 2,
       shooter.position.y + shooter.size.height,
       false,
-      this.config.projectileSpeed * 0.7
+      this.config.projectileSpeed * 0.7,
+      1  // 1 damage = lose 1 life (not instant kill)
     );
     this.projectiles.push(projectile);
   }
@@ -374,14 +493,14 @@ export class GameEngine {
     this.powerUps.push(powerUp);
   }
 
-  updateBoss() {
+  updateBoss(deltaTime: number = 1) {
     if (!this.boss || !this.boss.isAlive) return;
 
     // Boss intro - descend slowly (non-blocking)
     if (this.bossState.bossIntroTimer > 0) {
-      this.bossState.bossIntroTimer--;
+      this.bossState.bossIntroTimer -= deltaTime;
       // if (this.boss.position.y < 80) {
-      //   this.boss.position.y += 0.7;
+      //   this.boss.position.y += 0.7 * deltaTime;
       // }
       // Don't return - allow boss to start attacking during descent
     }
@@ -390,34 +509,40 @@ export class GameEngine {
     this.bossState.bossHealth = this.boss.health;
     this.bossState.bossPhase = this.boss.phase;
 
-    // Boss attacks
+    // Boss attacks (scales with both phase AND wave)
     const now = Date.now();
-    const attackDelay = this.boss.phase === 'phase4' ? 800 :
-    this.boss.phase === 'phase3' ? 1200 :
-    this.boss.phase === 'phase2' ? 1600 : 2000;
+
+    // Base attack delay by phase
+    const baseDelay = this.boss.phase === 'phase4' ? 1200 :
+    this.boss.phase === 'phase3' ? 1800 :
+    this.boss.phase === 'phase2' ? 2400 : 3000;
+
+    // Wave-based scaling: Each boss wave (5,10,15,20...) increases attack speed
+    const waveMultiplier = Math.max(0.5, 1 - (this.stats.wave / 5 - 1) * 0.1); // -10% per boss wave
+    const attackDelay = baseDelay * waveMultiplier;
 
     if (now - this.bossState.lastAttackTime > attackDelay) {
       this.bossState.lastAttackTime = now;
       this.executeBossAttack();
     }
 
-    // Update minions
+    // Update minions with delta time
     this.bossMinions = this.bossMinions.filter((m) => m.isAlive);
     this.bossMinions.forEach((minion) => {
-      minion.update(this.enemySpeed * this.enemyDirection * 0.5, 0);
+      minion.update(this.enemySpeed * this.enemyDirection * 0.5 * deltaTime, 0);
     });
 
     // Teleport cooldown
     if (this.bossState.teleportCooldown > 0) {
-      this.bossState.teleportCooldown--;
+      this.bossState.teleportCooldown -= deltaTime;
     }
   }
 
   executeBossAttack() {
     if (!this.boss) return;
 
-    // Choose attack pattern based on phase
-    const patterns: Array<'spread' | 'laser' | 'teleport' | 'summon'> = ['spread'];
+    // Choose attack pattern based on phase (no minion summoning for beginners)
+    const patterns: Array<'spread' | 'laser' | 'teleport'> = ['spread'];
 
     if (this.boss.phase === 'phase2' || this.boss.phase === 'phase3' || this.boss.phase === 'phase4') {
       patterns.push('laser');
@@ -425,9 +550,7 @@ export class GameEngine {
     if (this.boss.phase === 'phase3' || this.boss.phase === 'phase4') {
       if (this.bossState.teleportCooldown === 0) patterns.push('teleport');
     }
-    if (this.boss.phase === 'phase4') {
-      if (this.bossMinions.length < 4) patterns.push('summon', 'summon'); // Higher chance
-    }
+    // Removed minion summoning for beginner-friendly gameplay
 
     const pattern = patterns[Math.floor(Math.random() * patterns.length)];
     this.bossState.attackPattern = pattern;
@@ -442,19 +565,21 @@ export class GameEngine {
       case 'teleport':
         this.bossTeleport();
         break;
-      case 'summon':
-        this.bossSummonMinions();
-        break;
     }
   }
 
   bossSpreadShot() {
     if (!this.boss) return;
 
-    const angles = this.boss.phase === 'phase4' ? 9 :
-    this.boss.phase === 'phase3' ? 7 : 5;
+    const angles = this.boss.phase === 'phase4' ? 7 :
+    this.boss.phase === 'phase3' ? 5 : 3;
     const spread = Math.PI / 3;
     const startAngle = Math.PI / 2 - spread / 2;
+
+    // Wave-based speed scaling: +0.5 speed per boss wave
+    const baseSpeed = 6;
+    const waveBonus = (this.stats.wave / 5 - 1) * 0.5; // First boss at wave 5 = +0
+    const speed = baseSpeed + waveBonus;
 
     for (let i = 0; i < angles; i++) {
       const angle = startAngle + spread * i / (angles - 1);
@@ -462,11 +587,12 @@ export class GameEngine {
         this.boss.position.x + this.boss.size.width / 2,
         this.boss.position.y + this.boss.size.height,
         false,
-        8
+        speed,
+        1  // Partial damage (1 life lost, not instant kill)
       );
-      projectile.velocity.x = Math.cos(angle) * 8;
-      projectile.velocity.y = Math.sin(angle) * 8;
-      projectile.color = '#ff0000';
+      projectile.velocity.x = Math.cos(angle) * speed;
+      projectile.velocity.y = Math.sin(angle) * speed;
+      projectile.color = '#ff6600'; // Orange color for partial damage
       this.projectiles.push(projectile);
     }
   }
@@ -474,17 +600,28 @@ export class GameEngine {
   bossLaserBeam() {
     if (!this.boss) return;
 
-    // Create vertical laser beam
-    for (let i = 0; i < 20; i++) {
+    // Base laser speed by phase
+    const baseSpeed = this.boss.phase === 'phase4' ? 10 :
+                       this.boss.phase === 'phase3' ? 8 :
+                       this.boss.phase === 'phase2' ? 7 : 5;
+
+    // Wave-based speed scaling: +0.5 speed per boss wave
+    const waveBonus = (this.stats.wave / 5 - 1) * 0.5;
+    const laserSpeed = baseSpeed + waveBonus;
+
+    // Create vertical laser beam (2 damage for beginners)
+    // Fewer, more spaced out projectiles to avoid multi-hits
+    for (let i = 0; i < 8; i++) {
       const projectile = new Projectile(
-        this.boss.position.x + this.boss.size.width / 2 - 10 + (Math.random() - 0.5) * 20,
-        this.boss.position.y + this.boss.size.height + i * 10,
+        this.boss.position.x + this.boss.size.width / 2 - 5 + (Math.random() - 0.5) * 10,
+        this.boss.position.y + this.boss.size.height + i * 15,
         false,
-        12
+        laserSpeed,
+        2  // 2 damage (more than spread, less than instant death)
       );
-      projectile.size.width = 8;
-      projectile.size.height = 20;
-      projectile.color = '#ff6600';
+      projectile.size.width = 6;
+      projectile.size.height = 18;
+      projectile.color = '#ff0000'; // Red color for heavy damage
       this.projectiles.push(projectile);
     }
 
@@ -512,7 +649,11 @@ export class GameEngine {
       '#22d3ee'
     );
 
-    this.bossState.teleportCooldown = 300; // 5 second cooldown
+    // Wave-based teleport cooldown: -30 frames per boss wave (more frequent teleports)
+    const baseCooldown = 300; // 5 seconds at wave 5
+    const waveReduction = (this.stats.wave / 5 - 1) * 30;
+    this.bossState.teleportCooldown = Math.max(150, baseCooldown - waveReduction); // Minimum 2.5s
+
     this.addScreenShake(8);
   }
 
@@ -536,30 +677,42 @@ export class GameEngine {
     }
   }
 
-  updateEnemies() {
+  updateEnemies(deltaTime: number = 1) {
     let shouldDescend = false;
+
+    // Reduce speed in landscape mode to prevent rapid wall hits
+    const isLandscape = this.canvas.width > this.canvas.height;
+    const speedMultiplier = this.isMobile && isLandscape ? 0.25 : 1.0;  // Even slower in landscape
+    const adjustedSpeed = this.enemySpeed * speedMultiplier;
 
     for (const enemy of this.enemies) {
       if (!enemy.isAlive) continue;
 
-      const nextX = enemy.position.x + this.enemySpeed * this.enemyDirection;
+      const nextX = enemy.position.x + adjustedSpeed * this.enemyDirection * deltaTime;
       if (nextX <= 0 || nextX + enemy.size.width >= this.canvas.width) {
         shouldDescend = true;
         break;
       }
     }
 
-    if (shouldDescend) {
+    const now = performance.now();
+    // Much longer cooldown in landscape (wider screen = more wall hits)
+    const descentCooldown = this.isMobile ? (isLandscape ? 1500 : 300) : 0;
+
+    if (shouldDescend && (now - this.lastDescentTime > descentCooldown)) {
+      this.lastDescentTime = now;
       this.enemyDirection *= -1;
       for (const enemy of this.enemies) {
         if (enemy.isAlive) {
-          enemy.update(0, this.config.enemyDescendAmount);
+          // Very small descent in landscape to prevent rapid game-over
+          const descentAmount = this.isMobile && isLandscape ? 1 : this.config.enemyDescendAmount;
+          enemy.update(0, descentAmount);
         }
       }
     } else {
       for (const enemy of this.enemies) {
         if (enemy.isAlive) {
-          enemy.update(this.enemySpeed * this.enemyDirection, 0);
+          enemy.update(adjustedSpeed * this.enemyDirection * deltaTime, 0);
         }
       }
     }
@@ -632,7 +785,7 @@ export class GameEngine {
       }
 
       // Player projectiles vs boss
-      if (this.boss && this.boss.isAlive && this.bossState.bossIntroTimer === 0) {
+      if (this.boss && this.boss.isAlive && this.bossState.bossIntroTimer <= 0) {
         if (this.checkCollision(projectile.getBounds(), this.boss.getBounds())) {
           projectile.deactivate();
           this.boss.hit(1);
@@ -688,7 +841,21 @@ export class GameEngine {
 
         if (this.checkCollision(projectile.getBounds(), this.player.getBounds())) {
           projectile.deactivate();
-          this.hitPlayer();
+
+          // Use projectile damage:
+          // 1 = lose 1 life (orange spread shots)
+          // 2 = lose 2 lives (red laser beams)
+          // 999 = instant death (only for regular enemies, not boss)
+          if (projectile.damage >= 999) {
+            this.stats.lives = 0; // Instant kill (regular enemy bullets)
+            this.gameOver();
+          } else {
+            this.stats.lives -= projectile.damage; // Partial damage
+            if (this.stats.lives <= 0) {
+              this.gameOver();
+            }
+          }
+
           this.createExplosion(
             this.player.position.x + this.player.size.width / 2,
             this.player.position.y + this.player.size.height / 2
@@ -762,9 +929,10 @@ export class GameEngine {
   }
 
   createImpactParticles(x: number, y: number, color: string) {
-    // Create burst with multiple layers
-    for (let i = 0; i < 25; i++) {
-      const angle = Math.PI * 2 * i / 25;
+    // Drastically reduced particles for mobile performance
+    const particleCount = this.isMobile ? 3 : 8;
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.PI * 2 * i / particleCount;
       const speed = 2 + Math.random() * 5;
       const particleColor = i % 3 === 0 ? '#ffffff' : color;
       this.particles.push({
@@ -775,17 +943,18 @@ export class GameEngine {
         size: 2 + Math.random() * 4,
         color: particleColor,
         alpha: 1,
-        decay: 0.04,
+        decay: 0.06,
         lifetime: 0,
-        maxLifetime: 35
+        maxLifetime: 25
       });
     }
   }
 
   spawnDebrisParticles(x: number, y: number, color: string) {
-    // Multi-colored explosion debris
+    // Drastically reduced particles for mobile performance
+    const particleCount = this.isMobile ? 6 : 18;
     const colors = [color, '#ffffff', '#ff6600', '#ffaa00', '#ff0000'];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1 + Math.random() * 6;
       const particleColor = colors[Math.floor(Math.random() * colors.length)];
@@ -797,17 +966,18 @@ export class GameEngine {
         size: 2 + Math.random() * 5,
         color: particleColor,
         alpha: 1,
-        decay: 0.015,
+        decay: this.isMobile ? 0.05 : 0.025, // Faster decay on mobile
         lifetime: 0,
-        maxLifetime: 80
+        maxLifetime: this.isMobile ? 30 : 50 // Shorter lifetime on mobile
       });
     }
   }
 
   createCollectParticles(x: number, y: number) {
-    // Sparkle effect with multiple colors
+    // Drastically reduced particles for mobile performance
+    const particleCount = this.isMobile ? 4 : 12;
     const colors = ['#10b981', '#22d3ee', '#fbbf24', '#ffffff'];
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 2 + Math.random() * 5;
       this.particles.push({
@@ -818,9 +988,9 @@ export class GameEngine {
         size: 2 + Math.random() * 4,
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1,
-        decay: 0.03,
+        decay: this.isMobile ? 0.08 : 0.05,
         lifetime: 0,
-        maxLifetime: 50
+        maxLifetime: this.isMobile ? 25 : 35
       });
     }
   }
@@ -840,11 +1010,13 @@ export class GameEngine {
     // Boss wave completion
     if (this.bossState.isBossWave) {
       if (this.boss && !this.boss.isAlive && this.bossMinions.filter((m) => m.isAlive).length === 0) {
-        if (this.bossState.bossVictoryTimer > 0) {
-          this.bossState.bossVictoryTimer--;
-          return;
+        // Timer is already being decremented in update() method
+        // Auto-advance when timer reaches or goes below 0
+        if (this.bossState.bossVictoryTimer <= 0) {
+          this.state = 'playing'; // Resume playing
+          this.nextWave();
         }
-        this.nextWave();
+        return;
       }
       return;
     }
@@ -857,6 +1029,15 @@ export class GameEngine {
   }
 
   nextWave() {
+    // Save checkpoint when completing a boss wave
+    if (this.stats.wave % 5 === 0 && this.stats.wave > 0) {
+      this.lastCheckpoint = this.stats.wave;
+      console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
+    }
+
+    // Reset boss victory timer when advancing waves
+    this.bossState.bossVictoryTimer = 0;
+
     this.stats.wave++;
     this.enemySpeed += 0.3;
     this.enemyFireRate = Math.max(1000, this.enemyFireRate - 200);
@@ -865,20 +1046,28 @@ export class GameEngine {
   }
 
   update() {
+    // Calculate delta time for frame-rate independent movement
+    const currentTime = performance.now();
+    const deltaTime = (currentTime - this.lastFrameTime) / (1000 / this.targetFPS);
+    this.lastFrameTime = currentTime;
+
+    // Clamp delta time to prevent huge jumps (e.g., when tab is inactive)
+    const clampedDelta = Math.min(deltaTime, 3);
+
     // Handle boss victory state
     if (this.state === 'bossVictory') {
       if (this.bossState.bossVictoryTimer > 0) {
-        this.bossState.bossVictoryTimer--;
+        this.bossState.bossVictoryTimer -= clampedDelta;
       }
       this.player.update();
       this.powerUps.forEach((p) => p.update());
       this.particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= p.decay;
-        p.lifetime++;
-        p.size *= 0.97;
-        p.vy += 0.1;
+        p.x += p.vx * clampedDelta;
+        p.y += p.vy * clampedDelta;
+        p.alpha -= p.decay * clampedDelta;
+        p.lifetime += clampedDelta;
+        p.size *= Math.pow(0.97, clampedDelta);
+        p.vy += 0.1 * clampedDelta;
       });
       this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
       this.updateScreenShake();
@@ -892,7 +1081,7 @@ export class GameEngine {
     const timeScale = this.slowMotionActive ? 0.5 : 1;
 
     if (this.slowMotionDuration > 0) {
-      this.slowMotionDuration--;
+      this.slowMotionDuration -= clampedDelta;
       if (this.slowMotionDuration <= 0) this.slowMotionActive = false;
     }
 
@@ -900,19 +1089,21 @@ export class GameEngine {
     this.player.update();
 
     if (this.bossState.isBossWave) {
-      this.updateBoss();
+      this.updateBoss(clampedDelta);
     } else {
-      this.updateEnemies();
+      this.updateEnemies(clampedDelta);
     }
 
     this.enemyFire();
     this.spawnPowerUp();
     this.updateScreenShake();
 
-    // Update projectiles
+    // Update projectiles with delta time
     this.projectiles = this.projectiles.filter((p) => {
       if (!p.isActive) return false;
-      for (let i = 0; i < timeScale; i++) p.update();
+      const updates = timeScale * clampedDelta;
+      for (let i = 0; i < Math.floor(updates); i++) p.update();
+      if (updates % 1 > 0) p.update(); // Handle fractional updates
       return p.position.y > -20 && p.position.y < this.canvas.height + 20;
     });
 
@@ -927,14 +1118,14 @@ export class GameEngine {
     this.explosions.forEach((e) => e.update());
     this.explosions = this.explosions.filter((e) => !e.isDone());
 
-    // Update particles
+    // Update particles with delta time
     this.particles.forEach((p) => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.alpha -= p.decay;
-      p.lifetime++;
-      p.size *= 0.97;
-      p.vy += 0.1; // Gravity
+      p.x += p.vx * clampedDelta;
+      p.y += p.vy * clampedDelta;
+      p.alpha -= p.decay * clampedDelta;
+      p.lifetime += clampedDelta;
+      p.size *= Math.pow(0.97, clampedDelta);
+      p.vy += 0.1 * clampedDelta; // Gravity
     });
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
 
@@ -1007,10 +1198,17 @@ export class GameEngine {
   }
 
   reset() {
+    // Continue from last checkpoint if available, otherwise start from wave 1
+    const startWave = this.lastCheckpoint > 0 ? this.lastCheckpoint : 1;
+
+    if (this.lastCheckpoint > 0) {
+      console.log(`🔄 Continuing from checkpoint: Wave ${startWave}`);
+    }
+
     this.stats = {
       score: 0,
       lives: 3,
-      wave: 1,
+      wave: startWave,
       enemiesDestroyed: 0,
       xp: 0,
       level: 1,
@@ -1020,8 +1218,11 @@ export class GameEngine {
     };
     this.fireDelay = 300;
     this.config.playerSpeed = 7;
-    this.enemySpeed = this.config.enemySpeed;
-    this.enemyFireRate = this.config.enemyFireRate;
+
+    // Restore enemy difficulty for the checkpoint wave
+    this.enemySpeed = this.config.enemySpeed + (startWave - 1) * 0.3;
+    this.enemyFireRate = Math.max(1000, this.config.enemyFireRate - (startWave - 1) * 200);
+
     this.state = 'playing';
     this.projectiles = [];
     this.explosions = [];
@@ -1047,6 +1248,12 @@ export class GameEngine {
       teleportCooldown: 0
     };
     this.player = new Player(this.canvas.width, this.canvas.height, this.config.playerSpeed);
+
+    // Move spaceship up in portrait mode for better visibility
+    if (this.isMobile && this.canvas.height > this.canvas.width) {
+      this.player.position.y = this.canvas.height - this.player.size.height - 50; // 50px from bottom instead of 30px
+    }
+
     if (this.assets) this.player.setImage(this.assets.playerShip);
     this.initEnemies();
   }

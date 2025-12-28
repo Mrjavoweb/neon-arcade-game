@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StarfieldBackground from '@/components/StarfieldBackground';
 import NeonButton from '@/components/NeonButton';
 import GameInstructions from '@/components/GameInstructions';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -11,6 +12,9 @@ export default function HomePage() {
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Animated starfield background */}
       <StarfieldBackground />
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">

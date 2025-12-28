@@ -58,6 +58,21 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
           </div>
         }
 
+        {state === 'bossVictory' &&
+        <div className="text-center">
+            <h2
+            className="text-4xl md:text-5xl font-black mb-4 text-yellow-400 font-['Sora'] animate-pulse"
+            style={{ textShadow: '0 0 30px rgba(251, 191, 36, 1)' }}>
+
+              BOSS DEFEATED!
+            </h2>
+
+            <div className="mb-6 font-['Space_Grotesk'] text-cyan-300 text-lg">
+              Preparing next wave...
+            </div>
+          </div>
+        }
+
         {state === 'gameOver' &&
         <div className="text-center">
             <h2
@@ -66,7 +81,19 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
 
               GAME OVER
             </h2>
-            
+
+            {/* Checkpoint indicator */}
+            {stats.wave >= 5 && stats.wave % 5 >= 1 &&
+            <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-400 rounded-lg">
+              <div className="text-yellow-400 font-bold text-sm font-['Space_Grotesk']">
+                ✅ Checkpoint Saved!
+              </div>
+              <div className="text-cyan-300 text-xs">
+                You'll continue from Wave {Math.floor(stats.wave / 5) * 5}
+              </div>
+            </div>
+            }
+
             <div className="mb-6 space-y-2 font-['Space_Grotesk']">
               <div className="text-2xl text-cyan-300">
                 Final Score: <span className="font-bold text-cyan-400">{stats.score}</span>
@@ -87,18 +114,22 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
                 <div className="bg-black/30 rounded p-2 border border-cyan-400/30">
                   <div className="text-cyan-400 font-bold">Wave</div>
                   <div className="text-white text-lg">{stats.wave}</div>
+                  <div className="text-cyan-200/70 text-[0.65rem] mt-0.5">Difficulty level</div>
                 </div>
                 <div className="bg-black/30 rounded p-2 border border-pink-400/30">
                   <div className="text-pink-400 font-bold">Kills</div>
                   <div className="text-white text-lg">{stats.enemiesDestroyed}</div>
+                  <div className="text-pink-200/70 text-[0.65rem] mt-0.5">Enemies defeated</div>
                 </div>
                 <div className="bg-black/30 rounded p-2 border border-yellow-400/30">
                   <div className="text-yellow-400 font-bold">Fire Rate</div>
                   <div className="text-white text-lg">+{stats.fireRateBonus}%</div>
+                  <div className="text-yellow-200/70 text-[0.65rem] mt-0.5">Weapon speed</div>
                 </div>
                 <div className="bg-black/30 rounded p-2 border border-purple-400/30">
                   <div className="text-purple-400 font-bold">Speed</div>
                   <div className="text-white text-lg">+{stats.movementSpeedBonus}%</div>
+                  <div className="text-purple-200/70 text-[0.65rem] mt-0.5">Ship mobility</div>
                 </div>
               </div>
             </div>

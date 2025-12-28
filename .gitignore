@@ -75,6 +75,9 @@ __tests__/__snapshots__/
 *.sln
 *.sw?
 
+# Claude Code assistant files
+.claude/
+
 # OS generated files
 .DS_Store
 .DS_Store?

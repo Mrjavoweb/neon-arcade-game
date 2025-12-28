@@ -48,8 +48,47 @@ export default function GamePage() {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
+
+    // Set initial canvas size BEFORE creating engine
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     const engine = new GameEngine(canvas, isMobile);
     engineRef.current = engine;
+
+    // Handle resize events
+    const resizeCanvas = () => {
+      const oldWidth = canvas.width;
+      const oldHeight = canvas.height;
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Update player position to maintain relative position
+      if (engine.player) {
+        engine.player.position.x = (engine.player.position.x / oldWidth) * canvas.width;
+        engine.player.position.y = (engine.player.position.y / oldHeight) * canvas.height;
+      }
+
+      // Update enemy positions to maintain relative positions
+      if (engine.enemies) {
+        engine.enemies.forEach(enemy => {
+          if (enemy.isAlive) {
+            enemy.position.x = (enemy.position.x / oldWidth) * canvas.width;
+            enemy.position.y = (enemy.position.y / oldHeight) * canvas.height;
+          }
+        });
+      }
+
+      // Update boss position if active
+      if (engine.boss && engine.boss.isAlive) {
+        engine.boss.position.x = (engine.boss.position.x / oldWidth) * canvas.width;
+        engine.boss.position.y = (engine.boss.position.y / oldHeight) * canvas.height;
+      }
+    };
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', resizeCanvas);
 
     const init = async () => {
       await engine.loadAssets();
@@ -82,6 +121,8 @@ export default function GamePage() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('orientationchange', resizeCanvas);
       engine.cleanup();
     };
   }, [isMobile]);
@@ -99,12 +140,10 @@ export default function GamePage() {
   };
 
   return (
-    <div className="relative w-full h-screen bg-[#0a0014] overflow-hidden">
+    <div className="relative w-full h-screen bg-[#0a0014] overflow-hidden touch-none">
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
-        className="absolute inset-0" />
+        className="absolute inset-0 w-full h-full" />
 
 
       <GameHUD stats={gameState.stats} />
