@@ -620,20 +620,28 @@ export class ExplosionAnimation {
   spriteSheet?: HTMLImageElement;
   scale: number;
   rotation: number;
+  isMobile: boolean;
 
-  constructor(x: number, y: number, spriteSheet?: HTMLImageElement) {
+  constructor(x: number, y: number, spriteSheet?: HTMLImageElement, isMobile: boolean = false) {
     this.position = { x, y };
     this.frame = 0;
     this.maxFrames = 8; // 8 frames in explosion sprite sheet
     this.frameWidth = 64; // Assuming 512x64 sprite sheet (8 frames)
     this.frameHeight = 64;
     this.spriteSheet = spriteSheet;
-    this.scale = 0.8 + Math.random() * 0.4;
+    this.isMobile = isMobile;
+
+    // Much smaller explosions, especially on mobile
+    if (isMobile) {
+      this.scale = 0.3 + Math.random() * 0.15; // Mobile: 0.3-0.45x scale (was 0.8-1.2x)
+    } else {
+      this.scale = 0.4 + Math.random() * 0.2; // Desktop: 0.4-0.6x scale (was 0.8-1.2x)
+    }
     this.rotation = Math.random() * Math.PI * 2;
   }
 
   update() {
-    this.frame += 0.5; // Slower animation
+    this.frame += 0.75; // Faster animation for quicker fade (was 0.5)
   }
 
   render(ctx: CanvasRenderingContext2D) {
@@ -647,12 +655,19 @@ export class ExplosionAnimation {
     ctx.rotate(this.rotation);
     ctx.scale(this.scale, this.scale);
 
-    // Enhanced glow effect that fades
-    const glowIntensity = 40 * (1 - this.frame / this.maxFrames);
+    // Reduced glow effect - less obtrusive
+    const fadeProgress = this.frame / this.maxFrames;
+    const glowIntensity = this.isMobile
+      ? 15 * (1 - fadeProgress) // Mobile: subtle glow (was 40)
+      : 20 * (1 - fadeProgress); // Desktop: slightly more glow (was 40)
+
     ctx.shadowBlur = glowIntensity;
     ctx.shadowColor = '#ff6600';
 
-    // Add second glow layer
+    // Reduce opacity as animation progresses for smoother fade
+    ctx.globalAlpha = 1 - (fadeProgress * 0.3); // Slight transparency increase
+
+    // Add second glow layer - but lighter
     ctx.globalCompositeOperation = 'screen';
 
     ctx.drawImage(

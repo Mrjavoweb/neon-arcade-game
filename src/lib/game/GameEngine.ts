@@ -1030,7 +1030,7 @@ export class GameEngine {
 
   createExplosion(x: number, y: number) {
     if (this.assets) {
-      this.explosions.push(new ExplosionAnimation(x, y, this.assets.explosion));
+      this.explosions.push(new ExplosionAnimation(x, y, this.assets.explosion, this.isMobile));
     }
   }
 
