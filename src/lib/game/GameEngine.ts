@@ -1,5 +1,5 @@
 import { Player, Enemy, Boss, Projectile, ExplosionAnimation, PowerUpEntity } from './entities';
-import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState } from './types';
+import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState, ComboNotification, WaveTransition } from './types';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -41,6 +41,10 @@ export class GameEngine {
   tapCount: number;
   lastTapTime: number;
   tapTimer: number | null;
+  comboNotifications: ComboNotification[];
+  lastKillTime: number;
+  comboTimeout: number;
+  waveTransition: WaveTransition | null;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
@@ -70,6 +74,10 @@ export class GameEngine {
     this.tapCount = 0;
     this.lastTapTime = 0;
     this.tapTimer = null;
+    this.comboNotifications = [];
+    this.lastKillTime = 0;
+    this.comboTimeout = 3000; // 3 seconds to maintain combo
+    this.waveTransition = null;
 
     this.stats = {
       score: 0,
@@ -80,7 +88,9 @@ export class GameEngine {
       level: 1,
       maxHealth: 3,
       fireRateBonus: 0,
-      movementSpeedBonus: 0
+      movementSpeedBonus: 0,
+      combo: 0,
+      maxCombo: 0
     };
 
     this.config = {
@@ -851,6 +861,7 @@ export class GameEngine {
           if (!enemy.isAlive) {
             this.stats.score += enemy.points;
             this.stats.enemiesDestroyed++;
+            this.registerKill(enemy.points); // Track combo
 
             // Award XP based on enemy type
             const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
@@ -881,6 +892,7 @@ export class GameEngine {
           if (!minion.isAlive) {
             this.stats.score += minion.points;
             this.stats.enemiesDestroyed++;
+            this.registerKill(minion.points); // Track combo
             this.awardXP(15); // Fast enemy XP
             this.createExplosion(
               minion.position.x + minion.size.width / 2,
@@ -904,6 +916,7 @@ export class GameEngine {
             // Boss defeated!
             this.stats.score += this.boss.points * 5; // 5x score
             this.stats.enemiesDestroyed++;
+            this.registerKill(this.boss.points * 5); // Track combo (boss counts!)
             this.awardXP(200); // Boss XP
             this.createExplosion(
               this.boss.position.x + this.boss.size.width / 2,
@@ -1105,6 +1118,56 @@ export class GameEngine {
     }
   }
 
+  // COMBO SYSTEM - Track kill streaks and show notifications
+  registerKill(points: number) {
+    const now = Date.now();
+
+    // Reset combo if too much time has passed
+    if (now - this.lastKillTime > this.comboTimeout) {
+      this.stats.combo = 0;
+    }
+
+    this.lastKillTime = now;
+    this.stats.combo++;
+
+    // Track max combo
+    if (this.stats.combo > this.stats.maxCombo) {
+      this.stats.maxCombo = this.stats.combo;
+    }
+
+    // Show combo notification at milestones
+    if (this.stats.combo === 5) {
+      this.addComboNotification('NICE! x5', '#22d3ee', 1.2);
+      this.stats.score += 50;
+    } else if (this.stats.combo === 10) {
+      this.addComboNotification('GREAT! x10', '#fbbf24', 1.4);
+      this.stats.score += 100;
+      this.addScreenShake(10);
+    } else if (this.stats.combo === 20) {
+      this.addComboNotification('AMAZING! x20', '#ec4899', 1.6);
+      this.stats.score += 250;
+      this.addScreenShake(15);
+    } else if (this.stats.combo === 50) {
+      this.addComboNotification('LEGENDARY! x50', '#a855f7', 2.0);
+      this.stats.score += 500;
+      this.addScreenShake(20);
+    } else if (this.stats.combo % 25 === 0 && this.stats.combo > 50) {
+      this.addComboNotification(`UNSTOPPABLE! x${this.stats.combo}`, '#ff6600', 2.2);
+      this.stats.score += 1000;
+      this.addScreenShake(25);
+    }
+  }
+
+  addComboNotification(message: string, color: string, scale: number) {
+    this.comboNotifications.push({
+      message,
+      color,
+      scale,
+      alpha: 1,
+      lifetime: 0
+    });
+  }
+
   hitPlayer() {
     this.stats.lives--;
     if (this.stats.lives <= 0) {
@@ -1249,6 +1312,20 @@ export class GameEngine {
     });
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
 
+    // Update combo notifications
+    this.comboNotifications = this.comboNotifications.map(notif => ({
+      ...notif,
+      lifetime: notif.lifetime + clampedDelta,
+      alpha: Math.max(0, 1 - notif.lifetime / 120), // Fade out over 2 seconds
+      scale: notif.scale + (clampedDelta * 0.01) // Slight grow effect
+    })).filter(notif => notif.lifetime < 120);
+
+    // Reset combo if timeout reached
+    const now = Date.now();
+    if (this.stats.combo > 0 && now - this.lastKillTime > this.comboTimeout) {
+      this.stats.combo = 0;
+    }
+
     this.checkCollisions();
     this.checkWaveComplete();
   }
@@ -1314,6 +1391,61 @@ export class GameEngine {
     this.projectiles.forEach((projectile) => projectile.render(this.ctx));
     this.explosions.forEach((explosion) => explosion.render(this.ctx));
 
+    // Render combo notifications (on top of everything)
+    this.comboNotifications.forEach(notif => {
+      this.ctx.save();
+      this.ctx.globalAlpha = notif.alpha;
+      this.ctx.font = `bold ${32 * notif.scale}px 'Sora', sans-serif`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+
+      // Glow effect
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = notif.color;
+
+      // Draw text with stroke for visibility
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      this.ctx.lineWidth = 4;
+      this.ctx.strokeText(notif.message, this.canvas.width / 2, this.canvas.height * 0.3);
+
+      this.ctx.fillStyle = notif.color;
+      this.ctx.fillText(notif.message, this.canvas.width / 2, this.canvas.height * 0.3);
+
+      this.ctx.restore();
+    });
+
+    // Show current combo counter (persistent, top right)
+    if (this.stats.combo >= 3) {
+      this.ctx.save();
+      const comboY = this.canvas.height * 0.15;
+      const comboX = this.canvas.width / 2;
+
+      this.ctx.font = `bold 24px 'Space Grotesk', monospace`;
+      this.ctx.textAlign = 'center';
+
+      // Pulse effect based on combo size
+      const pulse = 1 + Math.sin(Date.now() / 200) * 0.1 * Math.min(this.stats.combo / 10, 1);
+      this.ctx.save();
+      this.ctx.translate(comboX, comboY);
+      this.ctx.scale(pulse, pulse);
+
+      // Glow
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = '#fbbf24';
+
+      // Stroke
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      this.ctx.lineWidth = 3;
+      this.ctx.strokeText(`${this.stats.combo}x COMBO`, 0, 0);
+
+      // Fill
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.fillText(`${this.stats.combo}x COMBO`, 0, 0);
+
+      this.ctx.restore();
+      this.ctx.restore();
+    }
+
     this.ctx.restore();
   }
 
@@ -1334,7 +1466,9 @@ export class GameEngine {
       level: 1,
       maxHealth: 3,
       fireRateBonus: 0,
-      movementSpeedBonus: 0
+      movementSpeedBonus: 0,
+      combo: 0,
+      maxCombo: 0
     };
     this.fireDelay = 300;
     this.config.playerSpeed = 7;

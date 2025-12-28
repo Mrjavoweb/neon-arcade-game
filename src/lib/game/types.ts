@@ -40,6 +40,8 @@ export interface GameStats {
   maxHealth: number;
   fireRateBonus: number;
   movementSpeedBonus: number;
+  combo: number; // Current kill streak
+  maxCombo: number; // Highest combo this session
 }
 
 export interface GameConfig {
@@ -62,6 +64,21 @@ export interface Particle {
   decay: number;
   lifetime: number;
   maxLifetime: number;
+}
+
+export interface ComboNotification {
+  message: string;
+  color: string;
+  scale: number;
+  alpha: number;
+  lifetime: number;
+}
+
+export interface WaveTransition {
+  active: boolean;
+  progress: number; // 0-1
+  waveNumber: number;
+  isMilestone: boolean;
 }
 
 export interface PowerUp {
