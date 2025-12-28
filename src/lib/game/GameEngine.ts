@@ -459,27 +459,46 @@ export class GameEngine {
     if (aliveEnemies.length === 0) return;
 
     // Progressive difficulty: More simultaneous shooters as waves increase
+    // Mobile gets much gentler scaling for playability
     const wave = this.stats.wave;
     let simultaneousShooters = 1;
     let burstFire = false;
     let columnAttack = false;
 
-    if (wave >= 21) {
-      simultaneousShooters = 5;
-      burstFire = Math.random() < 0.6; // 60% chance burst fire
-      columnAttack = Math.random() < 0.3; // 30% chance column attack
-    } else if (wave >= 16) {
-      simultaneousShooters = 4;
-      burstFire = Math.random() < 0.4; // 40% chance burst fire
-      columnAttack = Math.random() < 0.2; // 20% chance column attack
-    } else if (wave >= 11) {
-      simultaneousShooters = 3;
-      burstFire = Math.random() < 0.25; // 25% chance burst fire
-    } else if (wave >= 6) {
-      simultaneousShooters = 2;
+    if (this.isMobile) {
+      // MOBILE: Much gentler difficulty curve
+      if (wave >= 21) {
+        simultaneousShooters = 3; // Max 3 on mobile (vs 5 on desktop)
+        burstFire = Math.random() < 0.2; // 20% chance (vs 60% desktop)
+        // No column attacks on mobile - too overwhelming
+      } else if (wave >= 16) {
+        simultaneousShooters = 2;
+        burstFire = Math.random() < 0.12; // 12% chance (vs 40% desktop)
+      } else if (wave >= 11) {
+        simultaneousShooters = 2;
+        burstFire = Math.random() < 0.05; // 5% chance (vs 25% desktop) - very rare
+      } else if (wave >= 6) {
+        simultaneousShooters = 2;
+      }
+    } else {
+      // DESKTOP: Original challenging difficulty
+      if (wave >= 21) {
+        simultaneousShooters = 5;
+        burstFire = Math.random() < 0.6; // 60% chance burst fire
+        columnAttack = Math.random() < 0.3; // 30% chance column attack
+      } else if (wave >= 16) {
+        simultaneousShooters = 4;
+        burstFire = Math.random() < 0.4; // 40% chance burst fire
+        columnAttack = Math.random() < 0.2; // 20% chance column attack
+      } else if (wave >= 11) {
+        simultaneousShooters = 3;
+        burstFire = Math.random() < 0.25; // 25% chance burst fire
+      } else if (wave >= 6) {
+        simultaneousShooters = 2;
+      }
     }
 
-    // Column attack: All aliens in a random column fire together
+    // Column attack: All aliens in a random column fire together (desktop only)
     if (columnAttack) {
       this.enemyColumnAttack(aliveEnemies);
       return;
@@ -503,10 +522,10 @@ export class GameEngine {
     shooters.forEach(shooter => {
       this.createEnemyProjectile(shooter);
 
-      // Burst fire: Fire 2-3 rapid shots with slight delay
+      // Burst fire: Fire 2 rapid shots with slight delay (mobile gets only 2, desktop gets 2-3)
       if (burstFire) {
         setTimeout(() => this.createEnemyProjectile(shooter), 150);
-        if (wave >= 16) {
+        if (!this.isMobile && wave >= 16) {
           setTimeout(() => this.createEnemyProjectile(shooter), 300);
         }
       }
