@@ -2,6 +2,7 @@ import GameHUD from '@/components/game/GameHUD';
 import GameOverlay from '@/components/game/GameOverlay';
 import BossHealthBar from '@/components/game/BossHealthBar';
 import BossIntro from '@/components/game/BossIntro';
+import PauseButton from '@/components/game/PauseButton';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
@@ -127,6 +128,10 @@ export default function GamePage() {
     };
   }, [isMobile]);
 
+  const handlePause = () => {
+    engineRef.current?.togglePause();
+  };
+
   const handleResume = () => {
     engineRef.current?.togglePause();
   };
@@ -147,6 +152,8 @@ export default function GamePage() {
 
 
       <GameHUD stats={gameState.stats} />
+
+      <PauseButton onPause={handlePause} />
 
       <BossHealthBar
         show={gameState.bossState.bossActive}

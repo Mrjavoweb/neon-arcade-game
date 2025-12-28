@@ -1194,10 +1194,19 @@ export class GameEngine {
       return;
     }
 
-    // Normal wave completion
+    // Normal wave completion - add transition delay
     const aliveEnemies = this.enemies.filter((e) => e.isAlive);
     if (aliveEnemies.length === 0) {
-      this.nextWave();
+      // Start wave transition if not already active
+      if (!this.waveTransition) {
+        const isMilestone = (this.stats.wave + 1) % 5 === 0; // Next wave is milestone
+        this.waveTransition = {
+          active: true,
+          progress: 0,
+          waveNumber: this.stats.wave + 1,
+          isMilestone
+        };
+      }
     }
   }
 
@@ -1324,6 +1333,17 @@ export class GameEngine {
     const now = Date.now();
     if (this.stats.combo > 0 && now - this.lastKillTime > this.comboTimeout) {
       this.stats.combo = 0;
+    }
+
+    // Update wave transition
+    if (this.waveTransition && this.waveTransition.active) {
+      this.waveTransition.progress += clampedDelta / 120; // 2 second transition
+
+      // Complete transition and start next wave
+      if (this.waveTransition.progress >= 1) {
+        this.waveTransition = null;
+        this.nextWave();
+      }
     }
 
     this.checkCollisions();
@@ -1460,6 +1480,52 @@ export class GameEngine {
       this.ctx.fillText(`COMBO ${this.stats.combo}x`, x, y);
 
       this.ctx.restore();
+      this.ctx.restore();
+    }
+
+    // Render wave transition overlay
+    if (this.waveTransition && this.waveTransition.active) {
+      this.ctx.save();
+
+      // Dimmed background
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      // Wave complete message
+      const fontSize = this.isMobile ? 32 : 48;
+      this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+
+      const centerY = this.canvas.height / 2;
+
+      // "WAVE X COMPLETE!" message
+      const alpha = this.waveTransition.progress < 0.5
+        ? this.waveTransition.progress * 2
+        : (1 - this.waveTransition.progress) * 2;
+
+      this.ctx.globalAlpha = alpha;
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = '#22d3ee';
+
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      this.ctx.lineWidth = 4;
+      this.ctx.strokeText(`WAVE ${this.stats.wave} COMPLETE!`, this.canvas.width / 2, centerY - 40);
+
+      this.ctx.fillStyle = '#22d3ee';
+      this.ctx.fillText(`WAVE ${this.stats.wave} COMPLETE!`, this.canvas.width / 2, centerY - 40);
+
+      // "Next wave starting..." message
+      const smallFont = this.isMobile ? 18 : 24;
+      this.ctx.font = `${smallFont}px 'Space Grotesk', monospace`;
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.fillText(
+        this.waveTransition.isMilestone ? 'BOSS WAVE INCOMING...' : 'Get ready...',
+        this.canvas.width / 2,
+        centerY + 30
+      );
+
       this.ctx.restore();
     }
 
