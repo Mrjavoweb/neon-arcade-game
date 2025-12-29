@@ -293,12 +293,36 @@ export class GameEngine {
       if (e.key === 'p' || e.key === 'P') {
         this.togglePause();
       }
-      // Cheat codes for testing
+      // Cheat codes for testing - Boss Level Shortcuts
       if (e.key === 'b' || e.key === 'B') {
-        // Skip to next boss wave
-        if (this.state === 'playing' && !this.bossState.isBossWave) {
-          console.log('🎮 CHEAT: Skipping to Next Boss Wave!');
+        // Jump to Boss 1 (Wave 5)
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Jumping to Boss 1 (Wave 5)!');
           this.stats.wave = 4; // Will become wave 5 on nextWave()
+          this.nextWave();
+        }
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        // Jump to Boss 2 (Wave 10)
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Jumping to Boss 2 (Wave 10)!');
+          this.stats.wave = 9; // Will become wave 10 on nextWave()
+          this.nextWave();
+        }
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        // Jump to Boss 3 (Wave 15)
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Jumping to Boss 3 (Wave 15)!');
+          this.stats.wave = 14; // Will become wave 15 on nextWave()
+          this.nextWave();
+        }
+      }
+      if (e.key === ',' || e.key === '<') {
+        // Jump to Boss 4 (Wave 20)
+        if (this.state === 'playing') {
+          console.log('🎮 CHEAT: Jumping to Boss 4 (Wave 20)!');
+          this.stats.wave = 19; // Will become wave 20 on nextWave()
           this.nextWave();
         }
       }
