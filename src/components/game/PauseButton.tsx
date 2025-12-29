@@ -13,7 +13,7 @@ export default function PauseButton({ onPause }: PauseButtonProps) {
       className={`absolute z-50 pointer-events-auto ${
         isMobile && isLandscape
           ? 'top-1 left-1/2 -translate-x-1/2'
-          : 'top-2 left-2 sm:top-4 sm:left-4'
+          : 'top-2 right-2 sm:top-4 sm:right-4'
       }`}
       style={{
         paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined
