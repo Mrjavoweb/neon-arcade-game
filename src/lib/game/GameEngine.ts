@@ -385,10 +385,11 @@ export class GameEngine {
     const touchX = touch.clientX - rect.left;
     const touchY = touch.clientY - rect.top;
 
-    // Triple-tap cheat codes in top corners (for testing)
+    // Triple-tap cheat codes in corners (for testing)
     const cornerSize = 100; // 100px corner area
     const now = Date.now();
 
+    // Top corners - Wave navigation
     if (touchY < cornerSize) {
       // Top-left corner: Skip ahead 5 waves
       if (touchX < cornerSize) {
@@ -429,6 +430,55 @@ export class GameEngine {
           this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
           this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
           this.initEnemies();
+          this.tapCount = 0;
+        }
+        return; // Don't move player when activating cheat
+      }
+    }
+
+    // Bottom corners - Boss level shortcuts
+    if (touchY > this.canvas.height - cornerSize) {
+      // Bottom-left corner: Boss 1 (Wave 5) or Boss 3 (Wave 15)
+      if (touchX < cornerSize) {
+        if (now - this.lastTapTime < 500) {
+          this.tapCount++;
+        } else {
+          this.tapCount = 1;
+        }
+        this.lastTapTime = now;
+
+        if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 1 (Wave 5)!');
+          this.stats.wave = 4; // Will become wave 5 on nextWave()
+          this.nextWave();
+          this.tapCount = 0;
+        } else if (this.tapCount === 5 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 3 (Wave 15)!');
+          this.stats.wave = 14; // Will become wave 15 on nextWave()
+          this.nextWave();
+          this.tapCount = 0;
+        }
+        return; // Don't move player when activating cheat
+      }
+
+      // Bottom-right corner: Boss 2 (Wave 10) or Boss 4 (Wave 20)
+      if (touchX > this.canvas.width - cornerSize) {
+        if (now - this.lastTapTime < 500) {
+          this.tapCount++;
+        } else {
+          this.tapCount = 1;
+        }
+        this.lastTapTime = now;
+
+        if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 2 (Wave 10)!');
+          this.stats.wave = 9; // Will become wave 10 on nextWave()
+          this.nextWave();
+          this.tapCount = 0;
+        } else if (this.tapCount === 5 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 4 (Wave 20)!');
+          this.stats.wave = 19; // Will become wave 20 on nextWave()
+          this.nextWave();
           this.tapCount = 0;
         }
         return; // Don't move player when activating cheat
