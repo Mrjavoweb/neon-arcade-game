@@ -328,10 +328,6 @@ export class Boss {
       phase4: 55
     };
 
-    // Removed outer glow rectangle frame to keep boss image clean
-    ctx.shadowBlur = phaseGlowIntensity[this.phase] + Math.sin(Date.now() / 80) * 15;
-    ctx.shadowColor = phaseColors[this.phase];
-
     // Flash effect when hit
     if (this.flashTimer > 0 && Math.floor(this.flashTimer / 3) % 2 === 0) {
       ctx.globalAlpha = 0.5;
@@ -343,7 +339,8 @@ export class Boss {
     ctx.translate(-(this.position.x + this.size.width / 2), -(this.position.y + this.size.height / 2));
 
     if (this.image) {
-      ctx.shadowBlur = phaseGlowIntensity[this.phase];
+      // Subtle glow effect without creating a frame
+      ctx.shadowBlur = 20;
       ctx.shadowColor = phaseColors[this.phase];
 
       ctx.drawImage(
@@ -354,6 +351,7 @@ export class Boss {
         this.size.height
       );
     } else {
+      // Fallback if no image - draw colored rectangle
       ctx.fillStyle = phaseColors[this.phase];
       ctx.shadowBlur = phaseGlowIntensity[this.phase];
       ctx.shadowColor = phaseColors[this.phase];
