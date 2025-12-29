@@ -97,7 +97,7 @@ export interface SpriteAssets {
   alienFast: HTMLImageElement;
   bossAlien: HTMLImageElement; // Deprecated - kept for backward compatibility
   bossPhase1: HTMLImageElement; // Red boss
-  bossPhase2: HTMLImageElement; // Orange boss
+  bossPhase2: HTMLImageElement; // Turquoise boss
   bossPhase3: HTMLImageElement; // Yellow boss
   bossPhase4: HTMLImageElement; // Purple boss
   explosion: HTMLImageElement;

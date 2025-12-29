@@ -172,10 +172,10 @@ export class GameEngine {
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'), // Legacy boss
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/7de4aa13-5ada-4aef-a784-72e10b86f537.webp'), // Boss Phase 1 - Red
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/596ab572-6baa-4538-9b6f-09debb1fa220.webp'), // Boss Phase 2 - Orange
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/075469ac-119a-4b77-af54-ac714ef42fd5.webp'), // Boss Phase 3 - Yellow
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/4906b5fe-a127-4c56-9688-dde644a588ab.webp'), // Boss Phase 4 - Purple
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp'), // Boss Phase 1 - Red
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/a9af17d6-1d6a-46e4-916b-90492bd7b4d2.webp'), // Boss Phase 2 - Turquoise
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/d0c7b32c-6d54-4092-8588-a5d09cbe60d3.webp'), // Boss Phase 3 - Yellow
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/3595b35a-b995-4194-9445-3963d9199a8d.webp'), // Boss Phase 4 - Purple
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp'),

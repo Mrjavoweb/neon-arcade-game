@@ -316,7 +316,7 @@ export class Boss {
     // Glow based on phase
     const phaseColors = {
       phase1: '#dc2626',
-      phase2: '#f97316',
+      phase2: '#06b6d4',
       phase3: '#eab308',
       phase4: '#a855f7'
     };

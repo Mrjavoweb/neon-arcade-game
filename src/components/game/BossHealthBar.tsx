@@ -14,7 +14,7 @@ export default function BossHealthBar({ show, health, maxHealth, phase }: BossHe
 
   const phaseColors = {
     phase1: { bg: 'bg-red-600', glow: 'rgba(220, 38, 38, 0.8)', text: 'text-red-400' },
-    phase2: { bg: 'bg-orange-600', glow: 'rgba(249, 115, 22, 0.8)', text: 'text-orange-400' },
+    phase2: { bg: 'bg-cyan-600', glow: 'rgba(6, 182, 212, 0.8)', text: 'text-cyan-400' },
     phase3: { bg: 'bg-yellow-600', glow: 'rgba(234, 179, 8, 0.8)', text: 'text-yellow-400' },
     phase4: { bg: 'bg-purple-600', glow: 'rgba(168, 85, 247, 0.8)', text: 'text-purple-400' }
   };
