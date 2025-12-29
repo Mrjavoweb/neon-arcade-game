@@ -850,7 +850,7 @@ export class GameEngine {
     const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
     const laserSpeed = baseSpeed + waveBonus;
 
-    // Create vertical laser beam (3 damage - heavy hit)
+    // Create vertical laser beam (2 damage - heavy hit)
     // Fewer, more spaced out projectiles to avoid multi-hits
     for (let i = 0; i < 8; i++) {
       const projectile = new Projectile(
@@ -858,7 +858,7 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height + i * 15,
         false,
         laserSpeed,
-        3  // 3 damage (heavy hit - costs 3 lives)
+        2  // 2 damage (heavy hit - costs 2 lives)
       );
       projectile.size.width = 6;
       projectile.size.height = 18;
@@ -1904,17 +1904,10 @@ export class GameEngine {
         upgradeText = '+10% Movement Speed';
         break;
       case 2:
-        // +1 max health (capped at 6)
-        if (this.stats.maxHealth < 6) {
-          this.stats.maxHealth++;
-          this.stats.lives = Math.min(this.stats.lives + 1, this.stats.maxHealth);
-          upgradeText = '+1 Max Health';
-        } else {
-          // At max health cap - give fire rate bonus instead
-          this.stats.fireRateBonus += 5;
-          this.fireDelay = 300 * (1 - this.stats.fireRateBonus / 100);
-          upgradeText = '+5% Fire Rate (Max Health Reached)';
-        }
+        // +1 max health (no cap - can grow indefinitely)
+        this.stats.maxHealth++;
+        this.stats.lives = Math.min(this.stats.lives + 1, this.stats.maxHealth);
+        upgradeText = '+1 Max Health';
         break;
     }
 
