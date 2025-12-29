@@ -156,6 +156,10 @@ export class GameEngine {
       alienHeavy,
       alienFast,
       bossAlien,
+      bossPhase1,
+      bossPhase2,
+      bossPhase3,
+      bossPhase4,
       explosion,
       powerUpPlasma,
       powerUpRapid,
@@ -167,7 +171,11 @@ export class GameEngine {
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'), // Legacy boss
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/7de4aa13-5ada-4aef-a784-72e10b86f537.webp'), // Boss Phase 1 - Red
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/596ab572-6baa-4538-9b6f-09debb1fa220.webp'), // Boss Phase 2 - Orange
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/075469ac-119a-4b77-af54-ac714ef42fd5.webp'), // Boss Phase 3 - Yellow
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/4906b5fe-a127-4c56-9688-dde644a588ab.webp'), // Boss Phase 4 - Purple
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
       loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
@@ -182,6 +190,10 @@ export class GameEngine {
         alienHeavy,
         alienFast,
         bossAlien,
+        bossPhase1,
+        bossPhase2,
+        bossPhase3,
+        bossPhase4,
         explosion,
         powerUpPlasma,
         powerUpRapid,
@@ -221,7 +233,7 @@ export class GameEngine {
       const isLandscape = this.canvas.width > this.canvas.height;
       const bossY = this.isMobile ? (isLandscape ? 20 : 180) : 80; // Lowered from 130 to 180 in portrait
       this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
-      if (this.assets) this.boss.setImage(this.assets.bossAlien);
+      if (this.assets) this.boss.setImage(this.assets.bossPhase1); // Start with Phase 1 (Red) boss
 
       this.bossState.bossActive = true;
       this.bossState.bossHealth = this.boss.health;
@@ -644,7 +656,21 @@ export class GameEngine {
 
     this.boss.update(this.canvas.width);
     this.bossState.bossHealth = this.boss.health;
+
+    // Update boss image when phase changes
+    const previousPhase = this.bossState.bossPhase;
     this.bossState.bossPhase = this.boss.phase;
+
+    if (previousPhase !== this.boss.phase && this.assets) {
+      // Switch boss appearance based on current phase
+      const bossImageMap = {
+        phase1: this.assets.bossPhase1,
+        phase2: this.assets.bossPhase2,
+        phase3: this.assets.bossPhase3,
+        phase4: this.assets.bossPhase4
+      };
+      this.boss.setImage(bossImageMap[this.boss.phase]);
+    }
 
     // Boss attacks (scales with both phase AND wave)
     const now = Date.now();
