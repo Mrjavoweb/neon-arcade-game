@@ -27,6 +27,7 @@ export class GameEngine {
   autoFireInterval: number | null;
   assets?: SpriteAssets;
   screenShake: {x: number;y: number;intensity: number;};
+  hitFlashAlpha: number; // Red flash when player is hit
   slowMotionActive: boolean;
   slowMotionDuration: number;
   lastPowerUpSpawn: number;
@@ -62,6 +63,7 @@ export class GameEngine {
     this.touchX = null;
     this.autoFireInterval = null;
     this.screenShake = { x: 0, y: 0, intensity: 0 };
+    this.hitFlashAlpha = 0;
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
     this.lastPowerUpSpawn = 0;
@@ -1045,6 +1047,12 @@ export class GameEngine {
         this.screenShake.y = 0;
       }
     }
+
+    // Fade out hit flash
+    if (this.hitFlashAlpha > 0) {
+      this.hitFlashAlpha -= 0.02; // Quick fade
+      if (this.hitFlashAlpha < 0) this.hitFlashAlpha = 0;
+    }
   }
 
   createExplosion(x: number, y: number) {
@@ -1237,7 +1245,51 @@ export class GameEngine {
   }
 
   hitPlayer() {
+    // Don't take damage if invulnerable or shield is active
+    if (this.player.invulnerable || this.player.shieldActive) {
+      return;
+    }
+
+    // Lose a life
     this.stats.lives--;
+
+    // Reset combo on hit
+    this.stats.combo = 0;
+
+    // SCREEN SHAKE - Intense shake on hit
+    this.addScreenShake(25);
+
+    // RED FLASH - Screen flash on hit
+    this.hitFlashAlpha = 0.4;
+
+    // PARTICLE BURST - Explosion at player position
+    const burstColors = ['#ff0000', '#ff4500', '#ff6347', '#ffa500', '#ffff00'];
+    const particleCount = this.isMobile ? 20 : 30;
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.3;
+      const speed = 4 + Math.random() * 8;
+      const particleColor = burstColors[Math.floor(Math.random() * burstColors.length)];
+
+      this.particles.push({
+        x: this.player.position.x + this.player.size.width / 2,
+        y: this.player.position.y + this.player.size.height / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: particleColor,
+        alpha: 1,
+        decay: 0.015,
+        lifetime: 0,
+        maxLifetime: 80
+      });
+    }
+
+    // INVULNERABILITY - Brief invulnerability after hit (2 seconds at 60fps)
+    this.player.invulnerable = true;
+    this.player.invulnerabilityTimer = 120;
+
+    // Check for game over
     if (this.stats.lives <= 0) {
       this.gameOver();
     }
@@ -1432,6 +1484,12 @@ export class GameEngine {
     gradient.addColorStop(1, '#150028');
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
+
+    // Hit flash overlay - Red flash when player gets hit
+    if (this.hitFlashAlpha > 0) {
+      this.ctx.fillStyle = `rgba(255, 0, 0, ${this.hitFlashAlpha})`;
+      this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
+    }
 
     // Slow-mo overlay with enhanced effect
     if (this.slowMotionActive) {

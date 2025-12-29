@@ -16,6 +16,8 @@ export class Player {
   rapidDuration: number;
   engineParticles: Particle[];
   level: number;
+  invulnerable: boolean;
+  invulnerabilityTimer: number;
 
   constructor(canvasWidth: number, canvasHeight: number, speed: number) {
     this.size = { width: 50, height: 50 };
@@ -35,6 +37,8 @@ export class Player {
     this.rapidActive = false;
     this.rapidDuration = 0;
     this.engineParticles = [];
+    this.invulnerable = false;
+    this.invulnerabilityTimer = 0;
   }
 
   setImage(img: HTMLImageElement) {
@@ -57,6 +61,12 @@ export class Player {
     if (this.rapidDuration > 0) {
       this.rapidDuration--;
       if (this.rapidDuration <= 0) this.rapidActive = false;
+    }
+
+    // Update invulnerability
+    if (this.invulnerabilityTimer > 0) {
+      this.invulnerabilityTimer--;
+      if (this.invulnerabilityTimer <= 0) this.invulnerable = false;
     }
 
     // Generate enhanced engine trail particles
@@ -111,6 +121,12 @@ export class Player {
     });
 
     ctx.save();
+
+    // Invulnerability flashing effect
+    if (this.invulnerable) {
+      const flashAlpha = Math.sin(Date.now() / 50) * 0.5 + 0.5; // Flash between 0.5 and 1.0
+      ctx.globalAlpha = flashAlpha;
+    }
 
     // Level glow indicator
     const glowIntensity = 15 + this.level * 2;
