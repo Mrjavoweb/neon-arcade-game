@@ -67,7 +67,7 @@ export class GameEngine {
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
     this.lastPowerUpSpawn = 0;
-    this.powerUpSpawnRate = 15000; // 15 seconds
+    this.powerUpSpawnRate = 12000; // 12 seconds between spawn attempts
     this.pendingLevelUp = false;
     this.lastCheckpoint = 0; // No checkpoint initially
     this.lastFrameTime = performance.now();
@@ -594,12 +594,27 @@ export class GameEngine {
   spawnPowerUp() {
     const now = Date.now();
     if (now - this.lastPowerUpSpawn < this.powerUpSpawnRate) return;
-    if (Math.random() < 0.3) return; // 30% chance
+    if (Math.random() < 0.45) return; // 55% spawn chance (improved from 30%)
 
     this.lastPowerUpSpawn = now;
 
-    const types: Array<'plasma' | 'rapid' | 'shield' | 'slowmo'> = ['plasma', 'rapid', 'shield', 'slowmo'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    // Weighted rarity system for power-up types
+    // Common: Rapid Fire, Plasma (70% combined)
+    // Uncommon: Shield (20%)
+    // Rare: Slow Motion (10%)
+    const rand = Math.random();
+    let type: 'plasma' | 'rapid' | 'shield' | 'slowmo';
+
+    if (rand < 0.35) {
+      type = 'rapid';     // 35% - Common offensive boost
+    } else if (rand < 0.70) {
+      type = 'plasma';    // 35% - Common offensive boost
+    } else if (rand < 0.90) {
+      type = 'shield';    // 20% - Uncommon defensive boost
+    } else {
+      type = 'slowmo';    // 10% - Rare tactical advantage
+    }
+
     const x = Math.random() * (this.canvas.width - 40) + 20;
 
     const powerUp = new PowerUpEntity(x, -40, type);
@@ -1017,7 +1032,7 @@ export class GameEngine {
         break;
       case 'slowmo':
         this.slowMotionActive = true;
-        this.slowMotionDuration = 300; // 5 seconds
+        this.slowMotionDuration = 360; // 6 seconds (improved from 5s)
         break;
     }
   }

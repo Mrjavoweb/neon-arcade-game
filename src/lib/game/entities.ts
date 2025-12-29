@@ -221,17 +221,17 @@ export class Player {
 
   activateShield() {
     this.shieldActive = true;
-    this.shieldDuration = 600; // 10 seconds at 60fps
+    this.shieldDuration = 480; // 8 seconds at 60fps (balanced from 10s)
   }
 
   activatePlasma() {
     this.plasmaActive = true;
-    this.plasmaDuration = 450; // 7.5 seconds
+    this.plasmaDuration = 420; // 7 seconds (balanced from 7.5s)
   }
 
   activateRapid() {
     this.rapidActive = true;
-    this.rapidDuration = 450;
+    this.rapidDuration = 420; // 7 seconds (balanced from 7.5s)
   }
 }
 
