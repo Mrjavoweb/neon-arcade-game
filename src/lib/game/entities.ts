@@ -260,17 +260,22 @@ export class Boss {
     this.isAlive = true;
     this.wobbleOffset = Math.random() * Math.PI * 2;
     this.wobbleSpeed = 0.08;
-    this.moveSpeed = 2;
-    this.moveDirection = 1;
     this.phase = 'phase1';
     this.flashTimer = 0;
 
-    // Scale with wave difficulty (reduced for beginners)
-    const healthMultiplier = 1 + Math.floor(wave / 5) * 0.3;
+    // Scale with wave difficulty - progressive scaling for sustained challenge
+    // Wave 5: 60 HP | Wave 10: 90 HP | Wave 15: 126 HP | Wave 20: 168 HP
+    const bossNumber = Math.floor(wave / 5); // 1st boss, 2nd boss, 3rd boss...
+    const healthMultiplier = 1 + (bossNumber - 1) * 0.5; // +50% per boss encounter
+
+    // Movement speed increases with each boss encounter
+    this.moveSpeed = 2 + (bossNumber - 1) * 0.3; // Boss 1: 2.0 | Boss 2: 2.3 | Boss 3: 2.6
+    this.moveDirection = 1;
+
     this.size = { width: 120, height: 120 }; // 2.5-3x normal alien
     this.color = '#dc2626';
-    this.points = 500;
-    this.health = Math.floor(60 * healthMultiplier); // Reduced from 100 for easier fights
+    this.points = 500 + (bossNumber - 1) * 250; // Points scale with difficulty
+    this.health = Math.floor(60 * healthMultiplier);
     this.maxHealth = this.health;
   }
 

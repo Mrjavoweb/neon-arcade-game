@@ -680,8 +680,10 @@ export class GameEngine {
     this.boss.phase === 'phase3' ? 1800 :
     this.boss.phase === 'phase2' ? 2400 : 3000;
 
-    // Wave-based scaling: Each boss wave (5,10,15,20...) increases attack speed
-    const waveMultiplier = Math.max(0.5, 1 - (this.stats.wave / 5 - 1) * 0.1); // -10% per boss wave
+    // Wave-based scaling: Each boss wave increases attack speed progressively
+    // Boss 1: 100% | Boss 2: 85% | Boss 3: 72% | Boss 4: 61% | Boss 5: 52%
+    const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
+    const waveMultiplier = Math.max(0.5, 1 - (bossNumber - 1) * 0.15); // -15% per boss
     const attackDelay = baseDelay * waveMultiplier;
 
     if (now - this.bossState.lastAttackTime > attackDelay) {
@@ -739,9 +741,10 @@ export class GameEngine {
     const spread = Math.PI / 3;
     const startAngle = Math.PI / 2 - spread / 2;
 
-    // Wave-based speed scaling: +0.5 speed per boss wave
+    // Wave-based speed scaling: +0.8 speed per boss wave for noticeable progression
     const baseSpeed = 6;
-    const waveBonus = (this.stats.wave / 5 - 1) * 0.5; // First boss at wave 5 = +0
+    const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
+    const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
     const speed = baseSpeed + waveBonus;
 
     for (let i = 0; i < angles; i++) {
@@ -768,8 +771,9 @@ export class GameEngine {
                        this.boss.phase === 'phase3' ? 8 :
                        this.boss.phase === 'phase2' ? 7 : 5;
 
-    // Wave-based speed scaling: +0.5 speed per boss wave
-    const waveBonus = (this.stats.wave / 5 - 1) * 0.5;
+    // Wave-based speed scaling: +0.8 speed per boss wave for consistent progression
+    const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
+    const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
     const laserSpeed = baseSpeed + waveBonus;
 
     // Create vertical laser beam (2 damage for beginners)
