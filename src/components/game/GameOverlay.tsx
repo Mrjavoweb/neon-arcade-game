@@ -84,7 +84,7 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
 
             {/* Checkpoint indicator */}
             {stats.wave >= 5 && stats.wave % 5 >= 1 &&
-            <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-400 rounded-lg">
+          <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-400 rounded-lg">
               <div className="text-yellow-400 font-bold text-sm font-['Space_Grotesk']">
                 ✅ Checkpoint Saved!
               </div>
@@ -92,7 +92,7 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
                 You'll continue from Wave {Math.floor(stats.wave / 5) * 5}
               </div>
             </div>
-            }
+          }
 
             <div className="mb-6 space-y-2 font-['Space_Grotesk']">
               <div className="text-2xl text-cyan-300">

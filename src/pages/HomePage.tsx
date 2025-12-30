@@ -115,10 +115,11 @@ export default function HomePage() {
           transition={{ duration: 1, delay: 1 }}>
 
           <p
+
             className="text-sm text-gray-500"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
-            Built with React • Optimized for 60fps • Desktop & Mobile
+            <a href="https://aliens.digitalpalapp.com" className="hover:text-cyan-400 transition-colors duration-300" rel="noopener">DigitalPal Apps</a> • Optimized for 60fps • Desktop & Mobile
           </p>
         </motion.div>
       </div>

@@ -67,24 +67,24 @@ export default function GamePage() {
 
       // Update player position to maintain relative position
       if (engine.player) {
-        engine.player.position.x = (engine.player.position.x / oldWidth) * canvas.width;
-        engine.player.position.y = (engine.player.position.y / oldHeight) * canvas.height;
+        engine.player.position.x = engine.player.position.x / oldWidth * canvas.width;
+        engine.player.position.y = engine.player.position.y / oldHeight * canvas.height;
       }
 
       // Update enemy positions to maintain relative positions
       if (engine.enemies) {
-        engine.enemies.forEach(enemy => {
+        engine.enemies.forEach((enemy) => {
           if (enemy.isAlive) {
-            enemy.position.x = (enemy.position.x / oldWidth) * canvas.width;
-            enemy.position.y = (enemy.position.y / oldHeight) * canvas.height;
+            enemy.position.x = enemy.position.x / oldWidth * canvas.width;
+            enemy.position.y = enemy.position.y / oldHeight * canvas.height;
           }
         });
       }
 
       // Update boss position if active
       if (engine.boss && engine.boss.isAlive) {
-        engine.boss.position.x = (engine.boss.position.x / oldWidth) * canvas.width;
-        engine.boss.position.y = (engine.boss.position.y / oldHeight) * canvas.height;
+        engine.boss.position.x = engine.boss.position.x / oldWidth * canvas.width;
+        engine.boss.position.y = engine.boss.position.y / oldHeight * canvas.height;
       }
     };
 
