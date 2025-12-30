@@ -46,6 +46,9 @@ export class GameEngine {
   lastKillTime: number;
   comboTimeout: number;
   waveTransition: WaveTransition | null;
+  has15ComboReward: boolean;
+  has30ComboReward: boolean;
+  has50ComboReward: boolean;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
@@ -57,7 +60,7 @@ export class GameEngine {
     this.keys = new Set();
     this.state = 'playing';
     this.lastFireTime = 0;
-    this.fireDelay = 300;
+    this.fireDelay = 250;
     this.enemyDirection = 1;
     this.lastEnemyFireTime = 0;
     this.touchX = null;
@@ -78,17 +81,20 @@ export class GameEngine {
     this.tapTimer = null;
     this.comboNotifications = [];
     this.lastKillTime = 0;
-    this.comboTimeout = 3000; // 3 seconds to maintain combo
+    this.comboTimeout = 2000; // 2 seconds to maintain combo
     this.waveTransition = null;
+    this.has15ComboReward = false;
+    this.has30ComboReward = false;
+    this.has50ComboReward = false;
 
     this.stats = {
       score: 0,
-      lives: 3,
+      lives: 4,
       wave: 1,
       enemiesDestroyed: 0,
       xp: 0,
       level: 1,
-      maxHealth: 3,
+      maxHealth: 4,
       fireRateBonus: 0,
       movementSpeedBonus: 0,
       combo: 0,
@@ -99,9 +105,9 @@ export class GameEngine {
       playerSpeed: 7,
       projectileSpeed: 10,
       enemySpeed: isMobile ? 0.8 : 0.8,
-      enemyFireRate: isMobile ? 5000 : 2000,
+      enemyFireRate: isMobile ? 5000 : 3500, // Changed from 2000 to 3500 for gentler difficulty
       enemyDescendAmount: 15, // Base descent amount (overridden per-device in movement logic)
-      initialLives: 3
+      initialLives: 4 // Changed from 3 to 4 for beginner-friendly difficulty
     };
 
     this.enemySpeed = this.config.enemySpeed;
@@ -331,10 +337,14 @@ export class GameEngine {
         if (this.state === 'playing') {
           console.log('🎮 CHEAT: Skipping ahead 5 waves!');
           this.stats.wave = Math.min(95, this.stats.wave + 5);
-          // Use new balanced difficulty formula
+          // Use new beginner-friendly difficulty formula
           const wave = this.stats.wave;
-          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
-          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
+          // Progressive speed scaling: waves 1-10 (+0.03), 11-30 (+0.04), 31+ (+0.02)
+          const wave1to10 = Math.min(wave - 1, 10) * 0.03;
+          const wave11to30 = Math.max(0, Math.min(wave - 1, 30) - 10) * 0.04;
+          const wave31plus = Math.max(0, wave - 31) * 0.02;
+          this.enemySpeed = this.config.enemySpeed + wave1to10 + wave11to30 + wave31plus;
+          this.enemyFireRate = Math.max(1800, this.config.enemyFireRate - (wave - 1) * 40);
           this.initEnemies();
         }
       }
@@ -343,10 +353,14 @@ export class GameEngine {
         if (this.state === 'playing') {
           console.log('🎮 CHEAT: Going back 5 waves!');
           this.stats.wave = Math.max(1, this.stats.wave - 5);
-          // Use new balanced difficulty formula
+          // Use new beginner-friendly difficulty formula
           const wave = this.stats.wave;
-          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
-          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
+          // Progressive speed scaling: waves 1-10 (+0.03), 11-30 (+0.04), 31+ (+0.02)
+          const wave1to10 = Math.min(wave - 1, 10) * 0.03;
+          const wave11to30 = Math.max(0, Math.min(wave - 1, 30) - 10) * 0.04;
+          const wave31plus = Math.max(0, wave - 31) * 0.02;
+          this.enemySpeed = this.config.enemySpeed + wave1to10 + wave11to30 + wave31plus;
+          this.enemyFireRate = Math.max(1800, this.config.enemyFireRate - (wave - 1) * 40);
           this.initEnemies();
         }
       }
@@ -403,10 +417,14 @@ export class GameEngine {
         if (this.tapCount >= 3 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Skipping ahead 5 waves!');
           this.stats.wave = Math.min(95, this.stats.wave + 5);
-          // Use new balanced difficulty formula
+          // Use new beginner-friendly difficulty formula
           const wave = this.stats.wave;
-          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
-          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
+          // Progressive speed scaling: waves 1-10 (+0.03), 11-30 (+0.04), 31+ (+0.02)
+          const wave1to10 = Math.min(wave - 1, 10) * 0.03;
+          const wave11to30 = Math.max(0, Math.min(wave - 1, 30) - 10) * 0.04;
+          const wave31plus = Math.max(0, wave - 31) * 0.02;
+          this.enemySpeed = this.config.enemySpeed + wave1to10 + wave11to30 + wave31plus;
+          this.enemyFireRate = Math.max(1800, this.config.enemyFireRate - (wave - 1) * 40);
           this.initEnemies();
           this.tapCount = 0;
         }
@@ -425,10 +443,14 @@ export class GameEngine {
         if (this.tapCount >= 3 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Going back 5 waves!');
           this.stats.wave = Math.max(1, this.stats.wave - 5);
-          // Use new balanced difficulty formula
+          // Use new beginner-friendly difficulty formula
           const wave = this.stats.wave;
-          this.enemySpeed = this.config.enemySpeed + Math.min(wave - 1, 30) * 0.05 + Math.max(0, wave - 31) * 0.02;
-          this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (wave - 1) * 50);
+          // Progressive speed scaling: waves 1-10 (+0.03), 11-30 (+0.04), 31+ (+0.02)
+          const wave1to10 = Math.min(wave - 1, 10) * 0.03;
+          const wave11to30 = Math.max(0, Math.min(wave - 1, 30) - 10) * 0.04;
+          const wave31plus = Math.max(0, wave - 31) * 0.02;
+          this.enemySpeed = this.config.enemySpeed + wave1to10 + wave11to30 + wave31plus;
+          this.enemyFireRate = Math.max(1800, this.config.enemyFireRate - (wave - 1) * 40);
           this.initEnemies();
           this.tapCount = 0;
         }
@@ -828,11 +850,11 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height,
         false,
         speed,
-        1  // Partial damage (1 life lost, not instant kill)
+        2  // 2 damage (heavy hit - costs 2 lives)
       );
       projectile.velocity.x = Math.cos(angle) * speed;
       projectile.velocity.y = Math.sin(angle) * speed;
-      projectile.color = '#ff6600'; // Orange color for 1 damage
+      projectile.color = '#ff6600'; // Orange color for 2 damage
       this.projectiles.push(projectile);
     }
   }
@@ -850,7 +872,7 @@ export class GameEngine {
     const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
     const laserSpeed = baseSpeed + waveBonus;
 
-    // Create vertical laser beam (2 damage - heavy hit)
+    // Create vertical laser beam (3 damage - devastating hit)
     // Fewer, more spaced out projectiles to avoid multi-hits
     for (let i = 0; i < 8; i++) {
       const projectile = new Projectile(
@@ -858,11 +880,11 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height + i * 15,
         false,
         laserSpeed,
-        2  // 2 damage (heavy hit - costs 2 lives)
+        3  // 3 damage (devastating hit - costs 3 lives)
       );
       projectile.size.width = 6;
       projectile.size.height = 18;
-      projectile.color = '#ff0000'; // Red color for heavy damage
+      projectile.color = '#ff0000'; // Red color for devastating damage
       this.projectiles.push(projectile);
     }
 
@@ -1089,9 +1111,10 @@ export class GameEngine {
           projectile.deactivate();
 
           // Use projectile damage:
-          // 1 = lose 1 life (orange spread shots)
-          // 2 = lose 2 lives (red laser beams)
-          // 999 = instant death (only for regular enemies, not boss)
+          // 1 = lose 1 life (regular enemy bullets)
+          // 2 = lose 2 lives (boss orange spread shots)
+          // 3 = lose 3 lives (boss red laser beams)
+          // 999 = instant death (not used)
           if (projectile.damage >= 999) {
             this.stats.lives = 0; // Instant kill (regular enemy bullets)
             this.gameOver();
@@ -1272,14 +1295,46 @@ export class GameEngine {
       this.addComboNotification('GREAT! x10', '#fbbf24', 1.4);
       this.stats.score += 100;
       this.addScreenShake(10);
+    } else if (this.stats.combo === 15 && !this.has15ComboReward) {
+      // 15 Combo Life Reward (one-time per game)
+      this.has15ComboReward = true;
+
+      // Award +1 life (can exceed max health!)
+      this.stats.lives++;
+      this.stats.maxHealth = Math.max(this.stats.maxHealth, this.stats.lives);
+
+      // Celebration
+      this.addComboNotification('EPIC 15 COMBO!\n+1 LIFE REWARD!', '#ff6600', 2.0);
+      this.stats.score += 500;
+      this.addScreenShake(25);
     } else if (this.stats.combo === 20) {
       this.addComboNotification('AMAZING! x20', '#ec4899', 1.6);
       this.stats.score += 250;
       this.addScreenShake(15);
-    } else if (this.stats.combo === 50) {
-      this.addComboNotification('LEGENDARY! x50', '#a855f7', 2.0);
-      this.stats.score += 500;
-      this.addScreenShake(20);
+    } else if (this.stats.combo === 30 && !this.has30ComboReward) {
+      // 30 Combo Life Reward (one-time per game)
+      this.has30ComboReward = true;
+
+      // Award +1 life (can exceed max health!)
+      this.stats.lives++;
+      this.stats.maxHealth = Math.max(this.stats.maxHealth, this.stats.lives);
+
+      // Epic celebration
+      this.addComboNotification('INSANE 30 COMBO!\n+1 LIFE REWARD!', '#a855f7', 2.3);
+      this.stats.score += 1000;
+      this.addScreenShake(28);
+    } else if (this.stats.combo === 50 && !this.has50ComboReward) {
+      // 50 Combo Life Reward (one-time per game)
+      this.has50ComboReward = true;
+
+      // Award +1 life (can exceed max health for legendary achievement!)
+      this.stats.lives++;
+      this.stats.maxHealth = Math.max(this.stats.maxHealth, this.stats.lives);
+
+      // Legendary celebration
+      this.addComboNotification('LEGENDARY 50 COMBO!\n+1 LIFE REWARD!', '#ff00ff', 2.5);
+      this.stats.score += 2000;
+      this.addScreenShake(30);
     } else if (this.stats.combo % 25 === 0 && this.stats.combo > 50) {
       this.addComboNotification(`UNSTOPPABLE! x${this.stats.combo}`, '#ff6600', 2.2);
       this.stats.score += 1000;
@@ -1464,16 +1519,18 @@ export class GameEngine {
 
     this.stats.wave++;
 
-    // BALANCED DIFFICULTY CURVE - Much gentler scaling
-    // Enemy speed: +0.05 per wave with soft cap at wave 30
-    if (this.stats.wave <= 30) {
-      this.enemySpeed += 0.05; // Gentle increase (was 0.3)
+    // BEGINNER-FRIENDLY DIFFICULTY CURVE - Gentler early game scaling
+    // Enemy speed: Progressive scaling with different rates for early/mid/late game
+    if (this.stats.wave <= 10) {
+      this.enemySpeed += 0.03; // Gentle early game (waves 1-10)
+    } else if (this.stats.wave <= 30) {
+      this.enemySpeed += 0.04; // Moderate mid game (waves 11-30)
     } else {
-      this.enemySpeed += 0.02; // Very slow increase after wave 30
+      this.enemySpeed += 0.02; // Slow late game (waves 31+)
     }
 
-    // Fire rate: -50ms per wave with floor at 1500ms (was -200ms with floor at 1000ms)
-    this.enemyFireRate = Math.max(1500, this.enemyFireRate - 50);
+    // Fire rate: -40ms per wave with floor at 1800ms (gentler than before)
+    this.enemyFireRate = Math.max(1800, this.enemyFireRate - 40);
 
     this.initEnemies();
     this.projectiles = [];
@@ -1813,23 +1870,27 @@ export class GameEngine {
 
     this.stats = {
       score: 0,
-      lives: 3,
+      lives: 4, // Changed from 3 to 4 for beginner-friendly difficulty
       wave: startWave,
       enemiesDestroyed: 0,
       xp: 0,
       level: 1,
-      maxHealth: 3,
+      maxHealth: 4, // Changed from 3 to 4 for beginner-friendly difficulty
       fireRateBonus: 0,
       movementSpeedBonus: 0,
       combo: 0,
       maxCombo: 0
     };
-    this.fireDelay = 300;
+    this.fireDelay = 250; // Changed from 300ms to 250ms for faster firing
     this.config.playerSpeed = 7;
 
-    // Restore enemy difficulty for the checkpoint wave using balanced formula
-    this.enemySpeed = this.config.enemySpeed + Math.min(startWave - 1, 30) * 0.05 + Math.max(0, startWave - 31) * 0.02;
-    this.enemyFireRate = Math.max(1500, this.config.enemyFireRate - (startWave - 1) * 50);
+    // Restore enemy difficulty for the checkpoint wave using beginner-friendly formula
+    // Progressive speed scaling: waves 1-10 (+0.03), 11-30 (+0.04), 31+ (+0.02)
+    const wave1to10 = Math.min(startWave - 1, 10) * 0.03;
+    const wave11to30 = Math.max(0, Math.min(startWave - 1, 30) - 10) * 0.04;
+    const wave31plus = Math.max(0, startWave - 31) * 0.02;
+    this.enemySpeed = this.config.enemySpeed + wave1to10 + wave11to30 + wave31plus;
+    this.enemyFireRate = Math.max(1800, this.config.enemyFireRate - (startWave - 1) * 40);
 
     this.state = 'playing';
     this.projectiles = [];
@@ -1841,6 +1902,9 @@ export class GameEngine {
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
     this.lastPowerUpSpawn = 0;
+    this.has15ComboReward = false;
+    this.has30ComboReward = false;
+    this.has50ComboReward = false;
     this.boss = null;
     this.bossMinions = [];
     this.bossState = {
