@@ -237,7 +237,7 @@ export class GameEngine {
 
       // Boss position: adjusted for better visibility
       const isLandscape = this.canvas.width > this.canvas.height;
-      const bossY = this.isMobile ? (isLandscape ? 20 : 180) : 80; // Lowered from 130 to 180 in portrait
+      const bossY = this.isMobile ? (isLandscape ? 20 : 100) : 80; // Raised to 100 in portrait for more challenge
       this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
       if (this.assets) this.boss.setImage(this.assets.bossPhase1); // Start with Phase 1 (Red) boss
 
@@ -270,7 +270,7 @@ export class GameEngine {
 
     // Adjusted positioning - ensure spaceship is visible in landscape
     const offsetY = this.isMobile
-      ? (isLandscape ? 30 : 65)  // Moved down in landscape so HUD and top row are visible
+      ? (isLandscape ? 30 : 35)  // Raised to 35 in portrait for more challenge, landscape unchanged
       : Math.max(80, this.canvas.height * 0.1);
 
     for (let row = 0; row < rows; row++) {
