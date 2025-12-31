@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { GameState, GameStats } from '@/lib/game/types';
+import PWAInstallButton from '@/components/PWAInstallButton';
 
 interface GameOverlayProps {
   state: GameState;
@@ -7,9 +8,12 @@ interface GameOverlayProps {
   onResume: () => void;
   onRestart: () => void;
   onMainMenu: () => void;
+  onShop?: () => void;
+  onAchievements?: () => void;
+  onGuide?: () => void;
 }
 
-export default function GameOverlay({ state, stats, onResume, onRestart, onMainMenu }: GameOverlayProps) {
+export default function GameOverlay({ state, stats, onResume, onRestart, onMainMenu, onShop, onAchievements, onGuide }: GameOverlayProps) {
   if (state === 'playing') return null;
 
   return (
@@ -43,13 +47,45 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
 
                 Resume Game
               </button>
-              
+
+              {onShop && (
+                <button
+                onClick={onShop}
+                className="w-full px-6 py-3 bg-purple-500/30 hover:bg-purple-500/50 text-white font-bold rounded-lg border border-purple-400 transition-all font-['Space_Grotesk']">
+
+                  🛍️ Ship Shop
+                </button>
+              )}
+
+              {onAchievements && (
+                <button
+                onClick={onAchievements}
+                className="w-full px-6 py-3 bg-yellow-500/30 hover:bg-yellow-500/50 text-white font-bold rounded-lg border border-yellow-400 transition-all font-['Space_Grotesk']">
+
+                  🏆 Achievements
+                </button>
+              )}
+
+              {onGuide && (
+                <button
+                onClick={onGuide}
+                className="w-full px-6 py-3 bg-blue-500/30 hover:bg-blue-500/50 text-white font-bold rounded-lg border border-blue-400 transition-all font-['Space_Grotesk']">
+
+                  📖 Game Guide
+                </button>
+              )}
+
               <button
               onClick={onMainMenu}
               className="w-full px-6 py-3 bg-pink-500/30 hover:bg-pink-500/50 text-white font-bold rounded-lg border border-pink-400 transition-all font-['Space_Grotesk']">
 
                 Main Menu
               </button>
+            </div>
+
+            {/* PWA Install Button */}
+            <div className="mt-4 flex justify-center">
+              <PWAInstallButton />
             </div>
 
             <div className="mt-6 text-sm text-blue-200 font-['Space_Grotesk']">

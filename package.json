@@ -1,17 +1,17 @@
 {
-  "name": "neon-invaders-pwa",
+  "name": "alien-attack-pwa",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Epic neon-themed space invaders PWA game with boss battles and power-ups",
+  "description": "Epic neon-themed space shooter PWA game with boss battles and power-ups",
   "keywords": [
     "game",
     "pwa",
-    "space-invaders",
+    "space-shooter",
     "arcade",
-    "neon"
+    "alien-attack"
   ],
-  "author": "Neon Invaders Team",
+  "author": "Alien Attack Team",
   "license": "MIT",
   "scripts": {
     "dev": "vite",

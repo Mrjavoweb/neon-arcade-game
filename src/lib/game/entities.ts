@@ -18,6 +18,7 @@ export class Player {
   level: number;
   invulnerable: boolean;
   invulnerabilityTimer: number;
+  private filteredImageCache: Map<string, HTMLCanvasElement> = new Map();
 
   constructor(canvasWidth: number, canvasHeight: number, speed: number) {
     this.size = { width: 50, height: 50 };
@@ -97,7 +98,7 @@ export class Player {
     this.engineParticles = this.engineParticles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
   }
 
-  render(ctx: CanvasRenderingContext2D, shieldImage?: HTMLImageElement) {
+  render(ctx: CanvasRenderingContext2D, shieldImage?: HTMLImageElement, skinFilter?: string) {
     // Render enhanced engine particles first
     this.engineParticles.forEach((p) => {
       ctx.save();
@@ -122,6 +123,14 @@ export class Player {
 
     ctx.save();
 
+    // CRITICAL FIX: Apply filter here, inside the save/restore block
+    if (skinFilter && skinFilter !== 'none' && skinFilter !== 'undefined') {
+      ctx.filter = skinFilter;
+    } else {
+      // Explicitly set to 'none' if no filter
+      ctx.filter = 'none';
+    }
+
     // Invulnerability flashing effect
     if (this.invulnerable) {
       const flashAlpha = Math.sin(Date.now() / 50) * 0.5 + 0.5; // Flash between 0.5 and 1.0
@@ -138,13 +147,45 @@ export class Player {
       // Draw sprite with level-based glow
       ctx.shadowBlur = glowIntensity;
       ctx.shadowColor = this.shieldActive ? '#a855f7' : glowColor;
-      ctx.drawImage(
-        this.image,
-        this.position.x,
-        this.position.y,
-        this.size.width,
-        this.size.height
-      );
+
+      // WORKAROUND: Use offscreen canvas to apply filter to image
+      if (skinFilter && skinFilter !== 'none') {
+        // Check cache first
+        let filteredCanvas = this.filteredImageCache.get(skinFilter);
+
+        if (!filteredCanvas) {
+          // Create offscreen canvas with filter applied
+          filteredCanvas = document.createElement('canvas');
+          filteredCanvas.width = this.image.width;
+          filteredCanvas.height = this.image.height;
+          const offscreenCtx = filteredCanvas.getContext('2d')!;
+
+          // Apply filter and draw image to offscreen canvas
+          offscreenCtx.filter = skinFilter;
+          offscreenCtx.drawImage(this.image, 0, 0);
+
+          // Cache it for better performance
+          this.filteredImageCache.set(skinFilter, filteredCanvas);
+        }
+
+        // Draw the filtered canvas
+        ctx.drawImage(
+          filteredCanvas,
+          this.position.x,
+          this.position.y,
+          this.size.width,
+          this.size.height
+        );
+      } else {
+        // No filter - draw original image
+        ctx.drawImage(
+          this.image,
+          this.position.x,
+          this.position.y,
+          this.size.width,
+          this.size.height
+        );
+      }
     } else {
       // Fallback triangle
       ctx.fillStyle = this.color;

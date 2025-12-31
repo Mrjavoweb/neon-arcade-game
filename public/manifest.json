@@ -1,7 +1,7 @@
 {
-  "name": "Neon Invaders - Alien Space Attack",
-  "short_name": "Neon Invaders",
-  "description": "Epic neon-themed space invaders game with boss battles, power-ups, and progressive difficulty. Defend Earth against the alien invasion!",
+  "name": "Alien Attack - Space Shooter Game",
+  "short_name": "Alien Attack",
+  "description": "Epic neon-themed space shooter game with boss battles, power-ups, and progressive difficulty. Defend Earth against the alien invasion!",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -14,44 +14,44 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%2322d3ee'/><stop offset='50%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%23ec4899'/></linearGradient></defs><rect fill='%230a0014' width='192' height='192'/><text x='96' y='140' font-size='100' text-anchor='middle' fill='url(%23g1)'>👾</text></svg>",
+      "src": "https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2322d3ee' width='192' height='192' rx='48'/><text x='96' y='140' font-size='100' text-anchor='middle' fill='%230a0014'>👾</text></svg>",
+      "src": "https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/webp",
       "purpose": "maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%2322d3ee'/><stop offset='50%25' style='stop-color:%233b82f6'/><stop offset='100%25' style='stop-color:%23ec4899'/></linearGradient></defs><rect fill='%230a0014' width='512' height='512'/><text x='256' y='380' font-size='280' text-anchor='middle' fill='url(%23g2)'>👾</text></svg>",
+      "src": "https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%2322d3ee' width='512' height='512' rx='128'/><text x='256' y='380' font-size='280' text-anchor='middle' fill='%230a0014'>👾</text></svg>",
+      "src": "https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/webp",
       "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'><stop offset='0%25' style='stop-color:%230a0014'/><stop offset='50%25' style='stop-color:%230d001a'/><stop offset='100%25' style='stop-color:%23150028'/></linearGradient></defs><rect fill='url(%23bg)' width='540' height='720'/><text x='270' y='200' font-size='60' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>NEON</text><text x='270' y='280' font-size='60' text-anchor='middle' font-weight='bold' fill='%23ec4899'>INVADERS</text><text x='270' y='400' font-size='80' text-anchor='middle'>👾</text><text x='270' y='500' font-size='24' text-anchor='middle' fill='%2322d3ee'>Epic Boss Battles</text><text x='270' y='540' font-size='24' text-anchor='middle' fill='%23ec4899'>Power-ups %26 Upgrades</text><text x='270' y='580' font-size='24' text-anchor='middle' fill='%233b82f6'>Progressive Difficulty</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><defs><linearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'><stop offset='0%25' style='stop-color:%230a0014'/><stop offset='50%25' style='stop-color:%230d001a'/><stop offset='100%25' style='stop-color:%23150028'/></linearGradient></defs><rect fill='url(%23bg)' width='540' height='720'/><text x='270' y='200' font-size='60' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>ALIEN</text><text x='270' y='280' font-size='60' text-anchor='middle' font-weight='bold' fill='%23ec4899'>ATTACK</text><text x='270' y='400' font-size='80' text-anchor='middle'>👾</text><text x='270' y='500' font-size='24' text-anchor='middle' fill='%2322d3ee'>Epic Boss Battles</text><text x='270' y='540' font-size='24' text-anchor='middle' fill='%23ec4899'>Power-ups %26 Upgrades</text><text x='270' y='580' font-size='24' text-anchor='middle' fill='%233b82f6'>Progressive Difficulty</text></svg>",
       "sizes": "540x720",
       "type": "image/svg+xml",
       "form_factor": "narrow",
-      "label": "Neon Invaders gameplay on mobile"
+      "label": "Alien Attack gameplay on mobile"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><defs><linearGradient id='bg2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%230a0014'/><stop offset='100%25' style='stop-color:%23150028'/></linearGradient></defs><rect fill='url(%23bg2)' width='1280' height='720'/><text x='640' y='280' font-size='90' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>NEON INVADERS</text><text x='640' y='380' font-size='40' text-anchor='middle' fill='%23ec4899'>Defend Earth Against the Alien Horde</text><text x='320' y='560' font-size='28' text-anchor='middle' fill='%2322d3ee'>🎮 Classic Arcade</text><text x='640' y='560' font-size='28' text-anchor='middle' fill='%23ec4899'>👾 Boss Battles</text><text x='960' y='560' font-size='28' text-anchor='middle' fill='%233b82f6'>⚡ Power-ups</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><defs><linearGradient id='bg2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%230a0014'/><stop offset='100%25' style='stop-color:%23150028'/></linearGradient></defs><rect fill='url(%23bg2)' width='1280' height='720'/><text x='640' y='280' font-size='90' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>ALIEN ATTACK</text><text x='640' y='380' font-size='40' text-anchor='middle' fill='%23ec4899'>Defend Earth Against the Alien Horde</text><text x='320' y='560' font-size='28' text-anchor='middle' fill='%2322d3ee'>🎮 Classic Arcade</text><text x='640' y='560' font-size='28' text-anchor='middle' fill='%23ec4899'>👾 Boss Battles</text><text x='960' y='560' font-size='28' text-anchor='middle' fill='%233b82f6'>⚡ Power-ups</text></svg>",
       "sizes": "1280x720",
       "type": "image/svg+xml",
       "form_factor": "wide",
-      "label": "Neon Invaders desktop experience"
+      "label": "Alien Attack desktop experience"
     }
   ],
   "shortcuts": [

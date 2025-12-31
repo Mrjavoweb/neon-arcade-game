@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
+import { Achievement, DailyReward } from '@/lib/game/progression/ProgressionTypes';
 import GameHUD from './GameHUD';
 import GameOverlay from './GameOverlay';
 import BossHealthBar from './BossHealthBar';
 import BossIntro from './BossIntro';
 import LevelUpCelebration from './LevelUpCelebration';
+import AchievementToast from './AchievementToast';
+import DailyRewardPopup from './DailyRewardPopup';
+import ShopModal from './ShopModal';
 import { AnimatePresence } from 'framer-motion';
 
 interface GameCanvasProps {
@@ -33,6 +37,10 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
   });
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpData, setLevelUpData] = useState({ level: 1, upgrade: '' });
+  const [stardust, setStardust] = useState(0);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [dailyReward, setDailyReward] = useState<{ day: number; reward: DailyReward; streak: number } | null>(null);
+  const [showShop, setShowShop] = useState(false);
   const [bossState, setBossState] = useState<BossState>({
     isBossWave: false,
     bossActive: false,
@@ -75,13 +83,52 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
 
     // Initialize game engine with assets
     const initGame = async () => {
+      console.log('🎮 GameCanvas: initGame starting...');
       gameEngineRef.current = new GameEngine(canvas, isMobile);
+      console.log('🎮 GameCanvas: GameEngine created');
 
       // Set level up callback
       gameEngineRef.current.setLevelUpCallback((level: number, upgrade: string) => {
         setLevelUpData({ level, upgrade });
         setShowLevelUp(true);
       });
+
+      // Listen for currency changes
+      const handleCurrencyChange = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail?.balance !== undefined) {
+          console.log('🎮 GameCanvas: currency-changed event received. New balance:', customEvent.detail.balance);
+          setStardust(customEvent.detail.balance);
+        }
+      };
+      window.addEventListener('currency-changed', handleCurrencyChange);
+
+      // Listen for achievement unlocks
+      const handleAchievementUnlock = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail?.achievement) {
+          setAchievements(prev => [...prev, customEvent.detail.achievement]);
+        }
+      };
+      window.addEventListener('achievement-unlocked', handleAchievementUnlock);
+
+      // Listen for daily reward available
+      const handleDailyRewardAvailable = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail?.reward) {
+          setDailyReward({
+            day: customEvent.detail.day,
+            reward: customEvent.detail.reward,
+            streak: customEvent.detail.streak
+          });
+        }
+      };
+      window.addEventListener('daily-reward-available', handleDailyRewardAvailable);
+
+      // Initialize stardust from game engine
+      const initialStardust = gameEngineRef.current.currencyManager.getStardust();
+      console.log('🎮 GameCanvas: Initializing stardust from GameEngine:', initialStardust);
+      setStardust(initialStardust);
 
       await gameEngineRef.current.loadAssets();
 
@@ -150,6 +197,16 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     }
   };
 
+  const handleClaimDailyReward = () => {
+    if (gameEngineRef.current) {
+      const result = gameEngineRef.current.dailyRewardManager.claimReward();
+      if (result.success && result.reward) {
+        // Apply rewards (lives and maxHealth are handled by GameEngine if needed in future)
+        console.log('Daily reward claimed:', result.reward);
+      }
+    }
+  };
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0a0014]">
       <canvas
@@ -158,7 +215,7 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
         style={{ touchAction: 'none' }} />
 
       
-      <GameHUD stats={stats} />
+      <GameHUD stats={stats} stardust={stardust} />
       
       {/* Boss health bar */}
       {bossState.bossActive &&
@@ -184,13 +241,54 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
 
         }
       </AnimatePresence>
-      
+
+      {/* Achievement Toasts */}
+      <AnimatePresence>
+        {achievements.map((achievement, index) => (
+          <div key={achievement.id} style={{ top: `${5 + index * 11}rem` }} className="fixed right-0 z-50">
+            <AchievementToast
+              achievement={achievement}
+              onComplete={() => {
+                setAchievements(prev => prev.filter(a => a.id !== achievement.id));
+              }}
+            />
+          </div>
+        ))}
+      </AnimatePresence>
+
+      {/* Daily Reward Popup */}
+      <AnimatePresence>
+        {dailyReward && (
+          <DailyRewardPopup
+            day={dailyReward.day}
+            reward={dailyReward.reward}
+            streak={dailyReward.streak}
+            onClaim={handleClaimDailyReward}
+            onClose={() => setDailyReward(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Shop Modal */}
+      {gameEngineRef.current && (
+        <ShopModal
+          isOpen={showShop}
+          onClose={() => setShowShop(false)}
+          skins={gameEngineRef.current.cosmeticManager.getAllSkins()}
+          currentBalance={stardust}
+          activeSkinId={gameEngineRef.current.cosmeticManager.getActiveSkin().id}
+          onPurchase={(skinId) => gameEngineRef.current!.cosmeticManager.purchaseSkin(skinId)}
+          onEquip={(skinId) => gameEngineRef.current!.cosmeticManager.equipSkin(skinId)}
+        />
+      )}
+
       <GameOverlay
         state={gameState}
         stats={stats}
         onResume={handleResume}
         onRestart={handleRestart}
-        onMainMenu={handleMainMenu} />
+        onMainMenu={handleMainMenu}
+        onShop={() => setShowShop(true)} />
 
 
       {/* Mobile pause button */}

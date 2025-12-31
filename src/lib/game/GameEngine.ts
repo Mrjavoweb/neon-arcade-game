@@ -1,5 +1,9 @@
 import { Player, Enemy, Boss, Projectile, ExplosionAnimation, PowerUpEntity } from './entities';
 import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState, ComboNotification, WaveTransition } from './types';
+import { CurrencyManager } from './progression/CurrencyManager';
+import { DailyRewardManager } from './progression/DailyRewardManager';
+import { AchievementManager } from './progression/AchievementManager';
+import { CosmeticManager } from './progression/CosmeticManager';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -49,6 +53,13 @@ export class GameEngine {
   has15ComboReward: boolean;
   has30ComboReward: boolean;
   has50ComboReward: boolean;
+  tookDamageThisWave: boolean; // Track if player took damage this wave (for perfect wave achievement)
+
+  // Progression systems
+  currencyManager: CurrencyManager;
+  dailyRewardManager: DailyRewardManager;
+  achievementManager: AchievementManager;
+  cosmeticManager: CosmeticManager;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
@@ -86,6 +97,7 @@ export class GameEngine {
     this.has15ComboReward = false;
     this.has30ComboReward = false;
     this.has50ComboReward = false;
+    this.tookDamageThisWave = false;
 
     this.stats = {
       score: 0,
@@ -141,14 +153,41 @@ export class GameEngine {
       teleportCooldown: 0
     };
 
+    // Initialize progression systems
+    this.currencyManager = new CurrencyManager();
+    this.achievementManager = new AchievementManager(this.currencyManager);
+    this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
+    this.cosmeticManager = new CosmeticManager(this.currencyManager);
+
+    // Check for daily reward on game start
+    this.checkDailyReward();
+
     this.initEnemies();
     this.setupControls();
+
+    // Expose cheat functions globally for testing (only in dev)
+    if (typeof window !== 'undefined') {
+      (window as any).gameCheat = {
+        addCurrency: (amount: number) => {
+          this.currencyManager.earnStardust(amount, 'cheat');
+          console.log(`💎 Cheat: Added ${amount} Stardust. New balance: ${this.currencyManager.getStardust()}`);
+        },
+        getCurrency: () => {
+          const balance = this.currencyManager.getStardust();
+          console.log(`💎 Current balance: ${balance} Stardust`);
+          return balance;
+        }
+      };
+      console.log('🎮 Dev cheats enabled! Use window.gameCheat.addCurrency(100000) to add currency');
+    }
   }
 
   async loadAssets(): Promise<void> {
     const loadImage = (src: string): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
         const img = new Image();
+        // CRITICAL FIX: Enable CORS for external images to allow CSS filters
+        img.crossOrigin = 'anonymous';
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = src;
@@ -298,6 +337,25 @@ export class GameEngine {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'p' || e.key === 'P') {
         this.togglePause();
+      }
+      // CHEAT: Test Achievement Notification (Press 'A')
+      if (e.key === 'a' || e.key === 'A') {
+        console.log('🎮 CHEAT: Triggering test achievement!');
+        window.dispatchEvent(new CustomEvent('achievement-unlocked', {
+          detail: {
+            achievement: {
+              id: 'test_achievement',
+              name: 'Test Achievement',
+              description: 'Testing the notification system',
+              icon: '⚡',
+              rewards: {
+                stardust: 100,
+                lives: 1
+              },
+              difficulty: 'medium'
+            }
+          }
+        }));
       }
       // Cheat codes for testing - Boss Level Shortcuts
       if (e.key === 'b' || e.key === 'B') {
@@ -564,6 +622,7 @@ export class GameEngine {
           true,
           this.config.projectileSpeed
         );
+        projectile.color = this.cosmeticManager.getBulletColor(); // Apply skin bullet color
         this.projectiles.push(projectile);
       });
     } else {
@@ -573,6 +632,7 @@ export class GameEngine {
         true,
         this.config.projectileSpeed
       );
+      projectile.color = this.cosmeticManager.getBulletColor(); // Apply skin bullet color
       this.projectiles.push(projectile);
     }
   }
@@ -1093,6 +1153,10 @@ export class GameEngine {
             this.bossState.bossHealth = 0;
             this.bossState.bossVictoryTimer = 120; // 2 second victory pause
             this.state = 'bossVictory';
+
+            // Progression tracking for boss defeat
+            this.currencyManager.earnStardust(100, 'boss_defeat');
+            this.achievementManager.trackBossDefeat();
           } else {
             this.createImpactParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#ffff00');
             this.addScreenShake(5);
@@ -1103,7 +1167,7 @@ export class GameEngine {
     }
 
     // Enemy projectiles vs player
-    if (!this.player.shieldActive) {
+    if (!this.player.shieldActive && !this.player.invulnerable) {
       for (const projectile of this.projectiles) {
         if (!projectile.isActive || projectile.isPlayerProjectile) continue;
 
@@ -1116,7 +1180,7 @@ export class GameEngine {
           // 3 = lose 3 lives (boss red laser beams)
           // 999 = instant death (not used)
           if (projectile.damage >= 999) {
-            this.stats.lives = 0; // Instant kill (regular enemy bullets)
+            this.stats.lives = 0; // Instant kill (not used currently)
             this.gameOver();
           } else {
             this.stats.lives -= projectile.damage; // Partial damage
@@ -1125,11 +1189,21 @@ export class GameEngine {
             }
           }
 
+          // Track damage taken for perfect wave achievement
+          this.tookDamageThisWave = true;
+
+          // Activate invulnerability after taking damage (2 seconds at 60fps)
+          this.player.invulnerable = true;
+          this.player.invulnerabilityTimer = 120;
+
           this.createExplosion(
             this.player.position.x + this.player.size.width / 2,
             this.player.position.y + this.player.size.height / 2
           );
           this.addScreenShake(12);
+
+          // CRITICAL: Break after first hit to prevent multiple projectiles hitting in same frame
+          break;
         }
       }
     }
@@ -1162,6 +1236,9 @@ export class GameEngine {
         this.slowMotionDuration = 360; // 6 seconds (improved from 5s)
         break;
     }
+
+    // Track power-up collection for achievements
+    this.achievementManager.trackPowerUpCollected(type);
   }
 
   checkCollision(bounds1: any, bounds2: any): boolean {
@@ -1340,6 +1417,19 @@ export class GameEngine {
       this.stats.score += 1000;
       this.addScreenShake(25);
     }
+
+    // Progression tracking
+    this.achievementManager.trackKill();
+    this.achievementManager.trackCombo(this.stats.combo);
+
+    // Earn Stardust for combo milestones (one-time per session)
+    if (this.stats.combo === 15 && this.has15ComboReward) {
+      this.currencyManager.earnStardust(25, 'combo_15x');
+    } else if (this.stats.combo === 30 && this.has30ComboReward) {
+      this.currencyManager.earnStardust(50, 'combo_30x');
+    } else if (this.stats.combo === 50 && this.has50ComboReward) {
+      this.currencyManager.earnStardust(100, 'combo_50x');
+    }
   }
 
   addComboNotification(message: string, color: string, scale: number) {
@@ -1471,6 +1561,9 @@ export class GameEngine {
 
   gameOver() {
     this.state = 'gameOver';
+
+    // Track final score for achievements
+    this.achievementManager.trackScore(this.stats.score);
   }
 
   checkWaveComplete() {
@@ -1532,8 +1625,57 @@ export class GameEngine {
     // Fire rate: -40ms per wave with floor at 1800ms (gentler than before)
     this.enemyFireRate = Math.max(1800, this.enemyFireRate - 40);
 
+    // Progression tracking
+    this.currencyManager.earnStardust(10, 'wave_complete');
+    this.achievementManager.trackWave(this.stats.wave);
+    this.checkWaveMilestone(this.stats.wave);
+
+    // Track perfect wave (completed previous wave without damage)
+    if (!this.tookDamageThisWave && this.stats.wave > 1) {
+      this.achievementManager.trackPerfectWave();
+      console.log(`✨ Perfect Wave ${this.stats.wave - 1}! No damage taken.`);
+    }
+
+    // Reset damage flag for next wave
+    this.tookDamageThisWave = false;
+
     this.initEnemies();
     this.projectiles = [];
+  }
+
+  checkWaveMilestone(wave: number) {
+    const milestones: { [key: number]: number } = {
+      10: 50,
+      20: 150,
+      30: 300,
+      50: 500,
+      100: 1000
+    };
+
+    if (milestones[wave]) {
+      this.currencyManager.earnStardust(milestones[wave], `wave_${wave}_milestone`);
+      // Could add visual celebration here
+      console.log(`🎉 Wave ${wave} Milestone! +${milestones[wave]} 💎`);
+    }
+  }
+
+  checkDailyReward() {
+    const rewardCheck = this.dailyRewardManager.checkReward();
+
+    if (rewardCheck.available && rewardCheck.reward) {
+      // Dispatch event for UI to show daily reward popup
+      window.dispatchEvent(new CustomEvent('daily-reward-available', {
+        detail: {
+          day: rewardCheck.day,
+          reward: rewardCheck.reward,
+          streak: rewardCheck.streak
+        }
+      }));
+
+      console.log(`🎁 Daily Reward Available: Day ${rewardCheck.day} (Streak: ${rewardCheck.streak})`);
+    } else {
+      console.log(`✅ Daily reward already claimed today. Current streak: ${rewardCheck.streak}`);
+    }
   }
 
   update() {
@@ -1568,6 +1710,9 @@ export class GameEngine {
     }
 
     if (this.state !== 'playing') return;
+
+    // Update animated cosmetics (rainbow, galaxy skins)
+    this.cosmeticManager.update();
 
     const timeScale = this.slowMotionActive ? 0.5 : 1;
 
@@ -1707,7 +1852,11 @@ export class GameEngine {
 
     // Render entities with layering
     this.powerUps.forEach((p) => p.render(this.ctx));
-    this.player.render(this.ctx, this.assets?.shieldEffect);
+
+    // FIXED: Pass filter directly to player render method to ensure it's applied inside save/restore block
+    const skinFilter = this.cosmeticManager.getProcessedFilter();
+    this.player.render(this.ctx, this.assets?.shieldEffect, skinFilter);
+
     this.enemies.forEach((enemy) => enemy.render(this.ctx));
     this.bossMinions.forEach((minion) => minion.render(this.ctx));
     if (this.boss && this.boss.isAlive) {
@@ -1905,6 +2054,7 @@ export class GameEngine {
     this.has15ComboReward = false;
     this.has30ComboReward = false;
     this.has50ComboReward = false;
+    this.tookDamageThisWave = false;
     this.boss = null;
     this.bossMinions = [];
     this.bossState = {
@@ -1928,6 +2078,10 @@ export class GameEngine {
 
     if (this.assets) this.player.setImage(this.assets.playerShip);
     this.initEnemies();
+
+    // Track new game started for achievements
+    this.achievementManager.trackGamePlayed();
+    this.achievementManager.trackScore(0); // Reset for new game
   }
 
   setLevelUpCallback(callback: (level: number, upgrade: string) => void) {
@@ -1974,6 +2128,10 @@ export class GameEngine {
         upgradeText = '+1 Max Health';
         break;
     }
+
+    // Track level progression
+    this.achievementManager.trackLevel(this.stats.level);
+    this.currencyManager.earnStardust(5, `level_${this.stats.level}`);
 
     // Trigger celebration
     if (this.levelUpCallback) {

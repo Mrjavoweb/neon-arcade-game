@@ -5,11 +5,11 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 		<!-- Primary Meta Tags -->
-		<title>Neon Invaders - Alien Space Attack</title>
-		<meta name="title" content="Neon Invaders - Alien Space Attack">
-		<meta name="description" content="Epic neon-themed space invaders game with boss battles, power-ups, and progressive difficulty. Defend Earth against the alien invasion!">
-		<meta name="keywords" content="space invaders, neon game, arcade game, retro game, alien shooter, PWA game">
-		<meta name="author" content="Neon Invaders">
+		<title>Alien Attack - Space Shooter Game</title>
+		<meta name="title" content="Alien Attack - Space Shooter Game">
+		<meta name="description" content="Epic neon-themed space shooter game with boss battles, power-ups, and progressive difficulty. Defend Earth against the alien invasion!">
+		<meta name="keywords" content="space shooter, alien attack, arcade game, retro game, alien shooter, PWA game">
+		<meta name="author" content="Alien Attack">
 
 		<!-- PWA Configuration -->
 		<link rel="manifest" href="/manifest.json">
@@ -19,30 +19,30 @@
 		<!-- Apple iOS PWA Support -->
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">
-		<meta name="apple-mobile-web-app-title" content="Neon Invaders">
-		<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%2322d3ee' width='180' height='180' rx='40'/><text x='90' y='130' font-size='100' text-anchor='middle' fill='%230a0014'>👾</text></svg>">
+		<meta name="apple-mobile-web-app-title" content="Alien Attack">
+		<link rel="apple-touch-icon" href="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp">
 
 		<!-- Microsoft Windows PWA Support -->
 		<meta name="msapplication-TileColor" content="#0a0014">
-		<meta name="msapplication-TileImage" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 144'><rect fill='%2322d3ee' width='144' height='144'/><text x='72' y='105' font-size='80' text-anchor='middle' fill='%230a0014'>👾</text></svg>">
+		<meta name="msapplication-TileImage" content="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp">
 		<meta name="msapplication-config" content="none">
 
 		<!-- Favicon -->
-		<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%230a0014' width='32' height='32'/><text x='16' y='24' font-size='20' text-anchor='middle' fill='%2322d3ee'>👾</text></svg>">
+		<link rel="icon" type="image/webp" href="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp">
 
 		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="website">
 		<meta property="og:url" content="">
-		<meta property="og:title" content="Neon Invaders - Alien Space Attack">
-		<meta property="og:description" content="Epic neon-themed space invaders game with boss battles, power-ups, and progressive difficulty. Defend Earth!">
-		<meta property="og:image" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 630'><rect fill='%230a0014' width='1200' height='630'/><text x='600' y='280' font-size='120' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>NEON INVADERS</text><text x='600' y='400' font-size='60' text-anchor='middle' fill='%23ec4899'>Defend Earth Against the Alien Horde</text></svg>">
+		<meta property="og:title" content="Alien Attack - Space Shooter Game">
+		<meta property="og:description" content="Epic neon-themed space shooter game with boss battles, power-ups, and progressive difficulty. Defend Earth!">
+		<meta property="og:image" content="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp">
 
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image">
 		<meta property="twitter:url" content="">
-		<meta property="twitter:title" content="Neon Invaders - Alien Space Attack">
-		<meta property="twitter:description" content="Epic neon-themed space invaders game with boss battles, power-ups, and progressive difficulty. Defend Earth!">
-		<meta property="twitter:image" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600'><rect fill='%230a0014' width='1200' height='600'/><text x='600' y='280' font-size='120' text-anchor='middle' font-weight='bold' fill='%2322d3ee'>NEON INVADERS</text><text x='600' y='400' font-size='60' text-anchor='middle' fill='%23ec4899'>👾 Alien Space Attack 👾</text></svg>">
+		<meta property="twitter:title" content="Alien Attack - Space Shooter Game">
+		<meta property="twitter:description" content="Epic neon-themed space shooter game with boss battles, power-ups, and progressive difficulty. Defend Earth!">
+		<meta property="twitter:image" content="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp">
 
 		<!-- Preconnect to external domains for performance -->
 		<link rel="preconnect" href="https://newoaks.s3.us-west-1.amazonaws.com">
@@ -58,8 +58,15 @@
 
 		<!-- Service Worker Registration -->
 		<script>
-			// Register Service Worker for PWA functionality
-			if ('serviceWorker' in navigator) {
+			// Unregister service worker in development (it breaks Vite HMR)
+			if ('serviceWorker' in navigator && location.hostname === 'localhost') {
+				navigator.serviceWorker.getRegistrations().then(registrations => {
+					registrations.forEach(registration => registration.unregister());
+				});
+			}
+
+			// Register Service Worker for PWA functionality (production only)
+			if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
 				window.addEventListener('load', () => {
 					navigator.serviceWorker.register('/sw.js')
 						.then((registration) => {

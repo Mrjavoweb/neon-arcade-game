@@ -1,12 +1,44 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import StarfieldBackground from '@/components/StarfieldBackground';
 import NeonButton from '@/components/NeonButton';
 import GameInstructions from '@/components/GameInstructions';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import PWAInstallButton from '@/components/PWAInstallButton';
+import { useGameEngine } from '@/contexts/GameEngineContext';
+import { GameEngine } from '@/lib/game/GameEngine';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { engine, setEngine } = useGameEngine();
+  const [stardust, setStardust] = useState(0);
+
+  // Initialize game engine for persistence
+  useEffect(() => {
+    if (!engine) {
+      // Create a temporary canvas for game engine initialization
+      const tempCanvas = document.createElement('canvas');
+      const newEngine = new GameEngine(tempCanvas, false);
+      setEngine(newEngine);
+      setStardust(newEngine.currencyManager.getStardust());
+    } else {
+      setStardust(engine.currencyManager.getStardust());
+    }
+
+    // Listen for currency changes
+    const handleCurrencyChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.balance !== undefined) {
+        setStardust(customEvent.detail.balance);
+      }
+    };
+    window.addEventListener('currency-changed', handleCurrencyChange);
+
+    return () => {
+      window.removeEventListener('currency-changed', handleCurrencyChange);
+    };
+  }, [engine, setEngine]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -50,7 +82,7 @@ export default function HomePage() {
               ease: 'easeInOut'
             }}>
 
-            NEON INVADERS
+            ALIEN ATTACK
           </motion.h1>
 
           {/* Tagline */}
@@ -93,16 +125,55 @@ export default function HomePage() {
           </motion.p>
         </motion.div>
 
-        {/* Play Button */}
+        {/* Buttons - Two Row Layout */}
         <motion.div
+          className="flex flex-col gap-4 max-w-3xl mx-auto"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.8 }}>
 
-          <NeonButton onClick={() => navigate('/game')}>
-            ▶ PLAY GAME
-          </NeonButton>
+          {/* First Row: Play, Shop, Achievements */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <NeonButton onClick={() => navigate('/game')}>
+              ▶ PLAY GAME
+            </NeonButton>
+
+            <NeonButton onClick={() => navigate('/shop', { state: { from: '/' } })}>
+              🛍️ SHIP SHOP
+            </NeonButton>
+
+            <NeonButton onClick={() => navigate('/achievements', { state: { from: '/' } })}>
+              🏆 ACHIEVEMENTS
+            </NeonButton>
+          </div>
+
+          {/* Second Row: Game Guide and Install PWA */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <NeonButton onClick={() => navigate('/guide', { state: { from: '/' } })}>
+              📖 GAME GUIDE
+            </NeonButton>
+
+            <div className="flex-1">
+              <PWAInstallButton />
+            </div>
+          </div>
         </motion.div>
+
+        {/* Stardust Display */}
+        {stardust > 0 && (
+          <motion.div
+            className="mt-4 px-6 py-3 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+          >
+            <div className="text-purple-300 font-bold flex items-center gap-2 text-lg"
+                 style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
+              <span>💎</span>
+              <span>{stardust.toLocaleString()} Stardust</span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Instructions */}
         <GameInstructions />

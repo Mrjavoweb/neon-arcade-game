@@ -10,6 +10,7 @@ interface LevelUpCelebrationProps {
 export default function LevelUpCelebration({ level, upgrade, onComplete }: LevelUpCelebrationProps) {
   const [particles, setParticles] = useState<Array<{x: number;y: number;delay: number;}>>([]);
 
+
   useEffect(() => {
     // Generate random particle positions
     const newParticles = Array.from({ length: 15 }, () => ({
@@ -19,8 +20,8 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
     }));
     setParticles(newParticles);
 
-    // Auto-dismiss after 1.5 seconds
-    const timer = setTimeout(onComplete, 1500);
+    // Auto-dismiss after 1 second
+    const timer = setTimeout(onComplete, 1000);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -63,37 +64,34 @@ export default function LevelUpCelebration({ level, upgrade, onComplete }: Level
 
       )}
 
-      {/* Level up banner */}
+      {/* Level up banner - Compact, top-center over combo scores */}
       <motion.div
-        className="absolute top-4 right-4 z-10"
-        initial={{ scale: 0, rotateZ: -180 }}
-        animate={{ scale: 1, rotateZ: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 15 }}>
+        className="absolute top-4 left-1/2 -translate-x-1/2 z-10"
+        initial={{ scale: 0, y: -20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
 
-        <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 border-2 border-yellow-300 rounded-2xl p-3 shadow-2xl">
+        <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 border-2 border-yellow-300 rounded-lg px-4 py-1.5 shadow-xl">
           <motion.div
             className="text-center"
             animate={{
-              scale: [1, 1.1, 1]
+              scale: [1, 1.05, 1]
             }}
             transition={{
-              duration: 0.5,
-              repeat: 2,
+              duration: 0.3,
+              repeat: 1,
               ease: 'easeInOut'
             }}>
 
             <div
-              className="text-2xl md:text-3xl font-black text-white font-['Sora'] mb-1"
-              style={{ textShadow: '0 0 20px rgba(0, 0, 0, 0.8)' }}>
+              className="text-base font-black text-white font-['Sora'] inline"
+              style={{ textShadow: '0 0 10px rgba(0, 0, 0, 0.8)' }}>
 
-              LEVEL UP!
+              LEVEL {level}
             </div>
-            <div className="text-xl md:text-2xl font-bold text-yellow-900 mb-1">
-              Level {level}
-            </div>
-            <div className="text-sm md:text-base text-white font-['Space_Grotesk']">
+            <span className="text-sm text-yellow-900 ml-2 font-['Space_Grotesk']">
               {upgrade}
-            </div>
+            </span>
 
           </motion.div>
         </div>

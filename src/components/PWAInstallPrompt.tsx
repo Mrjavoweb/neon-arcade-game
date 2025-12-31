@@ -6,6 +6,7 @@ export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   useEffect(() => {
     // Check if already installed or running as PWA
@@ -58,12 +59,24 @@ export default function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Store dismissal in localStorage to avoid showing again this session
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    if (dontShowAgain) {
+      // Store permanent dismissal
+      localStorage.setItem('pwa-install-never-show', 'true');
+    } else {
+      // Store dismissal in localStorage to avoid showing again this session
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    }
   };
 
   // Don't show if already installed or dismissed recently
   useEffect(() => {
+    // Check if user selected "never show again"
+    const neverShow = localStorage.getItem('pwa-install-never-show');
+    if (neverShow === 'true') {
+      setShowPrompt(false);
+      return;
+    }
+
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
       const dismissedTime = parseInt(dismissed);
@@ -122,11 +135,24 @@ export default function PWAInstallPrompt() {
                     backgroundClip: 'text'
                   }}
                 >
-                  Install Neon Invaders
+                  Install Alien Attack
                 </h3>
                 <p className="text-sm text-cyan-100/80 mb-4">
                   Install as an app for offline play and faster loading!
                 </p>
+
+                {/* Don't Show Again Checkbox */}
+                <div className="mb-3">
+                  <label className="flex items-center gap-2 text-sm text-cyan-200 cursor-pointer hover:text-cyan-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={dontShowAgain}
+                      onChange={(e) => setDontShowAgain(e.target.checked)}
+                      className="w-4 h-4 rounded border-cyan-400/50 bg-cyan-900/30 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                    />
+                    <span>Don't show this again</span>
+                  </label>
+                </div>
 
                 <div className="flex gap-3">
                   <button
