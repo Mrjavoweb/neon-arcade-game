@@ -73,6 +73,9 @@ export default function GamePage() {
     engineRef.current = engine;
     setEngine(engine); // Set in context for other pages
 
+    // Expose engine to window for debugging
+    (window as any).engine = engine;
+
     // Set level up callback - Disabled to avoid blocking gameplay
     // engine.setLevelUpCallback((level: number, upgrade: string) => {
     //   setLevelUpData({ level, upgrade });
@@ -92,10 +95,15 @@ export default function GamePage() {
     // Listen for achievement unlocks
     const handleAchievementUnlock = (event: Event) => {
       const customEvent = event as CustomEvent;
+      console.log('🎮 GamePage: achievement-unlocked event received:', customEvent.detail);
       if (customEvent.detail?.achievement) {
+        console.log('🎮 GamePage: Adding achievement to toast queue:', customEvent.detail.achievement);
         setAchievements(prev => [...prev, customEvent.detail.achievement]);
+      } else {
+        console.warn('🎮 GamePage: achievement-unlocked event has no achievement in detail:', customEvent.detail);
       }
     };
+    console.log('🎮 GamePage: Registering achievement-unlocked event listener');
     window.addEventListener('achievement-unlocked', handleAchievementUnlock);
 
     // Listen for daily reward available

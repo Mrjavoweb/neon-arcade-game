@@ -332,7 +332,7 @@ export class GameEngine {
     // Adjusted positioning - ensure spaceship is visible in landscape
     const offsetY = this.isMobile ?
     isLandscape ? 30 : 65 // Moved down in landscape so HUD and top row are visible
-    : Math.max(80, this.canvas.height * 0.1);
+    : Math.max(50, this.canvas.height * 0.06); // Reduced for desktop to prevent overlap at high levels
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {

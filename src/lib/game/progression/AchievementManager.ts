@@ -394,6 +394,9 @@ export class AchievementManager {
 
   trackKill(enemyType?: string): void {
     this.progress.totalKills++;
+    if (this.progress.totalKills % 10 === 0) {
+      console.log(`🎯 Total kills: ${this.progress.totalKills}`);
+    }
     this.checkAchievements();
     this.saveProgress();
   }
@@ -467,18 +470,41 @@ export class AchievementManager {
   // PUBLIC API - QUERIES
   // ============================================================================
 
-  getAllAchievements(): Achievement[] {
+  getAllAchievements(): any[] {
     return this.achievements.map(a => {
       // Hide hidden achievements that aren't unlocked
       if (a.hidden && !a.unlocked) {
         return {
-          ...a,
+          id: a.id,
           name: '???',
           description: 'Hidden achievement',
-          icon: '🔒'
+          icon: '🔒',
+          rewards: a.rewards,
+          isUnlocked: a.unlocked,
+          unlockedAt: a.unlockedDate,
+          difficulty: a.difficulty,
+          category: a.category,
+          progress: {
+            current: a.requirement.current || 0,
+            target: a.requirement.target
+          }
         };
       }
-      return { ...a };
+      return {
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        icon: a.icon,
+        rewards: a.rewards,
+        isUnlocked: a.unlocked,
+        unlockedAt: a.unlockedDate,
+        difficulty: a.difficulty,
+        category: a.category,
+        progress: {
+          current: a.requirement.current || 0,
+          target: a.requirement.target
+        }
+      };
     });
   }
 
@@ -490,8 +516,30 @@ export class AchievementManager {
     return this.achievements.find(a => a.id === id);
   }
 
-  getProgress(): Readonly<AchievementProgress> {
-    return { ...this.progress };
+  getProgress(): any {
+    const unlocked = this.achievements.filter(a => a.unlocked).length;
+    const total = this.achievements.length;
+    const totalStardust = this.getTotalStardustFromAchievements();
+
+    // Calculate category breakdown
+    const categories: Record<string, { total: number; unlocked: number }> = {};
+    this.achievements.forEach(a => {
+      if (!categories[a.category]) {
+        categories[a.category] = { total: 0, unlocked: 0 };
+      }
+      categories[a.category].total++;
+      if (a.unlocked) {
+        categories[a.category].unlocked++;
+      }
+    });
+
+    return {
+      ...this.progress,
+      totalAchievements: total,
+      unlockedAchievements: unlocked,
+      totalStardust: totalStardust,
+      categories: categories
+    };
   }
 
   getCompletionPercentage(): number {
@@ -599,6 +647,12 @@ export class AchievementManager {
   }
 
   private unlockAchievement(achievement: Achievement): void {
+    console.log(`🏆 UNLOCKING ACHIEVEMENT: ${achievement.name}`, {
+      id: achievement.id,
+      rewards: achievement.rewards,
+      requirement: achievement.requirement
+    });
+
     achievement.unlocked = true;
     achievement.unlockedDate = new Date().toISOString();
 
@@ -615,11 +669,13 @@ export class AchievementManager {
     this.saveAchievements();
 
     // Dispatch event for UI notification
+    const eventDetail = { achievement: { ...achievement } };
+    console.log(`📢 Dispatching achievement-unlocked event:`, eventDetail);
     window.dispatchEvent(new CustomEvent('achievement-unlocked', {
-      detail: { achievement: { ...achievement } }
+      detail: eventDetail
     }));
 
-    console.log(`🏆 Achievement Unlocked: ${achievement.name}`);
+    console.log(`✅ Achievement Unlocked: ${achievement.name}`);
   }
 
   private saveProgress(): void {
@@ -723,15 +779,26 @@ export class AchievementManager {
   }
 
   debugPrintStatus(): void {
-    if (import.meta.env.DEV) {
-      const unlocked = this.getUnlockedAchievements().length;
-      const total = this.achievements.length;
-      const stardust = this.getTotalStardustFromAchievements();
-      console.log('🏆 Achievement Status:', {
-        unlocked: `${unlocked}/${total} (${this.getCompletionPercentage()}%)`,
-        totalStardust: `${stardust} 💎`,
-        progress: this.progress
-      });
-    }
+    const unlocked = this.getUnlockedAchievements().length;
+    const total = this.achievements.length;
+    const stardust = this.getTotalStardustFromAchievements();
+    console.log('🏆 Achievement Status:', {
+      unlocked: `${unlocked}/${total} (${this.getCompletionPercentage()}%)`,
+      totalStardust: `${stardust} 💎`,
+      progress: this.progress,
+      closeToUnlocking: this.achievements
+        .filter(a => !a.unlocked && a.requirement.current)
+        .map(a => ({
+          name: a.name,
+          progress: `${a.requirement.current}/${a.requirement.target}`,
+          percentage: Math.round((a.requirement.current! / a.requirement.target) * 100) + '%'
+        }))
+        .sort((a, b) => {
+          const aPercent = parseInt(a.percentage);
+          const bPercent = parseInt(b.percentage);
+          return bPercent - aPercent;
+        })
+        .slice(0, 5)
+    });
   }
 }
