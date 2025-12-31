@@ -325,7 +325,7 @@ export class GameEngine {
     // Optimized sizing and spacing for mobile
     const enemyWidth = this.isMobile ? isLandscape ? 24 : 20 : 40;
     const enemyHeight = this.isMobile ? isLandscape ? 24 : 20 : 40;
-    const padding = this.isMobile ? isLandscape ? 20 : 29 : 15; // Increased to 20 for better spacing in landscape
+    const padding = this.isMobile ? isLandscape ? 22 : 29 : 15; // Increased to 22 for optimal spacing in landscape
 
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
 
