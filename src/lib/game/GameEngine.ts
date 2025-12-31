@@ -270,15 +270,23 @@ export class GameEngine {
       };
 
       // Assign sprites to entities
+      console.log('🎨 Assigning sprites to entities...', {
+        playerShipLoaded: !!playerShip,
+        playerShipSize: playerShip ? `${playerShip.width}x${playerShip.height}` : 'N/A'
+      });
       this.player.setImage(playerShip);
+      console.log('✅ Player ship image assigned');
+
       this.enemies.forEach((enemy) => {
         if (enemy.type === 'boss') enemy.setImage(bossAlien);else
         if (enemy.type === 'heavy') enemy.setImage(alienHeavy);else
         if (enemy.type === 'fast') enemy.setImage(alienFast);else
         enemy.setImage(alienBasic);
       });
+      console.log('✅ All sprites assigned successfully');
     } catch (error) {
-      console.error('Failed to load assets:', error);
+      console.error('❌ Failed to load assets:', error);
+      // Even if assets fail, the game should still work with fallback shapes
     }
   }
 

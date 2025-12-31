@@ -19,6 +19,7 @@ export class Player {
   invulnerable: boolean;
   invulnerabilityTimer: number;
   private filteredImageCache: Map<string, HTMLCanvasElement> = new Map();
+  private _fallbackWarningShown: boolean = false;
 
   constructor(canvasWidth: number, canvasHeight: number, speed: number) {
     this.size = { width: 50, height: 50 };
@@ -43,7 +44,22 @@ export class Player {
   }
 
   setImage(img: HTMLImageElement) {
+    if (!img) {
+      console.error('❌ Player.setImage called with null/undefined image');
+      return;
+    }
+    if (!img.complete || img.naturalWidth === 0) {
+      console.warn('⚠️ Player image not fully loaded:', {
+        complete: img.complete,
+        naturalWidth: img.naturalWidth,
+        src: img.src?.substring(0, 60)
+      });
+    }
     this.image = img;
+    console.log('✅ Player image set successfully:', {
+      size: `${img.width}x${img.height}`,
+      complete: img.complete
+    });
   }
 
   update() {
@@ -143,39 +159,55 @@ export class Player {
     this.level >= 7 ? '#f59e0b' :
     this.level >= 4 ? '#22d3ee' : '#10b981';
 
-    if (this.image) {
+    if (this.image && this.image.complete && this.image.naturalWidth > 0) {
       // Draw sprite with level-based glow
       ctx.shadowBlur = glowIntensity;
       ctx.shadowColor = this.shieldActive ? '#a855f7' : glowColor;
 
       // WORKAROUND: Use offscreen canvas to apply filter to image
       if (skinFilter && skinFilter !== 'none') {
-        // Check cache first
-        let filteredCanvas = this.filteredImageCache.get(skinFilter);
+        try {
+          // Check cache first
+          let filteredCanvas = this.filteredImageCache.get(skinFilter);
 
-        if (!filteredCanvas) {
-          // Create offscreen canvas with filter applied
-          filteredCanvas = document.createElement('canvas');
-          filteredCanvas.width = this.image.width;
-          filteredCanvas.height = this.image.height;
-          const offscreenCtx = filteredCanvas.getContext('2d')!;
+          if (!filteredCanvas) {
+            // Create offscreen canvas with filter applied
+            filteredCanvas = document.createElement('canvas');
+            filteredCanvas.width = this.image.width;
+            filteredCanvas.height = this.image.height;
+            const offscreenCtx = filteredCanvas.getContext('2d');
 
-          // Apply filter and draw image to offscreen canvas
-          offscreenCtx.filter = skinFilter;
-          offscreenCtx.drawImage(this.image, 0, 0);
+            if (!offscreenCtx) {
+              throw new Error('Failed to get offscreen context');
+            }
 
-          // Cache it for better performance
-          this.filteredImageCache.set(skinFilter, filteredCanvas);
+            // Apply filter and draw image to offscreen canvas
+            offscreenCtx.filter = skinFilter;
+            offscreenCtx.drawImage(this.image, 0, 0);
+
+            // Cache it for better performance
+            this.filteredImageCache.set(skinFilter, filteredCanvas);
+          }
+
+          // Draw the filtered canvas
+          ctx.drawImage(
+            filteredCanvas,
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+          );
+        } catch (error) {
+          // Fallback to direct image drawing if filter fails
+          console.warn('Filter rendering failed, using direct image:', error);
+          ctx.drawImage(
+            this.image,
+            this.position.x,
+            this.position.y,
+            this.size.width,
+            this.size.height
+          );
         }
-
-        // Draw the filtered canvas
-        ctx.drawImage(
-          filteredCanvas,
-          this.position.x,
-          this.position.y,
-          this.size.width,
-          this.size.height
-        );
       } else {
         // No filter - draw original image
         ctx.drawImage(
@@ -187,7 +219,15 @@ export class Player {
         );
       }
     } else {
-      // Fallback triangle
+      // Fallback triangle (only used if image fails to load)
+      if (!this._fallbackWarningShown) {
+        console.warn('⚠️ Using fallback triangle for player ship - image not loaded', {
+          hasImage: !!this.image,
+          imageComplete: this.image?.complete,
+          imageNaturalWidth: this.image?.naturalWidth
+        });
+        this._fallbackWarningShown = true;
+      }
       ctx.fillStyle = this.color;
       ctx.shadowBlur = 20;
       ctx.shadowColor = glowColor;
