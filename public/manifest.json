@@ -2,8 +2,8 @@
   "name": "Alien Attack - Space Shooter Game",
   "short_name": "Alien Attack",
   "description": "Epic neon-themed space shooter game with boss battles, power-ups, and progressive difficulty. Defend Earth against the alien invasion!",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0014",
   "theme_color": "#22d3ee",
@@ -59,7 +59,7 @@
       "name": "New Game",
       "short_name": "Play",
       "description": "Start a new game",
-      "url": "./index.html#/game",
+      "url": "/game",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%2322d3ee' width='96' height='96' rx='20'/><polygon points='35,25 35,71 75,48' fill='%230a0014'/></svg>",
