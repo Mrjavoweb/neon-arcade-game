@@ -183,13 +183,35 @@ export class GameEngine {
   }
 
   async loadAssets(): Promise<void> {
-    const loadImage = (src: string): Promise<HTMLImageElement> => {
+    const loadImage = (src: string, name: string = 'image'): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
         const img = new Image();
-        // CRITICAL FIX: Enable CORS for external images to allow CSS filters
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
+
+        // Try loading without CORS first for better compatibility
+        // Only enable CORS if we need to apply filters
+        // img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+          console.log(`✅ Loaded ${name}:`, src.substring(0, 60) + '...');
+          resolve(img);
+        };
+
+        img.onerror = (error) => {
+          console.error(`❌ Failed to load ${name}:`, src, error);
+          // Try again with CORS as fallback
+          const retryImg = new Image();
+          retryImg.crossOrigin = 'anonymous';
+          retryImg.onload = () => {
+            console.log(`✅ Loaded ${name} (with CORS):`, src.substring(0, 60) + '...');
+            resolve(retryImg);
+          };
+          retryImg.onerror = () => {
+            console.error(`❌ Failed to load ${name} (with CORS):`, src);
+            reject(new Error(`Failed to load ${name}`));
+          };
+          retryImg.src = src;
+        };
+
         img.src = src;
       });
     };
@@ -212,21 +234,21 @@ export class GameEngine {
       powerUpSlowmo,
       shieldEffect] =
       await Promise.all([
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp'), // Legacy boss
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp'), // Boss Phase 1 - Red
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/a9af17d6-1d6a-46e4-916b-90492bd7b4d2.webp'), // Boss Phase 2 - Turquoise
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/d0c7b32c-6d54-4092-8588-a5d09cbe60d3.webp'), // Boss Phase 3 - Yellow
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/3595b35a-b995-4194-9445-3963d9199a8d.webp'), // Boss Phase 4 - Purple
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp'),
-      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/969a16ba-05c1-4406-8632-b5809c2e3b85.webp')]
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp', 'playerShip'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp', 'alienBasic'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp', 'alienHeavy'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp', 'alienFast'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp', 'bossAlien'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp', 'bossPhase1'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/a9af17d6-1d6a-46e4-916b-90492bd7b4d2.webp', 'bossPhase2'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/d0c7b32c-6d54-4092-8588-a5d09cbe60d3.webp', 'bossPhase3'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/3595b35a-b995-4194-9445-3963d9199a8d.webp', 'bossPhase4'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp', 'explosion'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp', 'powerUpPlasma'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp', 'powerUpRapid'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp', 'powerUpShield'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp', 'powerUpSlowmo'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/969a16ba-05c1-4406-8632-b5809c2e3b85.webp', 'shieldEffect')]
       );
 
       this.assets = {
@@ -301,9 +323,9 @@ export class GameEngine {
     const cols = this.isMobile && isLandscape ? 10 : 8; // 10 cols in landscape, 8 in portrait
 
     // Optimized sizing and spacing for mobile
-    const enemyWidth = this.isMobile ? isLandscape ? 16 : 20 : 40;
-    const enemyHeight = this.isMobile ? isLandscape ? 16 : 20 : 40;
-    const padding = this.isMobile ? isLandscape ? 28 : 29 : 15;
+    const enemyWidth = this.isMobile ? isLandscape ? 20 : 20 : 40;
+    const enemyHeight = this.isMobile ? isLandscape ? 20 : 20 : 40;
+    const padding = this.isMobile ? isLandscape ? 18 : 29 : 15; // Reduced from 28 to 18 for tighter spacing in landscape
 
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
 
