@@ -7,13 +7,15 @@ interface GameOverlayProps {
   stats: GameStats;
   onResume: () => void;
   onRestart: () => void;
+  onRestartFromWave1?: () => void;
   onMainMenu: () => void;
   onShop?: () => void;
   onAchievements?: () => void;
   onGuide?: () => void;
+  lastCheckpoint?: number;
 }
 
-export default function GameOverlay({ state, stats, onResume, onRestart, onMainMenu, onShop, onAchievements, onGuide }: GameOverlayProps) {
+export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, lastCheckpoint }: GameOverlayProps) {
   if (state === 'playing') return null;
 
   return (
@@ -119,13 +121,13 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
             </h2>
 
             {/* Checkpoint indicator */}
-            {stats.wave >= 5 && stats.wave % 5 >= 1 &&
+            {lastCheckpoint && lastCheckpoint > 0 &&
           <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-400 rounded-lg">
               <div className="text-yellow-400 font-bold text-sm font-['Space_Grotesk']">
                 ✅ Checkpoint Saved!
               </div>
               <div className="text-cyan-300 text-xs">
-                You'll continue from Wave {Math.floor(stats.wave / 5) * 5}
+                You'll continue from Wave {lastCheckpoint}
               </div>
             </div>
           }
@@ -176,9 +178,18 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onMainM
               className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg transition-all font-['Space_Grotesk']"
               style={{ boxShadow: '0 0 20px rgba(34, 211, 238, 0.5)' }}>
 
-                Play Again
+                {lastCheckpoint && lastCheckpoint > 0 ? `Continue from Wave ${lastCheckpoint}` : 'Play Again'}
               </button>
-              
+
+              {lastCheckpoint && lastCheckpoint > 0 && onRestartFromWave1 && (
+                <button
+                onClick={onRestartFromWave1}
+                className="w-full px-6 py-3 bg-green-500/30 hover:bg-green-500/50 text-white font-bold rounded-lg border border-green-400 transition-all font-['Space_Grotesk']">
+
+                  🔄 Start Fresh from Wave 1
+                </button>
+              )}
+
               <button
               onClick={onMainMenu}
               className="w-full px-6 py-3 bg-pink-500/30 hover:bg-pink-500/50 text-white font-bold rounded-lg border border-pink-400 transition-all font-['Space_Grotesk']">

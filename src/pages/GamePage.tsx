@@ -221,6 +221,10 @@ export default function GamePage() {
     engineRef.current?.reset();
   };
 
+  const handleRestartFromWave1 = () => {
+    engineRef.current?.resetFromWave1();
+  };
+
   const handleMainMenu = () => {
     navigate('/');
   };
@@ -292,10 +296,12 @@ export default function GamePage() {
           stats={gameState.stats}
           onResume={handleResume}
           onRestart={handleRestart}
+          onRestartFromWave1={handleRestartFromWave1}
           onMainMenu={handleMainMenu}
           onGuide={handleGuide}
           onShop={handleShop}
-          onAchievements={handleAchievements} />
+          onAchievements={handleAchievements}
+          lastCheckpoint={engineRef.current?.lastCheckpoint} />
 
       {/* Boss intro */}
       {gameState.state === 'bossIntro' && (

@@ -83,7 +83,7 @@ export class GameEngine {
     this.lastPowerUpSpawn = 0;
     this.powerUpSpawnRate = 12000; // 12 seconds between spawn attempts
     this.pendingLevelUp = false;
-    this.lastCheckpoint = 0; // No checkpoint initially
+    this.lastCheckpoint = this.loadCheckpoint(); // Load checkpoint from localStorage
     this.lastFrameTime = performance.now();
     this.targetFPS = 60;
     this.lastDescentTime = 0;
@@ -1623,11 +1623,10 @@ export class GameEngine {
   }
 
   nextWave() {
-    // Save checkpoint when completing a boss wave
-    if (this.stats.wave % 5 === 0 && this.stats.wave > 0) {
-      this.lastCheckpoint = this.stats.wave;
-      console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
-    }
+    // Save checkpoint after completing every wave
+    this.lastCheckpoint = this.stats.wave;
+    this.saveCheckpoint();
+    console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
 
     // Reset boss victory timer when advancing waves
     this.bossState.bossVictoryTimer = 0;
@@ -2104,6 +2103,32 @@ export class GameEngine {
     // Track new game started for achievements
     this.achievementManager.trackGamePlayed();
     this.achievementManager.trackScore(0); // Reset for new game
+  }
+
+  resetFromWave1() {
+    // Clear checkpoint and start from wave 1
+    this.lastCheckpoint = 0;
+    this.saveCheckpoint();
+    console.log(`🔄 Starting fresh from Wave 1`);
+    this.reset();
+  }
+
+  saveCheckpoint() {
+    try {
+      localStorage.setItem('alienInvasion_checkpoint', this.lastCheckpoint.toString());
+    } catch (error) {
+      console.error('Failed to save checkpoint:', error);
+    }
+  }
+
+  loadCheckpoint(): number {
+    try {
+      const checkpoint = localStorage.getItem('alienInvasion_checkpoint');
+      return checkpoint ? parseInt(checkpoint, 10) : 0;
+    } catch (error) {
+      console.error('Failed to load checkpoint:', error);
+      return 0;
+    }
   }
 
   setLevelUpCallback(callback: (level: number, upgrade: string) => void) {
