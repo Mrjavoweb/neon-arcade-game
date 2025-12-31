@@ -61,6 +61,12 @@ export class GameEngine {
   achievementManager: AchievementManager;
   cosmeticManager: CosmeticManager;
 
+  // Performance limits to prevent freezing during intense gameplay
+  readonly MAX_PARTICLES: number;
+  readonly MAX_PROJECTILES = 200;
+  readonly MAX_EXPLOSIONS = 50;
+  private performanceLogTimer = 0;
+
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -68,6 +74,10 @@ export class GameEngine {
     this.ctx = context;
 
     this.isMobile = isMobile;
+
+    // Set performance limits based on device
+    this.MAX_PARTICLES = isMobile ? 300 : 600;
+
     this.keys = new Set();
     this.state = 'playing';
     this.lastFireTime = 0;
@@ -1732,6 +1742,7 @@ export class GameEngine {
         p.vy += 0.1 * clampedDelta;
       });
       this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
+      this.enforcePerformanceLimits();
       this.updateScreenShake();
       this.checkCollisions();
       this.checkWaveComplete();
@@ -1793,6 +1804,9 @@ export class GameEngine {
       p.vy += 0.1 * clampedDelta; // Gravity
     });
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
+
+    // Enforce particle limit to prevent performance issues
+    this.enforcePerformanceLimits();
 
     // Update combo notifications
     this.comboNotifications = this.comboNotifications.map((notif) => ({
@@ -2136,6 +2150,38 @@ export class GameEngine {
     } catch (error) {
       console.error('Failed to load checkpoint:', error);
       return 0;
+    }
+  }
+
+  // Performance management - enforce limits to prevent freezing
+  enforcePerformanceLimits() {
+    const particleOverage = this.particles.length - this.MAX_PARTICLES;
+    const projectileOverage = this.projectiles.length - this.MAX_PROJECTILES;
+    const explosionOverage = this.explosions.length - this.MAX_EXPLOSIONS;
+
+    // Remove oldest particles if over limit
+    if (particleOverage > 0) {
+      this.particles.splice(0, particleOverage);
+      console.warn(`⚠️ Particle limit reached! Removed ${particleOverage} oldest particles (${this.particles.length}/${this.MAX_PARTICLES})`);
+    }
+
+    // Remove oldest projectiles if over limit
+    if (projectileOverage > 0) {
+      this.projectiles.splice(0, projectileOverage);
+      console.warn(`⚠️ Projectile limit reached! Removed ${projectileOverage} oldest projectiles (${this.projectiles.length}/${this.MAX_PROJECTILES})`);
+    }
+
+    // Remove oldest explosions if over limit
+    if (explosionOverage > 0) {
+      this.explosions.splice(0, explosionOverage);
+      console.warn(`⚠️ Explosion limit reached! Removed ${explosionOverage} oldest explosions (${this.explosions.length}/${this.MAX_EXPLOSIONS})`);
+    }
+
+    // Log performance metrics every 5 seconds
+    this.performanceLogTimer++;
+    if (this.performanceLogTimer >= 300) { // 60 FPS * 5 seconds
+      this.performanceLogTimer = 0;
+      console.log(`📊 Performance: Particles: ${this.particles.length}/${this.MAX_PARTICLES}, Projectiles: ${this.projectiles.length}/${this.MAX_PROJECTILES}, Explosions: ${this.explosions.length}/${this.MAX_EXPLOSIONS}, Enemies: ${this.enemies.length}`);
     }
   }
 
