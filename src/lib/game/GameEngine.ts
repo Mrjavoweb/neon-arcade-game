@@ -276,7 +276,7 @@ export class GameEngine {
 
       // Boss position: adjusted for better visibility
       const isLandscape = this.canvas.width > this.canvas.height;
-      const bossY = this.isMobile ? (isLandscape ? 20 : 180) : 80; // Lowered from 130 to 180 in portrait
+      const bossY = this.isMobile ? isLandscape ? 20 : 180 : 80; // Lowered from 130 to 180 in portrait
       this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
       if (this.assets) this.boss.setImage(this.assets.bossPhase1); // Start with Phase 1 (Red) boss
 
@@ -295,22 +295,22 @@ export class GameEngine {
 
     // Adjust grid based on orientation for mobile
     const isLandscape = this.canvas.width > this.canvas.height;
-    const rows = this.isMobile && isLandscape
-      ? Math.min(4 + Math.floor(wave / 3), 4)  // 4 rows max in landscape
-      : Math.min(5 + Math.floor(wave / 3), 7); // Normal rows in portrait
-    const cols = this.isMobile && isLandscape ? 10 : 8;  // 10 cols in landscape, 8 in portrait
+    const rows = this.isMobile && isLandscape ?
+    Math.min(4 + Math.floor(wave / 3), 4) // 4 rows max in landscape
+    : Math.min(5 + Math.floor(wave / 3), 7); // Normal rows in portrait
+    const cols = this.isMobile && isLandscape ? 10 : 8; // 10 cols in landscape, 8 in portrait
 
     // Optimized sizing and spacing for mobile
-    const enemyWidth = this.isMobile ? (isLandscape ? 16 : 20) : 40;
-    const enemyHeight = this.isMobile ? (isLandscape ? 16 : 20) : 40;
-    const padding = this.isMobile ? (isLandscape ? 28 : 29) : 15;
+    const enemyWidth = this.isMobile ? isLandscape ? 16 : 20 : 40;
+    const enemyHeight = this.isMobile ? isLandscape ? 16 : 20 : 40;
+    const padding = this.isMobile ? isLandscape ? 28 : 29 : 15;
 
     const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
 
     // Adjusted positioning - ensure spaceship is visible in landscape
-    const offsetY = this.isMobile
-      ? (isLandscape ? 30 : 65)  // Moved down in landscape so HUD and top row are visible
-      : Math.max(80, this.canvas.height * 0.1);
+    const offsetY = this.isMobile ?
+    isLandscape ? 30 : 65 // Moved down in landscape so HUD and top row are visible
+    : Math.max(80, this.canvas.height * 0.1);
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -703,7 +703,7 @@ export class GameEngine {
     }
 
     // Fire projectiles from selected shooters
-    shooters.forEach(shooter => {
+    shooters.forEach((shooter) => {
       this.createEnemyProjectile(shooter);
 
       // Burst fire: Fire 2 rapid shots with slight delay (mobile gets only 2, desktop gets 2-3)
@@ -725,7 +725,7 @@ export class GameEngine {
       shooter.position.y + shooter.size.height,
       false,
       this.config.projectileSpeed * 0.7,
-      1  // 1 damage = lose 1 life (not instant kill)
+      1 // 1 damage = lose 1 life (not instant kill)
     );
     this.projectiles.push(projectile);
   }
@@ -735,7 +735,7 @@ export class GameEngine {
     // Group enemies by column (approximate X position)
     const columns = new Map<number, any[]>();
 
-    aliveEnemies.forEach(enemy => {
+    aliveEnemies.forEach((enemy) => {
       const columnKey = Math.floor(enemy.position.x / 50); // Group by ~50px columns
       if (!columns.has(columnKey)) {
         columns.set(columnKey, []);
@@ -774,13 +774,13 @@ export class GameEngine {
     let type: 'plasma' | 'rapid' | 'shield' | 'slowmo';
 
     if (rand < 0.35) {
-      type = 'rapid';     // 35% - Common offensive boost
+      type = 'rapid'; // 35% - Common offensive boost
     } else if (rand < 0.70) {
-      type = 'plasma';    // 35% - Common offensive boost
+      type = 'plasma'; // 35% - Common offensive boost
     } else if (rand < 0.90) {
-      type = 'shield';    // 20% - Uncommon defensive boost
+      type = 'shield'; // 20% - Uncommon defensive boost
     } else {
-      type = 'slowmo';    // 10% - Rare tactical advantage
+      type = 'slowmo'; // 10% - Rare tactical advantage
     }
 
     const x = Math.random() * (this.canvas.width - 40) + 20;
@@ -910,7 +910,7 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height,
         false,
         speed,
-        2  // 2 damage (heavy hit - costs 2 lives)
+        2 // 2 damage (heavy hit - costs 2 lives)
       );
       projectile.velocity.x = Math.cos(angle) * speed;
       projectile.velocity.y = Math.sin(angle) * speed;
@@ -924,8 +924,8 @@ export class GameEngine {
 
     // Base laser speed by phase
     const baseSpeed = this.boss.phase === 'phase4' ? 10 :
-                       this.boss.phase === 'phase3' ? 8 :
-                       this.boss.phase === 'phase2' ? 7 : 5;
+    this.boss.phase === 'phase3' ? 8 :
+    this.boss.phase === 'phase2' ? 7 : 5;
 
     // Wave-based speed scaling: +0.8 speed per boss wave for consistent progression
     const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
@@ -940,7 +940,7 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height + i * 15,
         false,
         laserSpeed,
-        3  // 3 damage (devastating hit - costs 3 lives)
+        3 // 3 damage (devastating hit - costs 3 lives)
       );
       projectile.size.width = 6;
       projectile.size.height = 18;
@@ -1005,7 +1005,7 @@ export class GameEngine {
 
     // Reduce speed in landscape mode to prevent rapid wall hits
     const isLandscape = this.canvas.width > this.canvas.height;
-    const speedMultiplier = this.isMobile && isLandscape ? 0.25 : 1.0;  // Even slower in landscape
+    const speedMultiplier = this.isMobile && isLandscape ? 0.25 : 1.0; // Even slower in landscape
     const adjustedSpeed = this.enemySpeed * speedMultiplier;
 
     for (const enemy of this.enemies) {
@@ -1020,15 +1020,15 @@ export class GameEngine {
 
     const now = performance.now();
     // Much longer cooldown in landscape (wider screen = more wall hits)
-    const descentCooldown = this.isMobile ? (isLandscape ? 1500 : 300) : 0;
+    const descentCooldown = this.isMobile ? isLandscape ? 1500 : 300 : 0;
 
-    if (shouldDescend && (now - this.lastDescentTime > descentCooldown)) {
+    if (shouldDescend && now - this.lastDescentTime > descentCooldown) {
       this.lastDescentTime = now;
       this.enemyDirection *= -1;
       for (const enemy of this.enemies) {
         if (enemy.isAlive) {
           // Improved descent amounts for better pacing
-          const descentAmount = this.isMobile && isLandscape ? 2 : (this.isMobile ? 8 : 15);
+          const descentAmount = this.isMobile && isLandscape ? 2 : this.isMobile ? 8 : 15;
           enemy.update(0, descentAmount);
         }
       }
@@ -1448,20 +1448,20 @@ export class GameEngine {
     this.addScreenShake(isMilestone ? 20 : 12);
 
     // Particle burst from screen edges
-    const particleCount = this.isMobile ? (isMilestone ? 60 : 40) : (isMilestone ? 120 : 80);
-    const colors = isMilestone
-      ? ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
-      : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
+    const particleCount = this.isMobile ? isMilestone ? 60 : 40 : isMilestone ? 120 : 80;
+    const colors = isMilestone ?
+    ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
+    : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
 
     // Burst from all four corners
     const corners = [
-      { x: 0, y: 0 }, // Top-left
-      { x: this.canvas.width, y: 0 }, // Top-right
-      { x: 0, y: this.canvas.height }, // Bottom-left
-      { x: this.canvas.width, y: this.canvas.height } // Bottom-right
+    { x: 0, y: 0 }, // Top-left
+    { x: this.canvas.width, y: 0 }, // Top-right
+    { x: 0, y: this.canvas.height }, // Bottom-left
+    { x: this.canvas.width, y: this.canvas.height } // Bottom-right
     ];
 
-    corners.forEach(corner => {
+    corners.forEach((corner) => {
       for (let i = 0; i < particleCount / 4; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 3 + Math.random() * (isMilestone ? 10 : 7);
@@ -1531,7 +1531,7 @@ export class GameEngine {
     const particleCount = this.isMobile ? 20 : 30;
 
     for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.3;
+      const angle = Math.PI * 2 * i / particleCount + Math.random() * 0.3;
       const speed = 4 + Math.random() * 8;
       const particleColor = burstColors[Math.floor(Math.random() * burstColors.length)];
 
@@ -1766,12 +1766,12 @@ export class GameEngine {
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
 
     // Update combo notifications
-    this.comboNotifications = this.comboNotifications.map(notif => ({
+    this.comboNotifications = this.comboNotifications.map((notif) => ({
       ...notif,
       lifetime: notif.lifetime + clampedDelta,
       alpha: Math.max(0, 1 - notif.lifetime / 120), // Fade out over 2 seconds
-      scale: notif.scale + (clampedDelta * 0.01) // Slight grow effect
-    })).filter(notif => notif.lifetime < 120);
+      scale: notif.scale + clampedDelta * 0.01 // Slight grow effect
+    })).filter((notif) => notif.lifetime < 120);
 
     // Reset combo if timeout reached
     const now = Date.now();
@@ -1866,7 +1866,7 @@ export class GameEngine {
     this.explosions.forEach((explosion) => explosion.render(this.ctx));
 
     // Render combo notifications (centered top, smaller size)
-    this.comboNotifications.forEach(notif => {
+    this.comboNotifications.forEach((notif) => {
       this.ctx.save();
       this.ctx.globalAlpha = notif.alpha;
 
@@ -1943,13 +1943,13 @@ export class GameEngine {
 
       // Screen flash effect - bright flash at the start that fades quickly
       if (this.waveTransition.progress < 0.4) {
-        const flashAlpha = this.waveTransition.isMilestone
-          ? (0.4 - this.waveTransition.progress) / 0.4 * 0.6 // Much brighter flash for milestones
-          : (0.4 - this.waveTransition.progress) / 0.4 * 0.45; // More visible flash for normal waves
+        const flashAlpha = this.waveTransition.isMilestone ?
+        (0.4 - this.waveTransition.progress) / 0.4 * 0.6 // Much brighter flash for milestones
+        : (0.4 - this.waveTransition.progress) / 0.4 * 0.45; // More visible flash for normal waves
 
-        const flashColor = this.waveTransition.isMilestone
-          ? `rgba(251, 191, 36, ${flashAlpha})` // Golden flash for milestones
-          : `rgba(34, 211, 238, ${flashAlpha})`; // Cyan flash for normal waves
+        const flashColor = this.waveTransition.isMilestone ?
+        `rgba(251, 191, 36, ${flashAlpha})` // Golden flash for milestones
+        : `rgba(34, 211, 238, ${flashAlpha})`; // Cyan flash for normal waves
 
         this.ctx.fillStyle = flashColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1968,9 +1968,9 @@ export class GameEngine {
       const centerY = this.canvas.height / 2;
 
       // "WAVE X COMPLETE!" message
-      const alpha = this.waveTransition.progress < 0.5
-        ? this.waveTransition.progress * 2
-        : (1 - this.waveTransition.progress) * 2;
+      const alpha = this.waveTransition.progress < 0.5 ?
+      this.waveTransition.progress * 2 :
+      (1 - this.waveTransition.progress) * 2;
 
       this.ctx.globalAlpha = alpha;
       this.ctx.shadowBlur = 20;

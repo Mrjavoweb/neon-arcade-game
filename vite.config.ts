@@ -11,14 +11,14 @@ export default defineConfig(({ mode }) => ({
       clientPort: 443
     },
     allowedHosts: [
-      'mack-pretimely-cindi.ngrok-free.dev',
-      '.ngrok-free.dev',
-      '.ngrok.io'
-    ]
+    'mack-pretimely-cindi.ngrok-free.dev',
+    '.ngrok-free.dev',
+    '.ngrok.io']
+
   },
   plugins: [
-    react()
-  ],
+  react()],
+
 
   resolve: {
     alias: {

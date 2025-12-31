@@ -721,15 +721,15 @@ export class ExplosionAnimation {
 
     // Reduced glow effect - less obtrusive
     const fadeProgress = this.frame / this.maxFrames;
-    const glowIntensity = this.isMobile
-      ? 15 * (1 - fadeProgress) // Mobile: subtle glow (was 40)
-      : 20 * (1 - fadeProgress); // Desktop: slightly more glow (was 40)
+    const glowIntensity = this.isMobile ?
+    15 * (1 - fadeProgress) // Mobile: subtle glow (was 40)
+    : 20 * (1 - fadeProgress); // Desktop: slightly more glow (was 40)
 
     ctx.shadowBlur = glowIntensity;
     ctx.shadowColor = '#ff6600';
 
     // Reduce opacity as animation progresses for smoother fade
-    ctx.globalAlpha = 1 - (fadeProgress * 0.3); // Slight transparency increase
+    ctx.globalAlpha = 1 - fadeProgress * 0.3; // Slight transparency increase
 
     // Add second glow layer - but lighter
     ctx.globalCompositeOperation = 'screen';
