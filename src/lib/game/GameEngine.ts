@@ -63,8 +63,8 @@ export class GameEngine {
 
   // Performance limits to prevent freezing during intense gameplay
   readonly MAX_PARTICLES: number;
-  readonly MAX_PROJECTILES = 200;
-  readonly MAX_EXPLOSIONS = 50;
+  readonly MAX_PROJECTILES: number;
+  readonly MAX_EXPLOSIONS: number;
   private performanceLogTimer = 0;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
@@ -75,8 +75,10 @@ export class GameEngine {
 
     this.isMobile = isMobile;
 
-    // Set performance limits based on device
-    this.MAX_PARTICLES = isMobile ? 300 : 600;
+    // Set aggressive performance limits based on device (Option 1)
+    this.MAX_PARTICLES = isMobile ? 200 : 500;
+    this.MAX_PROJECTILES = isMobile ? 150 : 200;
+    this.MAX_EXPLOSIONS = isMobile ? 20 : 30;
 
     this.keys = new Set();
     this.state = 'playing';
@@ -1487,8 +1489,8 @@ export class GameEngine {
     // Screen shake - stronger for milestones
     this.addScreenShake(isMilestone ? 20 : 12);
 
-    // Particle burst from screen edges
-    const particleCount = this.isMobile ? isMilestone ? 60 : 40 : isMilestone ? 120 : 80;
+    // Reduced particle burst from screen edges (Option 1 optimization)
+    const particleCount = this.isMobile ? isMilestone ? 20 : 16 : isMilestone ? 40 : 32;
     const colors = isMilestone ?
     ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
     : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
@@ -1515,19 +1517,19 @@ export class GameEngine {
           size: 3 + Math.random() * (isMilestone ? 8 : 5), // Larger particles
           color: particleColor,
           alpha: 1,
-          decay: this.isMobile ? 0.01 : 0.005, // Even slower decay for 2-3 second lifetime
+          decay: this.isMobile ? 0.015 : 0.01, // Faster decay on mobile
           lifetime: 0,
-          maxLifetime: isMilestone ? 180 : 150 // 2.5-3 seconds at 60fps
+          maxLifetime: this.isMobile ? 120 : 150 // Shorter lifetime on mobile (2s vs 2.5s)
         });
       }
     });
 
-    // Center burst for milestones
+    // Reduced center burst for milestones (Option 1 optimization)
     if (isMilestone) {
       const centerX = this.canvas.width / 2;
       const centerY = this.canvas.height / 2;
 
-      for (let i = 0; i < (this.isMobile ? 50 : 100); i++) {
+      for (let i = 0; i < (this.isMobile ? 15 : 30); i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 4 + Math.random() * 12;
         const particleColor = colors[Math.floor(Math.random() * colors.length)];
@@ -1540,9 +1542,9 @@ export class GameEngine {
           size: 4 + Math.random() * 9, // Larger particles
           color: particleColor,
           alpha: 1,
-          decay: 0.004, // Even slower decay for milestones
+          decay: this.isMobile ? 0.008 : 0.006, // Faster decay on mobile
           lifetime: 0,
-          maxLifetime: 200 // ~3.3 seconds at 60fps
+          maxLifetime: this.isMobile ? 150 : 180 // Shorter lifetime on mobile
         });
       }
     }
@@ -2250,9 +2252,10 @@ export class GameEngine {
   }
 
   spawnLevelUpParticles(x: number, y: number) {
-    // Epic level up burst with multiple rings
-    for (let ring = 0; ring < 3; ring++) {
-      const particlesInRing = 30 + ring * 10;
+    // Reduced level up burst for better performance (Option 1 optimization)
+    const ringCount = this.isMobile ? 2 : 3;
+    for (let ring = 0; ring < ringCount; ring++) {
+      const particlesInRing = this.isMobile ? 8 + ring * 4 : 15 + ring * 5;
       for (let i = 0; i < particlesInRing; i++) {
         const angle = Math.PI * 2 * i / particlesInRing;
         const speed = 3 + ring * 2 + Math.random() * 4;
@@ -2264,9 +2267,9 @@ export class GameEngine {
           size: 3 + Math.random() * 5,
           color: ['#fbbf24', '#f59e0b', '#a855f7', '#22d3ee', '#ffffff'][Math.floor(Math.random() * 5)],
           alpha: 1,
-          decay: 0.015,
+          decay: this.isMobile ? 0.02 : 0.015,
           lifetime: 0,
-          maxLifetime: 100
+          maxLifetime: this.isMobile ? 80 : 100
         });
       }
     }
