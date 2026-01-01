@@ -139,6 +139,28 @@ export type ShipSkinId =
   | 'cosmic_void'
   | 'diamond_elite';
 
+export type ShipSuperpowerType =
+  | 'none'
+  | 'fire_rate_boost'
+  | 'movement_speed_boost'
+  | 'shield_duration_boost'
+  | 'dual_guns'
+  | 'piercing_shots'
+  | 'triple_shot'
+  | 'lifesteal'
+  | 'explosive_rounds'
+  | 'gravity_bullets'
+  | 'auto_shield';
+
+export interface ShipSuperpower {
+  type: ShipSuperpowerType;
+  name: string;
+  description: string;
+  // Effect values (varies by type)
+  value?: number; // e.g., 10 for 10% boost, 2 for dual guns
+  duration?: number; // For timed effects
+}
+
 export interface ShipSkin {
   id: ShipSkinId;
   name: string;
@@ -150,6 +172,9 @@ export interface ShipSkin {
   filter: string; // CSS filter
   bulletColor?: string; // Custom bullet color
   trailColor?: string; // Custom trail color
+
+  // Superpower system
+  superpower?: ShipSuperpower;
 
   // Unlock conditions
   unlocked: boolean;

@@ -155,8 +155,12 @@ export default function HomePage() {
             </NeonButton>
           </div>
 
-          {/* Second Row: Game Guide, Settings, and Install PWA */}
+          {/* Second Row: Leaderboard, Game Guide, Settings */}
           <div className="flex flex-col sm:flex-row gap-4">
+            <NeonButton onClick={() => navigate('/leaderboard', { state: { from: '/' } })}>
+              📊 LEADERBOARD
+            </NeonButton>
+
             <NeonButton onClick={() => navigate('/guide', { state: { from: '/' } })}>
               📖 GAME GUIDE
             </NeonButton>
@@ -164,8 +168,11 @@ export default function HomePage() {
             <NeonButton onClick={() => setShowSettings(true)}>
               ⚙️ SETTINGS
             </NeonButton>
+          </div>
 
-            <div className="flex-1">
+          {/* Third Row: Install PWA (if available) */}
+          <div className="flex justify-center">
+            <div className="w-full sm:w-auto">
               <PWAInstallButton />
             </div>
           </div>

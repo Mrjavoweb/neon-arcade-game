@@ -7,6 +7,7 @@ import { CosmeticManager } from './progression/CosmeticManager';
 import { getSettingsManager } from './settings/SettingsManager';
 import { GameSettings } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
+import { getLeaderboardManager, LeaderboardManager } from './leaderboard/LeaderboardManager';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -69,6 +70,9 @@ export class GameEngine {
 
   // Audio system
   audioManager: AudioManager;
+
+  // Leaderboard system
+  leaderboardManager: LeaderboardManager;
 
   // Performance limits to prevent freezing during intense gameplay
   readonly MAX_PARTICLES: number;
@@ -199,6 +203,10 @@ export class GameEngine {
     // Initialize audio system
     this.audioManager = getAudioManager();
     console.log('🔊 AudioManager initialized in GameEngine');
+
+    // Initialize leaderboard system
+    this.leaderboardManager = getLeaderboardManager();
+    console.log('📊 LeaderboardManager initialized in GameEngine');
 
     // Check for daily reward on game start
     this.checkDailyReward();
@@ -1741,6 +1749,17 @@ export class GameEngine {
     // Play game over sound and game over theme
     this.audioManager.playSound('game_over', 0.7);
     this.audioManager.playMusic('game_over_theme', false);
+
+    // Submit to leaderboard
+    const leaderboardResult = this.leaderboardManager.submitScore(this.stats);
+    console.log('📊 Leaderboard submission:', leaderboardResult);
+
+    // Dispatch event for UI notification if made any leaderboard
+    if (leaderboardResult.isHighScore || leaderboardResult.isHighestWave || leaderboardResult.isBestCombo) {
+      window.dispatchEvent(new CustomEvent('leaderboard-entry', {
+        detail: leaderboardResult
+      }));
+    }
 
     // Track final score for achievements
     this.achievementManager.trackScore(this.stats.score);

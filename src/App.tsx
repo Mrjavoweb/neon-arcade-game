@@ -7,6 +7,7 @@ import GamePage from "./pages/GamePage";
 import ShopPage from "./pages/ShopPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import GuidePage from "./pages/GuidePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import NotFound from "./pages/NotFound";
 import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
@@ -44,6 +45,7 @@ const App = () => {
                     <Route path="/shop" element={<ShopPage />} />
                     <Route path="/achievements" element={<AchievementsPage />} />
                     <Route path="/guide" element={<GuidePage />} />
+                    <Route path="/leaderboard" element={<LeaderboardPage />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Route>

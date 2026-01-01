@@ -201,10 +201,10 @@ export default function GamePage() {
     };
   }, [isMobile]);
 
-  // Keep game paused when returning from shop/achievements/guide
+  // Keep game paused when returning from shop/achievements/guide/leaderboard
   useEffect(() => {
     const returnedFrom = (location.state as { returnedFrom?: string })?.returnedFrom;
-    if (returnedFrom && (returnedFrom === 'shop' || returnedFrom === 'achievements' || returnedFrom === 'guide')) {
+    if (returnedFrom && (returnedFrom === 'shop' || returnedFrom === 'achievements' || returnedFrom === 'guide' || returnedFrom === 'leaderboard')) {
       // Ensure game stays paused when returning
       if (engineRef.current && engineRef.current.state !== 'paused') {
         engineRef.current.togglePause();
@@ -282,6 +282,14 @@ export default function GamePage() {
     setShowSettings(false);
   };
 
+  const handleLeaderboard = () => {
+    // Pause the game before navigating
+    if (engineRef.current && engineRef.current.state !== 'paused') {
+      engineRef.current.togglePause();
+    }
+    navigate('/leaderboard', { state: { from: '/game' } });
+  };
+
   return (
     <div className="relative w-full h-screen bg-[#0a0014] overflow-hidden touch-none">
         <canvas
@@ -314,6 +322,7 @@ export default function GamePage() {
           onShop={handleShop}
           onAchievements={handleAchievements}
           onSettings={handleSettings}
+          onLeaderboard={handleLeaderboard}
           lastCheckpoint={engineRef.current?.lastCheckpoint} />
 
         {/* Settings Overlay */}

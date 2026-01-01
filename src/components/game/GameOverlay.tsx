@@ -13,10 +13,11 @@ interface GameOverlayProps {
   onAchievements?: () => void;
   onGuide?: () => void;
   onSettings?: () => void;
+  onLeaderboard?: () => void;
   lastCheckpoint?: number;
 }
 
-export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, onSettings, lastCheckpoint }: GameOverlayProps) {
+export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, onSettings, onLeaderboard, lastCheckpoint }: GameOverlayProps) {
   if (state === 'playing') return null;
 
   return (
@@ -66,6 +67,15 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onResta
                 className="w-full px-6 py-3 bg-yellow-500/30 hover:bg-yellow-500/50 text-white font-bold rounded-lg border border-yellow-400 transition-all font-['Space_Grotesk']">
 
                   🏆 Achievements
+                </button>
+              )}
+
+              {onLeaderboard && (
+                <button
+                onClick={onLeaderboard}
+                className="w-full px-6 py-3 bg-cyan-500/30 hover:bg-cyan-500/50 text-white font-bold rounded-lg border border-cyan-400 transition-all font-['Space_Grotesk']">
+
+                  📊 Leaderboard
                 </button>
               )}
 
@@ -197,6 +207,15 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onResta
                 className="w-full px-6 py-3 bg-green-500/30 hover:bg-green-500/50 text-white font-bold rounded-lg border border-green-400 transition-all font-['Space_Grotesk']">
 
                   🔄 Start Fresh from Wave 1
+                </button>
+              )}
+
+              {onLeaderboard && (
+                <button
+                onClick={onLeaderboard}
+                className="w-full px-6 py-3 bg-cyan-500/30 hover:bg-cyan-500/50 text-white font-bold rounded-lg border border-cyan-400 transition-all font-['Space_Grotesk']">
+
+                  📊 View Leaderboard
                 </button>
               )}
 
