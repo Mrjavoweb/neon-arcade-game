@@ -2,6 +2,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import ShipPreview from './ShipPreview';
 
+interface ShipSuperpower {
+  type: string;
+  name: string;
+  description: string;
+  value?: number;
+  duration?: number;
+}
+
 interface ShipSkin {
   id: string;
   name: string;
@@ -11,6 +19,9 @@ interface ShipSkin {
   isDefault: boolean;
   filter: string;
   previewColor: string;
+  superpower?: ShipSuperpower;
+  tier?: string;
+  role?: 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
 }
 
 interface ShopItemModalProps {
@@ -40,6 +51,26 @@ export default function ShopItemModal({
     onEquip(skin.id);
     onClose();
   };
+
+  // Helper function for role badge styling
+  const getRoleBadge = (role?: string) => {
+    switch (role) {
+      case 'offensive':
+        return { icon: '⚔️', label: 'Offensive', color: 'bg-red-500/80 border-red-400/60' };
+      case 'defensive':
+        return { icon: '🛡️', label: 'Defensive', color: 'bg-blue-500/80 border-blue-400/60' };
+      case 'mobility':
+        return { icon: '⚡', label: 'Mobility', color: 'bg-green-500/80 border-green-400/60' };
+      case 'utility':
+        return { icon: '✨', label: 'Utility', color: 'bg-purple-500/80 border-purple-400/60' };
+      case 'balanced':
+        return { icon: '⚖️', label: 'Balanced', color: 'bg-cyan-500/80 border-cyan-400/60' };
+      default:
+        return null;
+    }
+  };
+
+  const roleBadge = getRoleBadge(skin.role);
 
   return (
     <AnimatePresence>
@@ -82,10 +113,36 @@ export default function ShopItemModal({
             {skin.name}
           </h2>
 
+          {/* Role Badge */}
+          {roleBadge && (
+            <div className="flex justify-center mb-3">
+              <div className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full border-2 text-white ${roleBadge.color}`}>
+                {roleBadge.icon} {roleBadge.label.toUpperCase()}
+              </div>
+            </div>
+          )}
+
           {/* Description */}
-          <p className="text-center text-cyan-200 mb-6 font-['Space_Grotesk']">
+          <p className="text-center text-cyan-200 mb-4 font-['Space_Grotesk']">
             {skin.description}
           </p>
+
+          {/* Superpower Display */}
+          {skin.superpower && skin.superpower.type !== 'none' && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-400/40 rounded-xl">
+              <div className="text-center">
+                <div className="text-xs uppercase tracking-wider text-purple-300 mb-1 font-['Space_Grotesk'] font-bold">
+                  ⚡ SUPERPOWER
+                </div>
+                <div className="text-lg font-bold text-yellow-300 mb-1 font-['Sora']">
+                  {skin.superpower.name}
+                </div>
+                <div className="text-sm text-cyan-200 font-['Space_Grotesk']">
+                  {skin.superpower.description}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Price or Status */}
           <div className="text-center mb-6">

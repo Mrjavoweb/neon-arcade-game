@@ -152,6 +152,8 @@ export type ShipSuperpowerType =
   | 'gravity_bullets'
   | 'auto_shield';
 
+export type ShipRole = 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
+
 export interface ShipSuperpower {
   type: ShipSuperpowerType;
   name: string;
@@ -175,6 +177,7 @@ export interface ShipSkin {
 
   // Superpower system
   superpower?: ShipSuperpower;
+  role?: ShipRole; // Ship role/category
 
   // Unlock conditions
   unlocked: boolean;

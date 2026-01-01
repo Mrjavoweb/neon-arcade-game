@@ -44,6 +44,7 @@ export class CosmeticManager {
         price: 0,
         filter: 'none',
         bulletColor: '#22d3ee',
+        role: 'balanced',
         superpower: {
           type: 'none',
           name: 'Standard Configuration',
@@ -63,6 +64,7 @@ export class CosmeticManager {
         price: 600,
         filter: 'hue-rotate(170deg) saturate(150%)', // Cyan to Red: 190° + 170° = 360° = 0° (red)
         bulletColor: '#ff6b6b',
+        role: 'offensive',
         superpower: {
           type: 'fire_rate_boost',
           name: 'Enhanced Firing System',
@@ -79,6 +81,7 @@ export class CosmeticManager {
         price: 600,
         filter: 'hue-rotate(290deg) saturate(130%)', // Cyan to Green: 190° + 290° = 480° = 120° (green)
         bulletColor: '#51cf66',
+        role: 'mobility',
         superpower: {
           type: 'movement_speed_boost',
           name: 'Boosted Thrusters',
@@ -95,6 +98,7 @@ export class CosmeticManager {
         price: 600,
         filter: 'hue-rotate(80deg) saturate(140%)', // Cyan to Purple: 190° + 80° = 270° (purple/magenta)
         bulletColor: '#a855f7',
+        role: 'defensive',
         superpower: {
           type: 'shield_duration_boost',
           name: 'Reinforced Shields',
@@ -115,6 +119,7 @@ export class CosmeticManager {
         price: 1500,
         filter: 'hue-rotate(220deg) saturate(200%) brightness(130%)', // Cyan to Gold: 190° + 220° = 410° = 50° (gold/yellow)
         bulletColor: '#ffd700',
+        role: 'offensive',
         superpower: {
           type: 'dual_guns',
           name: 'Twin Plasma Cannons',
@@ -131,6 +136,7 @@ export class CosmeticManager {
         price: 1500,
         filter: 'hue-rotate(180deg) saturate(120%) brightness(110%)',
         bulletColor: '#06b6d4',
+        role: 'offensive',
         superpower: {
           type: 'piercing_shots',
           name: 'Armor-Piercing Rounds',
@@ -151,6 +157,7 @@ export class CosmeticManager {
         price: 3000,
         filter: 'hue-rotate(var(--rainbow-hue)) saturate(200%)', // Dynamic!
         bulletColor: 'rainbow', // Special flag for dynamic color
+        role: 'offensive',
         superpower: {
           type: 'triple_shot',
           name: 'Multi-Barrel Arsenal',
@@ -167,6 +174,7 @@ export class CosmeticManager {
         price: 3000,
         filter: 'brightness(30%) contrast(150%)',
         bulletColor: '#6366f1',
+        role: 'utility',
         superpower: {
           type: 'lifesteal',
           name: 'Damage Absorption',
@@ -183,6 +191,7 @@ export class CosmeticManager {
         price: 3000,
         filter: 'hue-rotate(30deg) saturate(300%) brightness(150%)',
         bulletColor: '#ff8c00',
+        role: 'offensive',
         superpower: {
           type: 'explosive_rounds',
           name: 'Explosive Ordnance',
@@ -203,6 +212,7 @@ export class CosmeticManager {
         price: 5000,
         filter: 'hue-rotate(var(--galaxy-hue)) contrast(150%) saturate(150%)', // Dynamic!
         bulletColor: 'galaxy', // Special flag for dynamic color
+        role: 'utility',
         superpower: {
           type: 'gravity_bullets',
           name: 'Gravitational Weapons',
@@ -219,6 +229,7 @@ export class CosmeticManager {
         price: 7500,
         filter: 'grayscale(100%) brightness(200%) contrast(150%)',
         bulletColor: '#e0e7ff',
+        role: 'defensive',
         superpower: {
           type: 'auto_shield',
           name: 'Auto-Regenerating Shields',

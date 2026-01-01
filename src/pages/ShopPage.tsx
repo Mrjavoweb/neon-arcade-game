@@ -15,6 +15,7 @@ interface ShipSkin {
   unlocked: boolean;
   filter: string;
   tier: string;
+  role?: 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
 }
 
 export default function ShopPage() {
@@ -30,6 +31,24 @@ export default function ShopPage() {
 
   // Get return path from location state, default to /game
   const returnPath = (location.state as { from?: string })?.from || '/game';
+
+  // Helper function for role badge styling
+  const getRoleBadge = (role?: string) => {
+    switch (role) {
+      case 'offensive':
+        return { icon: '⚔️', label: 'Offensive', color: 'bg-red-500/80 text-white' };
+      case 'defensive':
+        return { icon: '🛡️', label: 'Defensive', color: 'bg-blue-500/80 text-white' };
+      case 'mobility':
+        return { icon: '⚡', label: 'Mobility', color: 'bg-green-500/80 text-white' };
+      case 'utility':
+        return { icon: '✨', label: 'Utility', color: 'bg-purple-500/80 text-white' };
+      case 'balanced':
+        return { icon: '⚖️', label: 'Balanced', color: 'bg-cyan-500/80 text-black' };
+      default:
+        return null;
+    }
+  };
 
   // Initialize engine if it doesn't exist
   useEffect(() => {
@@ -161,6 +180,8 @@ export default function ShopPage() {
             const isDefault = skin.tier === 'default';
             const canAfford = stardust >= skin.price;
 
+            const roleBadge = getRoleBadge(skin.role);
+
             return (
               <motion.div
                 key={skin.id}
@@ -175,26 +196,36 @@ export default function ShopPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}>
 
-                {/* Active Badge */}
-                {isActive && (
-                  <div className="mb-3 inline-block px-3 py-1 bg-cyan-500 text-black text-xs font-bold rounded-full">
-                    ✓ EQUIPPED
-                  </div>
-                )}
+                {/* Badge Row */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {/* Active Badge */}
+                  {isActive && (
+                    <div className="inline-block px-3 py-1 bg-cyan-500 text-black text-xs font-bold rounded-full">
+                      ✓ EQUIPPED
+                    </div>
+                  )}
 
-                {/* Owned Badge */}
-                {!isActive && skin.unlocked && !isDefault && (
-                  <div className="mb-3 inline-block px-3 py-1 bg-green-500/70 text-white text-xs font-bold rounded-full">
-                    ✓ OWNED
-                  </div>
-                )}
+                  {/* Owned Badge */}
+                  {!isActive && skin.unlocked && !isDefault && (
+                    <div className="inline-block px-3 py-1 bg-green-500/70 text-white text-xs font-bold rounded-full">
+                      ✓ OWNED
+                    </div>
+                  )}
 
-                {/* Default Badge */}
-                {isDefault && !isActive && (
-                  <div className="mb-3 inline-block px-3 py-1 bg-gray-500/50 text-white text-xs font-bold rounded-full">
-                    DEFAULT
-                  </div>
-                )}
+                  {/* Default Badge */}
+                  {isDefault && !isActive && (
+                    <div className="inline-block px-3 py-1 bg-gray-500/50 text-white text-xs font-bold rounded-full">
+                      DEFAULT
+                    </div>
+                  )}
+
+                  {/* Role Badge */}
+                  {roleBadge && (
+                    <div className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${roleBadge.color}`}>
+                      {roleBadge.icon} {roleBadge.label}
+                    </div>
+                  )}
+                </div>
 
                 {/* Ship Preview */}
                 <div className="relative h-32 mb-4 flex items-center justify-center bg-black/40 rounded-lg border border-cyan-400/20">
@@ -205,53 +236,30 @@ export default function ShopPage() {
                 <h3 className="text-xl font-bold text-white mb-2 font-['Sora']">{skin.name}</h3>
 
                 {/* Description */}
-                <p className="text-sm text-cyan-200/80 mb-4 font-['Space_Grotesk']">{skin.description}</p>
+                <p className="text-sm text-cyan-200/80 mb-4 font-['Space_Grotesk'] line-clamp-2">{skin.description}</p>
 
-                {/* Price / Action - Direct actions on buttons */}
-                {isDefault ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isActive) handleEquip(skin.id);
-                    }}
-                    disabled={isActive}
-                    className={`w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                      isActive
-                        ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                        : 'bg-cyan-500 hover:bg-cyan-400 text-black'
-                    }`}>
-                    {isActive ? 'Equipped' : 'Equip'}
-                  </button>
-                ) : skin.unlocked ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isActive) handleEquip(skin.id);
-                    }}
-                    disabled={isActive}
-                    className={`w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                      isActive
-                        ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                        : 'bg-cyan-500 hover:bg-cyan-400 text-black'
-                    }`}>
-                    {isActive ? 'Equipped' : 'Equip Ship'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (canAfford) handlePurchase(skin.id);
-                    }}
-                    disabled={!canAfford}
-                    className={`w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] flex items-center justify-center gap-2 ${
-                      canAfford
-                        ? 'bg-purple-500 hover:bg-purple-400 text-white'
-                        : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                    }`}>
-                    <span>💎 {skin.price.toLocaleString()}</span>
-                    <span>{canAfford ? 'Buy Now' : 'Not Enough'}</span>
-                  </button>
-                )}
+                {/* Price Display */}
+                <div className="mb-3 text-center">
+                  {isDefault ? (
+                    <div className="text-sm text-gray-400 font-['Space_Grotesk']">Free - Default Ship</div>
+                  ) : skin.unlocked ? (
+                    <div className="text-sm text-green-400 font-bold font-['Space_Grotesk']">✓ Owned</div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-xl">💎</span>
+                      <span className={`text-lg font-bold font-['Space_Grotesk'] ${canAfford ? 'text-purple-200' : 'text-gray-400'}`}>
+                        {skin.price.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* View Details Button */}
+                <button
+                  onClick={() => setSelectedSkin(skin)}
+                  className="w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/90 hover:to-pink-500/90 border border-purple-400/40 text-white">
+                  View Details & Superpowers
+                </button>
               </motion.div>
             );
           })}
