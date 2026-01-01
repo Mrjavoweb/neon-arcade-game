@@ -4,6 +4,8 @@ import { CurrencyManager } from './progression/CurrencyManager';
 import { DailyRewardManager } from './progression/DailyRewardManager';
 import { AchievementManager } from './progression/AchievementManager';
 import { CosmeticManager } from './progression/CosmeticManager';
+import { getSettingsManager } from './settings/SettingsManager';
+import { GameSettings } from './settings/SettingsTypes';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -60,6 +62,9 @@ export class GameEngine {
   dailyRewardManager: DailyRewardManager;
   achievementManager: AchievementManager;
   cosmeticManager: CosmeticManager;
+
+  // Settings system
+  private settings: GameSettings;
 
   // Performance limits to prevent freezing during intense gameplay
   readonly MAX_PARTICLES: number;
@@ -176,6 +181,16 @@ export class GameEngine {
     this.achievementManager = new AchievementManager(this.currencyManager);
     this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
     this.cosmeticManager = new CosmeticManager(this.currencyManager);
+
+    // Initialize settings system
+    const settingsManager = getSettingsManager();
+    this.settings = settingsManager.getSettings();
+
+    // Listen for settings changes
+    window.addEventListener('settings-changed', ((event: CustomEvent) => {
+      this.settings = event.detail.settings;
+      console.log('⚙️ Settings updated in GameEngine:', this.settings);
+    }) as EventListener);
 
     // Check for daily reward on game start
     this.checkDailyReward();
@@ -1299,7 +1314,14 @@ export class GameEngine {
   }
 
   addScreenShake(intensity: number) {
-    this.screenShake.intensity = Math.max(this.screenShake.intensity, intensity);
+    // Check if screen shake is enabled in settings
+    if (!this.settings.screenShake) {
+      return; // Don't add shake if disabled
+    }
+
+    // Apply 50% reduction to make shake less intense and more subtle
+    const reducedIntensity = intensity * 0.5;
+    this.screenShake.intensity = Math.max(this.screenShake.intensity, reducedIntensity);
   }
 
   updateScreenShake() {

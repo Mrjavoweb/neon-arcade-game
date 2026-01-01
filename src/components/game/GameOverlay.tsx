@@ -12,10 +12,11 @@ interface GameOverlayProps {
   onShop?: () => void;
   onAchievements?: () => void;
   onGuide?: () => void;
+  onSettings?: () => void;
   lastCheckpoint?: number;
 }
 
-export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, lastCheckpoint }: GameOverlayProps) {
+export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, onSettings, lastCheckpoint }: GameOverlayProps) {
   if (state === 'playing') return null;
 
   return (
@@ -74,6 +75,15 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onResta
                 className="w-full px-6 py-3 bg-blue-500/30 hover:bg-blue-500/50 text-white font-bold rounded-lg border border-blue-400 transition-all font-['Space_Grotesk']">
 
                   📖 Game Guide
+                </button>
+              )}
+
+              {onSettings && (
+                <button
+                onClick={onSettings}
+                className="w-full px-6 py-3 bg-gray-500/30 hover:bg-gray-500/50 text-white font-bold rounded-lg border border-gray-400 transition-all font-['Space_Grotesk']">
+
+                  ⚙️ Settings
                 </button>
               )}
 

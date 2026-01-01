@@ -1,5 +1,6 @@
 import GameHUD from '@/components/game/GameHUD';
 import GameOverlay from '@/components/game/GameOverlay';
+import SettingsOverlay from '@/components/game/SettingsOverlay';
 import BossHealthBar from '@/components/game/BossHealthBar';
 import BossIntro from '@/components/game/BossIntro';
 import PauseButton from '@/components/game/PauseButton';
@@ -59,6 +60,7 @@ export default function GamePage() {
   const [levelUpData, setLevelUpData] = useState({ level: 1, upgrade: '' });
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [dailyReward, setDailyReward] = useState<{ day: number; reward: DailyReward; streak: number } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -271,6 +273,14 @@ export default function GamePage() {
     navigate('/guide', { state: { from: '/game' } });
   };
 
+  const handleSettings = () => {
+    setShowSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+  };
+
   return (
     <div className="relative w-full h-screen bg-[#0a0014] overflow-hidden touch-none">
         <canvas
@@ -301,7 +311,14 @@ export default function GamePage() {
           onGuide={handleGuide}
           onShop={handleShop}
           onAchievements={handleAchievements}
+          onSettings={handleSettings}
           lastCheckpoint={engineRef.current?.lastCheckpoint} />
+
+        {/* Settings Overlay */}
+        <SettingsOverlay
+          isOpen={showSettings}
+          onClose={handleCloseSettings}
+          isMobile={isMobile} />
 
       {/* Boss intro */}
       {gameState.state === 'bossIntro' && (

@@ -6,6 +6,7 @@ import NeonButton from '@/components/NeonButton';
 import GameInstructions from '@/components/GameInstructions';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWAInstallButton from '@/components/PWAInstallButton';
+import SettingsOverlay from '@/components/game/SettingsOverlay';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
 
@@ -13,6 +14,8 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { engine, setEngine } = useGameEngine();
   const [stardust, setStardust] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
 
   // Initialize game engine for persistence
   useEffect(() => {
@@ -147,10 +150,14 @@ export default function HomePage() {
             </NeonButton>
           </div>
 
-          {/* Second Row: Game Guide and Install PWA */}
+          {/* Second Row: Game Guide, Settings, and Install PWA */}
           <div className="flex flex-col sm:flex-row gap-4">
             <NeonButton onClick={() => navigate('/guide', { state: { from: '/' } })}>
               📖 GAME GUIDE
+            </NeonButton>
+
+            <NeonButton onClick={() => setShowSettings(true)}>
+              ⚙️ SETTINGS
             </NeonButton>
 
             <div className="flex-1">
@@ -177,6 +184,12 @@ export default function HomePage() {
 
         {/* Instructions */}
         <GameInstructions />
+
+        {/* Settings Overlay */}
+        <SettingsOverlay
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          isMobile={isMobile} />
 
         {/* Footer Credits */}
         <motion.div
