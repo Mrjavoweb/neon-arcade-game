@@ -4,6 +4,7 @@ import {
   STORAGE_KEYS
 } from './ProgressionTypes';
 import { CurrencyManager } from './CurrencyManager';
+import { getAudioManager } from '../audio/AudioManager';
 
 /**
  * AchievementManager - Manages all 30 achievements
@@ -667,6 +668,10 @@ export class AchievementManager {
     // Lives and maxHealth granted by GameEngine when it receives event
 
     this.saveAchievements();
+
+    // Play achievement unlock sound
+    const audioManager = getAudioManager();
+    audioManager.playSound('achievement_unlock', 0.7);
 
     // Dispatch event for UI notification
     const eventDetail = { achievement: { ...achievement } };

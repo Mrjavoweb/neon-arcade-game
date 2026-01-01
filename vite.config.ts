@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
 
   // Optimize build for better performance
   build: {
-    outDir: 'build', // Use 'build' instead of 'dist' to avoid permission issues
+    outDir: 'dist', // Temporarily use dist to avoid build directory lock
     target: 'esnext',
     minify: 'esbuild',
     rollupOptions: {

@@ -4,6 +4,7 @@ import SettingsOverlay from '@/components/game/SettingsOverlay';
 import BossHealthBar from '@/components/game/BossHealthBar';
 import BossIntro from '@/components/game/BossIntro';
 import PauseButton from '@/components/game/PauseButton';
+import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LevelUpCelebration from '@/components/game/LevelUpCelebration';
 import AchievementToast from '@/components/game/AchievementToast';
 import DailyRewardPopup from '@/components/game/DailyRewardPopup';
@@ -290,6 +291,7 @@ export default function GamePage() {
 
         <GameHUD stats={gameState.stats} stardust={stardust} />
 
+        <SoundToggleButton />
         <PauseButton onPause={handlePause} />
 
         <BossHealthBar

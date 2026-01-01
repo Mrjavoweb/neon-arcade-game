@@ -6,6 +6,7 @@ import { AchievementManager } from './progression/AchievementManager';
 import { CosmeticManager } from './progression/CosmeticManager';
 import { getSettingsManager } from './settings/SettingsManager';
 import { GameSettings } from './settings/SettingsTypes';
+import { getAudioManager, AudioManager } from './audio/AudioManager';
 
 export class GameEngine {
   canvas: HTMLCanvasElement;
@@ -65,6 +66,9 @@ export class GameEngine {
 
   // Settings system
   private settings: GameSettings;
+
+  // Audio system
+  audioManager: AudioManager;
 
   // Performance limits to prevent freezing during intense gameplay
   readonly MAX_PARTICLES: number;
@@ -192,6 +196,10 @@ export class GameEngine {
       console.log('⚙️ Settings updated in GameEngine:', this.settings);
     }) as EventListener);
 
+    // Initialize audio system
+    this.audioManager = getAudioManager();
+    console.log('🔊 AudioManager initialized in GameEngine');
+
     // Check for daily reward on game start
     this.checkDailyReward();
 
@@ -317,6 +325,50 @@ export class GameEngine {
         enemy.setImage(alienBasic);
       });
       console.log('✅ All sprites assigned successfully');
+
+      // Preload audio files
+      console.log('🔊 Preloading audio files...');
+      this.audioManager.preloadSounds([
+        // Player sounds
+        'player_shoot',
+        'player_hit',
+        'player_death',
+        'player_powerup_collect',
+        // Enemy sounds
+        'enemy_shoot',
+        'enemy_hit',
+        'enemy_death',
+        'enemy_spawn',
+        // Boss sounds
+        'boss_spawn',
+        'boss_attack_laser',
+        'boss_attack_missile',
+        'boss_death',
+        // Powerup sounds
+        'powerup_collect',
+        'powerup_shield_activate',
+        'powerup_rapid_fire',
+        'powerup_slowmo',
+        // UI sounds
+        'ui_button_click',
+        'ui_button_hover',
+        // Progression sounds
+        'level_up',
+        'achievement_unlock',
+        'wave_complete',
+        'checkpoint_reached',
+        'combo_milestone',
+        'game_over'
+      ]);
+
+      this.audioManager.preloadMusic([
+        'menu_theme',
+        'gameplay_theme',
+        'boss_battle_theme',
+        'ambient_space'
+      ]);
+      console.log('✅ Audio preloading initiated');
+
     } catch (error) {
       console.error('❌ Failed to load assets:', error);
       // Even if assets fail, the game should still work with fallback shapes
@@ -342,6 +394,10 @@ export class GameEngine {
       const bossY = this.isMobile ? isLandscape ? 20 : 180 : 80; // Lowered from 130 to 180 in portrait
       this.boss = new Boss(this.canvas.width / 2 - 60, bossY, wave);
       if (this.assets) this.boss.setImage(this.assets.bossPhase1); // Start with Phase 1 (Red) boss
+
+      // Play boss spawn sound and switch to boss music
+      this.audioManager.playSound('boss_spawn', 0.8);
+      this.audioManager.playMusic('boss_battle_theme', true);
 
       this.bossState.bossActive = true;
       this.bossState.bossHealth = this.boss.health;
@@ -676,6 +732,9 @@ export class GameEngine {
 
     this.lastFireTime = now;
 
+    // Play player shoot sound
+    this.audioManager.playSound('player_shoot', 0.3);
+
     if (this.player.plasmaActive) {
       // Spread shot
       [-15, 0, 15].forEach((offset) => {
@@ -782,6 +841,9 @@ export class GameEngine {
   // Helper method to create enemy projectile
   createEnemyProjectile(shooter: any) {
     if (!shooter.isAlive) return;
+
+    // Play enemy shoot sound
+    this.audioManager.playSound('enemy_shoot', 0.2);
 
     const projectile = new Projectile(
       shooter.position.x + shooter.size.width / 2 - 2,
@@ -955,6 +1017,9 @@ export class GameEngine {
   bossSpreadShot() {
     if (!this.boss) return;
 
+    // Play boss missile attack sound
+    this.audioManager.playSound('boss_attack_missile', 0.5);
+
     const angles = this.boss.phase === 'phase4' ? 7 :
     this.boss.phase === 'phase3' ? 5 : 3;
     const spread = Math.PI / 3;
@@ -984,6 +1049,9 @@ export class GameEngine {
 
   bossLaserBeam() {
     if (!this.boss) return;
+
+    // Play boss laser attack sound
+    this.audioManager.playSound('boss_attack_laser', 0.6);
 
     // Base laser speed by phase
     const baseSpeed = this.boss.phase === 'phase4' ? 10 :
@@ -1127,6 +1195,9 @@ export class GameEngine {
           enemy.hit();
 
           if (!enemy.isAlive) {
+            // Play enemy death sound
+            this.audioManager.playSound('enemy_death', 0.4);
+
             this.stats.score += enemy.points;
             this.stats.enemiesDestroyed++;
             this.registerKill(enemy.points); // Track combo
@@ -1142,6 +1213,8 @@ export class GameEngine {
             this.addScreenShake(8);
             this.spawnDebrisParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, enemy.color);
           } else {
+            // Play enemy hit sound (not dead yet)
+            this.audioManager.playSound('enemy_hit', 0.3);
             this.createImpactParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, '#ffff00');
             this.addScreenShake(3);
           }
@@ -1182,6 +1255,10 @@ export class GameEngine {
 
           if (!this.boss.isAlive) {
             // Boss defeated!
+            // Play boss death sound and switch back to gameplay music
+            this.audioManager.playSound('boss_death', 0.9);
+            this.audioManager.playMusic('gameplay_theme', true);
+
             this.stats.score += this.boss.points * 5; // 5x score
             this.stats.enemiesDestroyed++;
             this.registerKill(this.boss.points * 5); // Track combo (boss counts!)
@@ -1241,6 +1318,9 @@ export class GameEngine {
           // 1 = lose 1 life (regular enemy bullets)
           // 2 = lose 2 lives (boss orange spread shots)
           // 3 = lose 3 lives (boss red laser beams)
+          // Play player hit sound
+          this.audioManager.playSound('player_hit', 0.6);
+
           // 999 = instant death (not used)
           if (projectile.damage >= 999) {
             this.stats.lives = 0; // Instant kill (not used currently)
@@ -1284,19 +1364,26 @@ export class GameEngine {
   }
 
   activatePowerUp(type: 'plasma' | 'rapid' | 'shield' | 'slowmo') {
+    // Play powerup collect sound
+    this.audioManager.playSound('powerup_collect', 0.5);
+
     switch (type) {
       case 'plasma':
         this.player.activatePlasma();
+        // Note: powerup_plasma.mp3 not yet available
         break;
       case 'rapid':
         this.player.activateRapid();
+        this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
         this.player.activateShield();
+        this.audioManager.playSound('powerup_shield_activate', 0.6);
         break;
       case 'slowmo':
         this.slowMotionActive = true;
         this.slowMotionDuration = 360; // 6 seconds (improved from 5s)
+        this.audioManager.playSound('powerup_slowmo', 0.6);
         break;
     }
 
@@ -1446,6 +1533,9 @@ export class GameEngine {
       // 15 Combo Life Reward (one-time per game)
       this.has15ComboReward = true;
 
+      // Play combo milestone sound
+      this.audioManager.playSound('combo_milestone', 0.7);
+
       // Award +1 life (can exceed max health!)
       this.stats.lives++;
       this.stats.maxHealth = Math.max(this.stats.maxHealth, this.stats.lives);
@@ -1462,6 +1552,9 @@ export class GameEngine {
       // 30 Combo Life Reward (one-time per game)
       this.has30ComboReward = true;
 
+      // Play combo milestone sound
+      this.audioManager.playSound('combo_milestone', 0.7);
+
       // Award +1 life (can exceed max health!)
       this.stats.lives++;
       this.stats.maxHealth = Math.max(this.stats.maxHealth, this.stats.lives);
@@ -1473,6 +1566,9 @@ export class GameEngine {
     } else if (this.stats.combo === 50 && !this.has50ComboReward) {
       // 50 Combo Life Reward (one-time per game)
       this.has50ComboReward = true;
+
+      // Play combo milestone sound
+      this.audioManager.playSound('combo_milestone', 0.7);
 
       // Award +1 life (can exceed max health for legendary achievement!)
       this.stats.lives++;
@@ -1632,6 +1728,10 @@ export class GameEngine {
   gameOver() {
     this.state = 'gameOver';
 
+    // Play game over sound and stop music
+    this.audioManager.playSound('game_over', 0.7);
+    this.audioManager.stopMusic(true);
+
     // Track final score for achievements
     this.achievementManager.trackScore(this.stats.score);
   }
@@ -1671,9 +1771,13 @@ export class GameEngine {
   }
 
   nextWave() {
+    // Play wave complete sound
+    this.audioManager.playSound('wave_complete', 0.6);
+
     // Save checkpoint after completing every wave
     this.lastCheckpoint = this.stats.wave;
     this.saveCheckpoint();
+    this.audioManager.playSound('checkpoint_reached', 0.5);
     console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
 
     // Reset boss victory timer when advancing waves
@@ -2155,6 +2259,9 @@ export class GameEngine {
     // Track new game started for achievements
     this.achievementManager.trackGamePlayed();
     this.achievementManager.trackScore(0); // Reset for new game
+
+    // Start gameplay music
+    this.audioManager.playMusic('gameplay_theme', true);
   }
 
   resetFromWave1() {
@@ -2228,6 +2335,10 @@ export class GameEngine {
       this.stats.xp -= xpPerLevel;
       this.stats.level++;
       this.pendingLevelUp = true;
+
+      // Play level up sound
+      this.audioManager.playSound('level_up', 0.7);
+
       this.applyLevelUpgrade();
     }
   }

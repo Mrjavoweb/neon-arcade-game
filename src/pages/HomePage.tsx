@@ -9,6 +9,7 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
+import { getAudioManager } from '@/lib/game/audio/AudioManager';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -28,6 +29,10 @@ export default function HomePage() {
     } else {
       setStardust(engine.currencyManager.getStardust());
     }
+
+    // Start menu music
+    const audioManager = getAudioManager();
+    audioManager.playMusic('menu_theme', true);
 
     // Listen for currency changes
     const handleCurrencyChange = (event: Event) => {
