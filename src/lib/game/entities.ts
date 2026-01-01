@@ -300,19 +300,23 @@ export class Player {
     this.position.x = Math.max(0, Math.min(this.canvasWidth - this.size.width, x - this.size.width / 2));
   }
 
-  activateShield() {
+  activateShield(bonusDuration: number = 0, percentBoost: number = 0) {
     this.shieldActive = true;
-    this.shieldDuration = 480; // 8 seconds at 60fps (balanced from 10s)
+    let baseDuration = 480; // 8 seconds at 60fps (balanced from 10s)
+    if (percentBoost > 0) {
+      baseDuration = baseDuration * (1 + percentBoost / 100);
+    }
+    this.shieldDuration = baseDuration + bonusDuration;
   }
 
-  activatePlasma() {
+  activatePlasma(bonusDuration: number = 0) {
     this.plasmaActive = true;
-    this.plasmaDuration = 420; // 7 seconds (balanced from 7.5s)
+    this.plasmaDuration = 420 + bonusDuration; // 7 seconds + bonus
   }
 
-  activateRapid() {
+  activateRapid(bonusDuration: number = 0) {
     this.rapidActive = true;
-    this.rapidDuration = 420; // 7 seconds (balanced from 7.5s)
+    this.rapidDuration = 420 + bonusDuration; // 7 seconds + bonus
   }
 }
 
@@ -620,6 +624,10 @@ export class Projectile {
   isPlayerProjectile: boolean;
   trailParticles: Particle[];
   damage: number; // 1 = 1 life, 2 = 2 lives, 999 = instant kill
+  piercing: boolean; // Piercing shots - penetrate first enemy
+  explosive: boolean; // Explosive rounds - create explosion on impact
+  gravity: boolean; // Gravity bullets - pull enemies
+  piercedEnemies: number; // Track how many enemies this bullet has pierced
 
   constructor(x: number, y: number, isPlayerProjectile: boolean, speed: number, damage: number = 999) {
     this.position = { x, y };
@@ -630,6 +638,10 @@ export class Projectile {
     this.isPlayerProjectile = isPlayerProjectile;
     this.trailParticles = [];
     this.damage = damage;
+    this.piercing = false;
+    this.explosive = false;
+    this.gravity = false;
+    this.piercedEnemies = 0;
   }
 
   update() {

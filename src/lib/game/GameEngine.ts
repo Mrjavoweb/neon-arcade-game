@@ -156,7 +156,14 @@ export class GameEngine {
     this.enemySpeed = this.config.enemySpeed;
     this.enemyFireRate = this.config.enemyFireRate;
 
-    this.player = new Player(canvas.width, canvas.height, this.config.playerSpeed);
+    // Apply movement speed boost from superpower
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    let playerSpeed = this.config.playerSpeed;
+    if (superpower.type === 'movement_speed_boost' && superpower.value) {
+      playerSpeed = playerSpeed * (1 + superpower.value / 100);
+    }
+
+    this.player = new Player(canvas.width, canvas.height, playerSpeed);
 
     // Move spaceship up in portrait mode for better visibility
     if (this.isMobile && canvas.height > canvas.width) {
@@ -740,7 +747,16 @@ export class GameEngine {
 
   fire() {
     const now = Date.now();
-    const fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
+
+    // Get active superpower
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+
+    // Apply fire rate boost if applicable
+    let fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
+    if (superpower.type === 'fire_rate_boost' && superpower.value) {
+      fireRate = fireRate * (1 - superpower.value / 100);
+    }
+
     if (now - this.lastFireTime < fireRate) return;
 
     this.lastFireTime = now;
@@ -748,8 +764,16 @@ export class GameEngine {
     // Play player shoot sound
     this.audioManager.playSound('player_shoot', 0.3);
 
-    if (this.player.plasmaActive) {
-      // Spread shot
+    // Determine shot pattern based on superpowers and powerups
+    const plasmaActive = this.player.plasmaActive;
+    const isTripleShot = superpower.type === 'triple_shot';
+    const isDualGuns = superpower.type === 'dual_guns';
+    const isPiercing = superpower.type === 'piercing_shots';
+    const isExplosive = superpower.type === 'explosive_rounds';
+    const isGravity = superpower.type === 'gravity_bullets';
+
+    // Triple Shot superpower (Rainbow Streak) - Always fires 3 bullets
+    if (isTripleShot) {
       [-15, 0, 15].forEach((offset) => {
         const projectile = new Projectile(
           this.player.position.x + this.player.size.width / 2 - 2 + offset,
@@ -757,17 +781,57 @@ export class GameEngine {
           true,
           this.config.projectileSpeed
         );
-        projectile.color = this.cosmeticManager.getBulletColor(); // Apply skin bullet color
+        projectile.color = this.cosmeticManager.getBulletColor();
+        if (isPiercing) projectile.piercing = true;
+        if (isExplosive) projectile.explosive = true;
+        if (isGravity) projectile.gravity = true;
         this.projectiles.push(projectile);
       });
-    } else {
+    }
+    // Dual Guns superpower (Gold Elite) - Fires 2 bullets side-by-side
+    else if (isDualGuns) {
+      [-8, 8].forEach((offset) => {
+        const projectile = new Projectile(
+          this.player.position.x + this.player.size.width / 2 - 2 + offset,
+          this.player.position.y,
+          true,
+          this.config.projectileSpeed
+        );
+        projectile.color = this.cosmeticManager.getBulletColor();
+        if (isPiercing) projectile.piercing = true;
+        if (isExplosive) projectile.explosive = true;
+        if (isGravity) projectile.gravity = true;
+        this.projectiles.push(projectile);
+      });
+    }
+    // Plasma powerup - spread shot (overrides single shot)
+    else if (plasmaActive) {
+      [-15, 0, 15].forEach((offset) => {
+        const projectile = new Projectile(
+          this.player.position.x + this.player.size.width / 2 - 2 + offset,
+          this.player.position.y,
+          true,
+          this.config.projectileSpeed
+        );
+        projectile.color = this.cosmeticManager.getBulletColor();
+        if (isPiercing) projectile.piercing = true;
+        if (isExplosive) projectile.explosive = true;
+        if (isGravity) projectile.gravity = true;
+        this.projectiles.push(projectile);
+      });
+    }
+    // Standard single shot
+    else {
       const projectile = new Projectile(
         this.player.position.x + this.player.size.width / 2 - 2,
         this.player.position.y,
         true,
         this.config.projectileSpeed
       );
-      projectile.color = this.cosmeticManager.getBulletColor(); // Apply skin bullet color
+      projectile.color = this.cosmeticManager.getBulletColor();
+      if (isPiercing) projectile.piercing = true;
+      if (isExplosive) projectile.explosive = true;
+      if (isGravity) projectile.gravity = true;
       this.projectiles.push(projectile);
     }
   }
@@ -1207,7 +1271,14 @@ export class GameEngine {
         if (!enemy.isAlive) continue;
 
         if (this.checkCollision(projectile.getBounds(), enemy.getBounds())) {
-          projectile.deactivate();
+          // Piercing shots - allow bullet to continue through first enemy
+          const isPiercing = projectile.piercing && projectile.piercedEnemies < 1;
+          if (!isPiercing) {
+            projectile.deactivate();
+          } else {
+            projectile.piercedEnemies++;
+          }
+
           enemy.hit();
 
           if (!enemy.isAlive) {
@@ -1228,13 +1299,21 @@ export class GameEngine {
             );
             this.addScreenShake(8);
             this.spawnDebrisParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, enemy.color);
+
+            // Explosive rounds - create additional explosion damage
+            if (projectile.explosive) {
+              this.createExplosiveRoundDamage(
+                enemy.position.x + enemy.size.width / 2,
+                enemy.position.y + enemy.size.height / 2
+              );
+            }
           } else {
             // Play enemy hit sound (not dead yet)
             this.audioManager.playSound('enemy_hit', 0.3);
             this.createImpactParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, '#ffff00');
             this.addScreenShake(3);
           }
-          break;
+          if (!isPiercing) break;
         }
       }
 
@@ -1385,22 +1464,27 @@ export class GameEngine {
     // Play powerup collect sound
     this.audioManager.playSound('powerup_collect', 0.5);
 
+    // Get superpower for possible duration extensions
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    const bonusDuration = superpower.type === 'gravity_bullets' && superpower.value ? superpower.value * 60 : 0;
+
     switch (type) {
       case 'plasma':
-        this.player.activatePlasma();
+        this.player.activatePlasma(bonusDuration);
         this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
-        this.player.activateRapid();
+        this.player.activateRapid(bonusDuration);
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
-        this.player.activateShield();
+        const shieldBoost = superpower.type === 'shield_duration_boost' && superpower.value ? superpower.value : 0;
+        this.player.activateShield(bonusDuration, shieldBoost);
         this.audioManager.playSound('powerup_shield_activate', 0.6);
         break;
       case 'slowmo':
         this.slowMotionActive = true;
-        this.slowMotionDuration = 360; // 6 seconds (improved from 5s)
+        this.slowMotionDuration = 360 + bonusDuration; // 6 seconds + bonus
         this.audioManager.playSound('powerup_slowmo', 0.6);
         break;
     }
@@ -1452,6 +1536,79 @@ export class GameEngine {
   createExplosion(x: number, y: number) {
     if (this.assets) {
       this.explosions.push(new ExplosionAnimation(x, y, this.assets.explosion, this.isMobile));
+    }
+  }
+
+  createExplosiveRoundDamage(x: number, y: number) {
+    // Explosive rounds - damage nearby enemies in small AoE
+    const explosionRadius = 30;
+
+    // Check all enemies in range
+    for (const enemy of this.enemies) {
+      if (!enemy.isAlive) continue;
+
+      const dx = (enemy.position.x + enemy.size.width / 2) - x;
+      const dy = (enemy.position.y + enemy.size.height / 2) - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < explosionRadius) {
+        enemy.hit();
+        if (!enemy.isAlive) {
+          this.audioManager.playSound('enemy_death', 0.3);
+          this.stats.score += enemy.points;
+          this.stats.enemiesDestroyed++;
+          this.registerKill(enemy.points);
+          const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
+          this.awardXP(xpReward);
+          this.createExplosion(
+            enemy.position.x + enemy.size.width / 2,
+            enemy.position.y + enemy.size.height / 2
+          );
+          this.spawnDebrisParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, enemy.color);
+        }
+      }
+    }
+
+    // Visual effect for explosion
+    this.createImpactParticles(x, y, '#ff8c00');
+    this.addScreenShake(5);
+  }
+
+  applyGravityPull(projectile: Projectile) {
+    // Gravity bullets - pull enemies slightly toward the bullet
+    const gravityRadius = 60;
+    const pullStrength = 0.3;
+
+    for (const enemy of this.enemies) {
+      if (!enemy.isAlive) continue;
+
+      const dx = projectile.position.x - (enemy.position.x + enemy.size.width / 2);
+      const dy = projectile.position.y - (enemy.position.y + enemy.size.height / 2);
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < gravityRadius && distance > 0) {
+        // Pull enemy toward bullet
+        const pullX = (dx / distance) * pullStrength;
+        const pullY = (dy / distance) * pullStrength;
+        enemy.position.x += pullX;
+        enemy.position.y += pullY;
+      }
+    }
+
+    // Also pull boss minions
+    for (const minion of this.bossMinions) {
+      if (!minion.isAlive) continue;
+
+      const dx = projectile.position.x - (minion.position.x + minion.size.width / 2);
+      const dy = projectile.position.y - (minion.position.y + minion.size.height / 2);
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < gravityRadius && distance > 0) {
+        const pullX = (dx / distance) * pullStrength;
+        const pullY = (dy / distance) * pullStrength;
+        minion.position.x += pullX;
+        minion.position.y += pullY;
+      }
     }
   }
 
@@ -1701,6 +1858,16 @@ export class GameEngine {
     // Lose a life
     this.stats.lives--;
 
+    // Lifesteal superpower (Dark Matter) - convert damage to score bonus
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    if (superpower.type === 'lifesteal' && superpower.value) {
+      // 10% of damage taken converts to score bonus (damage = 1 life lost, bonus = 100 points)
+      const scoreBonus = Math.floor(100 * (superpower.value / 100));
+      this.stats.score += scoreBonus;
+      // Visual feedback for lifesteal
+      this.createImpactParticles(this.player.position.x + this.player.size.width / 2, this.player.position.y, '#6366f1');
+    }
+
     // Reset combo on hit
     this.stats.combo = 0;
 
@@ -1846,6 +2013,14 @@ export class GameEngine {
     // Reset damage flag for next wave
     this.tookDamageThisWave = false;
 
+    // Auto-shield superpower (Diamond Elite) - start each wave with shield
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    if (superpower.type === 'auto_shield' && superpower.value) {
+      this.player.shieldActive = true;
+      this.player.shieldDuration = superpower.value * 60; // Convert seconds to frames
+      this.audioManager.playSound('powerup_shield_activate', 0.4);
+    }
+
     this.initEnemies();
     this.projectiles = [];
   }
@@ -1946,8 +2121,19 @@ export class GameEngine {
     this.projectiles = this.projectiles.filter((p) => {
       if (!p.isActive) return false;
       const updates = timeScale * clampedDelta;
-      for (let i = 0; i < Math.floor(updates); i++) p.update();
-      if (updates % 1 > 0) p.update(); // Handle fractional updates
+      for (let i = 0; i < Math.floor(updates); i++) {
+        p.update();
+        // Apply gravity pull to enemies if gravity bullets are active
+        if (p.gravity && p.isPlayerProjectile) {
+          this.applyGravityPull(p);
+        }
+      }
+      if (updates % 1 > 0) {
+        p.update();
+        if (p.gravity && p.isPlayerProjectile) {
+          this.applyGravityPull(p);
+        }
+      }
       return p.position.y > -20 && p.position.y < this.canvas.height + 20;
     });
 
@@ -2280,7 +2466,14 @@ export class GameEngine {
       attackPattern: 'spread',
       teleportCooldown: 0
     };
-    this.player = new Player(this.canvas.width, this.canvas.height, this.config.playerSpeed);
+    // Apply movement speed boost from superpower
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    let playerSpeed = this.config.playerSpeed;
+    if (superpower.type === 'movement_speed_boost' && superpower.value) {
+      playerSpeed = playerSpeed * (1 + superpower.value / 100);
+    }
+
+    this.player = new Player(this.canvas.width, this.canvas.height, playerSpeed);
 
     // Move spaceship up in portrait mode for better visibility
     if (this.isMobile && this.canvas.height > this.canvas.width) {
