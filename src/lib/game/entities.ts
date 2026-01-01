@@ -805,7 +805,7 @@ export class PowerUpEntity implements PowerUp {
   constructor(x: number, y: number, type: 'plasma' | 'rapid' | 'shield' | 'slowmo') {
     this.position = { x, y };
     this.size = { width: 35, height: 35 };
-    this.velocity = { x: 0, y: 1.5 };
+    this.velocity = { x: 0, y: 2.75 };
     this.type = type;
     this.isActive = true;
     this.rotation = 0;
