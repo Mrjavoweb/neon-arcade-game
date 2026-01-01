@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Zap, Heart, Shield, Rocket, Target, Trophy, Download } from 'lucide-react';
+import { ChevronLeft, Zap, Heart, Shield, Rocket, Target, Trophy, Download, Settings } from 'lucide-react';
 
 export default function GuidePage() {
   const navigate = useNavigate();
@@ -330,12 +330,65 @@ export default function GuidePage() {
           </div>
         </motion.section>
 
+        {/* Settings */}
+        <motion.section
+          className="mb-8 bg-gradient-to-br from-gray-900/40 to-slate-900/40 border-2 border-gray-400/40 rounded-xl p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}>
+          <h2 className="text-2xl font-black text-cyan-400 mb-4 font-['Sora'] flex items-center gap-2">
+            <Settings className="w-6 h-6" />
+            Settings & Customization
+          </h2>
+          <p className="text-cyan-200 font-['Space_Grotesk'] mb-4">
+            Access settings from the pause menu during gameplay or from the main menu. Customize your experience:
+          </p>
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
+              <h3 className="text-lg font-bold text-cyan-300 mb-2 font-['Space_Grotesk']">🎬 Screen Shake</h3>
+              <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
+                Toggle camera shake effects on/off. When enabled, the screen shakes during impacts and explosions
+                (reduced to 50% intensity for comfort). Disable if you find it distracting or disorienting.
+              </p>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4 border border-purple-400/20">
+              <h3 className="text-lg font-bold text-purple-300 mb-2 font-['Space_Grotesk']">✨ Particle Quality</h3>
+              <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
+                Adjust visual effects quality for better performance:
+              </p>
+              <ul className="mt-2 space-y-1 text-cyan-200 font-['Space_Grotesk'] text-sm ml-4">
+                <li><strong className="text-white">• Low:</strong> Minimal particles, best for older devices</li>
+                <li><strong className="text-white">• Medium:</strong> Balanced visuals and performance (recommended)</li>
+                <li><strong className="text-white">• High:</strong> Maximum visual effects for powerful devices</li>
+              </ul>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4 border border-yellow-400/20">
+              <h3 className="text-lg font-bold text-yellow-300 mb-2 font-['Space_Grotesk']">🔊 Audio Controls</h3>
+              <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
+                Sound effects and background music toggles are coming soon! When implemented, you'll be able to:
+              </p>
+              <ul className="mt-2 space-y-1 text-cyan-200/70 font-['Space_Grotesk'] text-sm ml-4">
+                <li>• Control sound effects volume</li>
+                <li>• Toggle background music on/off</li>
+                <li>• Adjust individual audio elements</li>
+              </ul>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4 border border-blue-400/20">
+              <h3 className="text-lg font-bold text-blue-300 mb-2 font-['Space_Grotesk']">📱 Mobile Settings</h3>
+              <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
+                On mobile devices, you can also adjust touch control sensitivity (Low/Normal/High) to match
+                your playing style. Haptic feedback toggle coming soon!
+              </p>
+            </div>
+          </div>
+        </motion.section>
+
         {/* Install PWA */}
         <motion.section
           className="mb-8 bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border-2 border-cyan-400/60 rounded-xl p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}>
+          transition={{ duration: 0.5, delay: 0.7 }}>
           <h2 className="text-2xl font-black text-cyan-400 mb-4 font-['Sora'] flex items-center gap-2">
             <Download className="w-6 h-6" />
             Install as App
