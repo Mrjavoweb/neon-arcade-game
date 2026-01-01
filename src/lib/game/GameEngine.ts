@@ -111,10 +111,16 @@ export class GameEngine {
     this.has50ComboReward = false;
     this.tookDamageThisWave = false;
 
+    // Start from checkpoint if available, otherwise start from wave 1
+    const startWave = this.lastCheckpoint > 0 ? this.lastCheckpoint : 1;
+    if (this.lastCheckpoint > 0) {
+      console.log(`🔄 Starting from saved checkpoint: Wave ${startWave}`);
+    }
+
     this.stats = {
       score: 0,
       lives: 4,
-      wave: 1,
+      wave: startWave,
       enemiesDestroyed: 0,
       xp: 0,
       level: 1,
