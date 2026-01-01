@@ -156,20 +156,6 @@ export class GameEngine {
     this.enemySpeed = this.config.enemySpeed;
     this.enemyFireRate = this.config.enemyFireRate;
 
-    // Apply movement speed boost from superpower
-    const superpower = this.cosmeticManager.getActiveSuperpower();
-    let playerSpeed = this.config.playerSpeed;
-    if (superpower.type === 'movement_speed_boost' && superpower.value) {
-      playerSpeed = playerSpeed * (1 + superpower.value / 100);
-    }
-
-    this.player = new Player(canvas.width, canvas.height, playerSpeed);
-
-    // Move spaceship up in portrait mode for better visibility
-    if (this.isMobile && canvas.height > canvas.width) {
-      this.player.position.y = canvas.height - this.player.size.height - 50; // 50px from bottom instead of 30px
-    }
-
     this.enemies = [];
     this.boss = null;
     this.bossMinions = [];
@@ -191,11 +177,25 @@ export class GameEngine {
       teleportCooldown: 0
     };
 
-    // Initialize progression systems
+    // Initialize progression systems FIRST (before player creation)
     this.currencyManager = new CurrencyManager();
     this.achievementManager = new AchievementManager(this.currencyManager);
     this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
     this.cosmeticManager = new CosmeticManager(this.currencyManager);
+
+    // NOW create player with movement speed boost from superpower
+    const superpower = this.cosmeticManager.getActiveSuperpower();
+    let playerSpeed = this.config.playerSpeed;
+    if (superpower.type === 'movement_speed_boost' && superpower.value) {
+      playerSpeed = playerSpeed * (1 + superpower.value / 100);
+    }
+
+    this.player = new Player(canvas.width, canvas.height, playerSpeed);
+
+    // Move spaceship up in portrait mode for better visibility
+    if (this.isMobile && canvas.height > canvas.width) {
+      this.player.position.y = canvas.height - this.player.size.height - 50; // 50px from bottom instead of 30px
+    }
 
     // Initialize settings system
     const settingsManager = getSettingsManager();
