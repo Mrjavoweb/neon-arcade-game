@@ -1,4 +1,4 @@
-import { Position, Size, Velocity, Particle, PowerUp } from './types';
+import { Position, Size, Velocity, Particle, PowerUp, PowerUpType } from './types';
 
 export class Player {
   position: Position;
@@ -8,12 +8,25 @@ export class Player {
   speed: number;
   canvasWidth: number;
   image?: HTMLImageElement;
+  // Original powerups
   shieldActive: boolean;
   shieldDuration: number;
   plasmaActive: boolean;
   plasmaDuration: number;
   rapidActive: boolean;
   rapidDuration: number;
+  // New powerups
+  homingActive: boolean;
+  homingDuration: number;
+  laserActive: boolean;
+  laserDuration: number;
+  invincibilityActive: boolean;
+  invincibilityDuration: number;
+  freezeActive: boolean;
+  freezeDuration: number;
+  magnetActive: boolean;
+  magnetDuration: number;
+  // Other properties
   engineParticles: Particle[];
   level: number;
   invulnerable: boolean;
@@ -32,12 +45,25 @@ export class Player {
     this.color = '#22d3ee';
     this.speed = speed;
     this.canvasWidth = canvasWidth;
+    // Original powerups
     this.shieldActive = false;
     this.shieldDuration = 0;
     this.plasmaActive = false;
     this.plasmaDuration = 0;
     this.rapidActive = false;
     this.rapidDuration = 0;
+    // New powerups
+    this.homingActive = false;
+    this.homingDuration = 0;
+    this.laserActive = false;
+    this.laserDuration = 0;
+    this.invincibilityActive = false;
+    this.invincibilityDuration = 0;
+    this.freezeActive = false;
+    this.freezeDuration = 0;
+    this.magnetActive = false;
+    this.magnetDuration = 0;
+    // Other properties
     this.engineParticles = [];
     this.invulnerable = false;
     this.invulnerabilityTimer = 0;
@@ -66,7 +92,7 @@ export class Player {
     this.position.x += this.velocity.x;
     this.position.x = Math.max(0, Math.min(this.canvasWidth - this.size.width, this.position.x));
 
-    // Update power-ups
+    // Update power-ups (original)
     if (this.shieldDuration > 0) {
       this.shieldDuration--;
       if (this.shieldDuration <= 0) this.shieldActive = false;
@@ -78,6 +104,28 @@ export class Player {
     if (this.rapidDuration > 0) {
       this.rapidDuration--;
       if (this.rapidDuration <= 0) this.rapidActive = false;
+    }
+
+    // Update power-ups (new)
+    if (this.homingDuration > 0) {
+      this.homingDuration--;
+      if (this.homingDuration <= 0) this.homingActive = false;
+    }
+    if (this.laserDuration > 0) {
+      this.laserDuration--;
+      if (this.laserDuration <= 0) this.laserActive = false;
+    }
+    if (this.invincibilityDuration > 0) {
+      this.invincibilityDuration--;
+      if (this.invincibilityDuration <= 0) this.invincibilityActive = false;
+    }
+    if (this.freezeDuration > 0) {
+      this.freezeDuration--;
+      if (this.freezeDuration <= 0) this.freezeActive = false;
+    }
+    if (this.magnetDuration > 0) {
+      this.magnetDuration--;
+      if (this.magnetDuration <= 0) this.magnetActive = false;
     }
 
     // Update invulnerability
@@ -317,6 +365,31 @@ export class Player {
   activateRapid(bonusDuration: number = 0) {
     this.rapidActive = true;
     this.rapidDuration = 420 + bonusDuration; // 7 seconds + bonus
+  }
+
+  activateHoming(bonusDuration: number = 0) {
+    this.homingActive = true;
+    this.homingDuration = 420 + bonusDuration; // 7 seconds + bonus
+  }
+
+  activateLaser(bonusDuration: number = 0) {
+    this.laserActive = true;
+    this.laserDuration = 360 + bonusDuration; // 6 seconds + bonus
+  }
+
+  activateInvincibility(bonusDuration: number = 0) {
+    this.invincibilityActive = true;
+    this.invincibilityDuration = 300 + bonusDuration; // 5 seconds + bonus
+  }
+
+  activateFreeze(bonusDuration: number = 0) {
+    this.freezeActive = true;
+    this.freezeDuration = 240 + bonusDuration; // 4 seconds + bonus
+  }
+
+  activateMagnet(bonusDuration: number = 0) {
+    this.magnetActive = true;
+    this.magnetDuration = 480 + bonusDuration; // 8 seconds + bonus
   }
 }
 
@@ -808,13 +881,13 @@ export class PowerUpEntity implements PowerUp {
   position: Position;
   size: Size;
   velocity: Velocity;
-  type: 'plasma' | 'rapid' | 'shield' | 'slowmo';
+  type: PowerUpType;
   isActive: boolean;
   image?: HTMLImageElement;
   rotation: number;
   pulseOffset: number;
 
-  constructor(x: number, y: number, type: 'plasma' | 'rapid' | 'shield' | 'slowmo') {
+  constructor(x: number, y: number, type: PowerUpType) {
     this.position = { x, y };
     this.size = { width: 35, height: 35 };
     this.velocity = { x: 0, y: 2.75 };
@@ -839,11 +912,23 @@ export class PowerUpEntity implements PowerUp {
 
     const pulse = 1 + Math.sin(this.pulseOffset) * 0.2;
     const glowPulse = 30 + Math.sin(this.pulseOffset * 2) * 10;
-    const colors = {
-      plasma: '#a855f7',
-      rapid: '#22d3ee',
-      shield: '#10b981',
-      slowmo: '#f59e0b'
+    const colors: Record<PowerUpType, string> = {
+      // Original powerups
+      plasma: '#a855f7',      // Purple
+      rapid: '#22d3ee',       // Cyan
+      shield: '#10b981',      // Green
+      slowmo: '#f59e0b',      // Orange
+      // New offensive powerups
+      homing: '#ec4899',      // Pink (homing missiles)
+      laser: '#ef4444',       // Red (laser beam)
+      nuke: '#dc2626',        // Dark Red (nuclear bomb)
+      // New defensive powerups
+      invincibility: '#fbbf24', // Gold (invincibility star)
+      freeze: '#60a5fa',      // Blue (freeze ray)
+      // New utility powerups
+      extralife: '#f87171',   // Light Red (heart/life)
+      multiplier: '#a78bfa',  // Violet (score multiplier)
+      magnet: '#34d399'       // Teal (magnet)
     };
 
     ctx.save();

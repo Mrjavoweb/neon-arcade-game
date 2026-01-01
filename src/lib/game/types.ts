@@ -81,11 +81,29 @@ export interface WaveTransition {
   isMilestone: boolean;
 }
 
+export type PowerUpType =
+  // Original powerups
+  | 'plasma'
+  | 'rapid'
+  | 'shield'
+  | 'slowmo'
+  // New offensive powerups
+  | 'homing'
+  | 'laser'
+  | 'nuke'
+  // New defensive powerups
+  | 'invincibility'
+  | 'freeze'
+  // New utility powerups
+  | 'extralife'
+  | 'multiplier'
+  | 'magnet';
+
 export interface PowerUp {
   position: Position;
   size: Size;
   velocity: Velocity;
-  type: 'plasma' | 'rapid' | 'shield' | 'slowmo';
+  type: PowerUpType;
   isActive: boolean;
   image?: HTMLImageElement;
 }
