@@ -343,11 +343,14 @@ export class GameEngine {
         'boss_spawn',
         'boss_attack_laser',
         'boss_attack_missile',
+        'boss_hit',
+        'boss_phase_change',
         'boss_death',
         // Powerup sounds
         'powerup_collect',
         'powerup_shield_activate',
         'powerup_rapid_fire',
+        'powerup_plasma',
         'powerup_slowmo',
         // UI sounds
         'ui_button_click',
@@ -365,6 +368,8 @@ export class GameEngine {
         'menu_theme',
         'gameplay_theme',
         'boss_battle_theme',
+        'victory_theme',
+        'game_over_theme',
         'ambient_space'
       ]);
       console.log('✅ Audio preloading initiated');
@@ -943,6 +948,9 @@ export class GameEngine {
     this.bossState.bossPhase = this.boss.phase;
 
     if (previousPhase !== this.boss.phase && this.assets) {
+      // Play boss phase change sound
+      this.audioManager.playSound('boss_phase_change', 0.8);
+
       // Switch boss appearance based on current phase
       const bossImageMap = {
         phase1: this.assets.bossPhase1,
@@ -1255,9 +1263,9 @@ export class GameEngine {
 
           if (!this.boss.isAlive) {
             // Boss defeated!
-            // Play boss death sound and switch back to gameplay music
+            // Play boss death sound and victory theme
             this.audioManager.playSound('boss_death', 0.9);
-            this.audioManager.playMusic('gameplay_theme', true);
+            this.audioManager.playMusic('victory_theme', false);
 
             this.stats.score += this.boss.points * 5; // 5x score
             this.stats.enemiesDestroyed++;
@@ -1298,6 +1306,8 @@ export class GameEngine {
             this.currencyManager.earnStardust(100, 'boss_defeat');
             this.achievementManager.trackBossDefeat();
           } else {
+            // Play boss hit sound (not dead yet)
+            this.audioManager.playSound('boss_hit', 0.5);
             this.createImpactParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#ffff00');
             this.addScreenShake(5);
           }
@@ -1370,7 +1380,7 @@ export class GameEngine {
     switch (type) {
       case 'plasma':
         this.player.activatePlasma();
-        // Note: powerup_plasma.mp3 not yet available
+        this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
         this.player.activateRapid();
@@ -1728,9 +1738,9 @@ export class GameEngine {
   gameOver() {
     this.state = 'gameOver';
 
-    // Play game over sound and stop music
+    // Play game over sound and game over theme
     this.audioManager.playSound('game_over', 0.7);
-    this.audioManager.stopMusic(true);
+    this.audioManager.playMusic('game_over_theme', false);
 
     // Track final score for achievements
     this.achievementManager.trackScore(this.stats.score);
@@ -1782,6 +1792,11 @@ export class GameEngine {
 
     // Reset boss victory timer when advancing waves
     this.bossState.bossVictoryTimer = 0;
+
+    // Switch back to gameplay music after boss victory
+    if (this.bossState.isBossWave) {
+      this.audioManager.playMusic('gameplay_theme', true);
+    }
 
     this.stats.wave++;
 
