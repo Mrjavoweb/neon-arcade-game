@@ -984,12 +984,35 @@ export class PowerUpEntity implements PowerUp {
         this.size.height
       );
     } else {
+      // Colored circle background
       ctx.fillStyle = colors[this.type];
       ctx.shadowBlur = glowPulse;
       ctx.shadowColor = colors[this.type];
       ctx.beginPath();
       ctx.arc(0, 0, this.size.width / 2, 0, Math.PI * 2);
       ctx.fill();
+
+      // Add emoji/symbol labels for new powerups
+      const labels: Partial<Record<PowerUpType, string>> = {
+        homing: '🌸',
+        laser: '🔴',
+        nuke: '💥',
+        invincibility: '⭐',
+        freeze: '❄️',
+        extralife: '❤️',
+        multiplier: '2×',
+        magnet: '🧲'
+      };
+
+      const label = labels[this.type];
+      if (label) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, 0, 0);
+      }
     }
 
     ctx.restore();
