@@ -598,9 +598,12 @@ export class Enemy {
     this.image = img;
   }
 
-  update(dx: number, dy: number) {
-    this.position.x += dx;
-    this.position.y += dy;
+  update(dx: number, dy: number, isFrozen: boolean = false) {
+    // Don't move when frozen
+    if (!isFrozen) {
+      this.position.x += dx;
+      this.position.y += dy;
+    }
     this.wobbleOffset += this.wobbleSpeed;
   }
 
@@ -701,6 +704,8 @@ export class Projectile {
   explosive: boolean; // Explosive rounds - create explosion on impact
   gravity: boolean; // Gravity bullets - pull enemies
   piercedEnemies: number; // Track how many enemies this bullet has pierced
+  homing: boolean; // Homing missiles - track enemies
+  target: Enemy | null; // Target enemy for homing
 
   constructor(x: number, y: number, isPlayerProjectile: boolean, speed: number, damage: number = 999) {
     this.position = { x, y };
@@ -715,9 +720,30 @@ export class Projectile {
     this.explosive = false;
     this.gravity = false;
     this.piercedEnemies = 0;
+    this.homing = false;
+    this.target = null;
   }
 
   update() {
+    // Homing missile tracking
+    if (this.homing && this.target && this.target.isAlive) {
+      // Calculate direction to target
+      const dx = (this.target.position.x + this.target.size.width / 2) - this.position.x;
+      const dy = (this.target.position.y + this.target.size.height / 2) - this.position.y;
+      const angle = Math.atan2(dy, dx);
+
+      // Adjust velocity toward target (slight homing, not perfect tracking)
+      const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+      this.velocity.x += Math.cos(angle) * 0.3;
+      this.velocity.y += Math.sin(angle) * 0.3;
+
+      // Normalize to maintain speed
+      const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+      this.velocity.x = (this.velocity.x / currentSpeed) * speed;
+      this.velocity.y = (this.velocity.y / currentSpeed) * speed;
+    }
+
+    this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
 
     // Trail particles

@@ -848,9 +848,40 @@ export class GameEngine {
       if (isGravity) projectile.gravity = true;
       this.projectiles.push(projectile);
     }
+
+    // Homing Missiles - assign target to newly created projectiles
+    if (this.player.homingActive) {
+      // Find nearest enemy
+      let nearestEnemy: Enemy | null = null;
+      let minDist = Infinity;
+      for (const enemy of this.enemies) {
+        if (!enemy.isAlive) continue;
+        const dist = Math.hypot(
+          enemy.position.x - this.player.position.x,
+          enemy.position.y - this.player.position.y
+        );
+        if (dist < minDist) {
+          minDist = dist;
+          nearestEnemy = enemy;
+        }
+      }
+
+      // Assign homing to all newly fired projectiles
+      const newProjectiles = isTripleShot || isDualGuns || plasmaActive ?
+        this.projectiles.slice(-3) :
+        this.projectiles.slice(-1);
+
+      newProjectiles.forEach(projectile => {
+        projectile.homing = true;
+        projectile.target = nearestEnemy;
+      });
+    }
   }
 
   enemyFire() {
+    // Don't fire when frozen
+    if (this.player.freezeActive) return;
+
     const now = Date.now();
     if (now - this.lastEnemyFireTime < this.enemyFireRate) return;
 
@@ -1278,7 +1309,7 @@ export class GameEngine {
         if (enemy.isAlive) {
           // Improved descent amounts for better pacing
           const descentAmount = this.isMobile && isLandscape ? 2 : this.isMobile ? 8 : 15;
-          enemy.update(0, descentAmount);
+          enemy.update(0, descentAmount, this.player.freezeActive);
         }
       }
     } else {
@@ -1286,7 +1317,7 @@ export class GameEngine {
         if (enemy.isAlive) {
           // Apply individual enemy speed multiplier
           const enemySpeed = adjustedSpeed * enemy.speedMultiplier * this.enemyDirection * deltaTime;
-          enemy.update(enemySpeed, 0);
+          enemy.update(enemySpeed, 0, this.player.freezeActive);
         }
       }
     }
@@ -1323,7 +1354,7 @@ export class GameEngine {
             // Play enemy death sound
             this.audioManager.playSound('enemy_death', 0.4);
 
-            this.stats.score += enemy.points;
+            this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
             this.stats.enemiesDestroyed++;
             this.registerKill(enemy.points); // Track combo
 
@@ -1364,7 +1395,7 @@ export class GameEngine {
           minion.hit();
 
           if (!minion.isAlive) {
-            this.stats.score += minion.points;
+            this.stats.score += Math.floor(minion.points * this.scoreMultiplier);
             this.stats.enemiesDestroyed++;
             this.registerKill(minion.points); // Track combo
             this.awardXP(15); // Fast enemy XP
@@ -1392,7 +1423,7 @@ export class GameEngine {
             this.audioManager.playSound('boss_death', 0.9);
             this.audioManager.playMusic('victory_theme', false);
 
-            this.stats.score += this.boss.points * 5; // 5x score
+            this.stats.score += Math.floor(this.boss.points * 5 * this.scoreMultiplier); // 5x score + multiplier
             this.stats.enemiesDestroyed++;
             this.registerKill(this.boss.points * 5); // Track combo (boss counts!)
             this.awardXP(200); // Boss XP
@@ -1447,7 +1478,7 @@ export class GameEngine {
     }
 
     // Enemy projectiles vs player
-    if (!this.player.shieldActive && !this.player.invulnerable) {
+    if (!this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
       for (const projectile of this.projectiles) {
         if (!projectile.isActive || projectile.isPlayerProjectile) continue;
 
@@ -1638,7 +1669,7 @@ export class GameEngine {
         enemy.hit();
         if (!enemy.isAlive) {
           this.audioManager.playSound('enemy_death', 0.3);
-          this.stats.score += enemy.points;
+          this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
           this.stats.enemiesDestroyed++;
           this.registerKill(enemy.points);
           const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
@@ -1842,10 +1873,10 @@ export class GameEngine {
     // Show combo notification at milestones
     if (this.stats.combo === 5) {
       this.addComboNotification('NICE! x5', '#22d3ee', 1.2);
-      this.stats.score += 50;
+      this.stats.score += Math.floor(50 * this.scoreMultiplier);
     } else if (this.stats.combo === 10) {
       this.addComboNotification('GREAT! x10', '#fbbf24', 1.4);
-      this.stats.score += 100;
+      this.stats.score += Math.floor(100 * this.scoreMultiplier);
       this.addScreenShake(10);
     } else if (this.stats.combo === 15 && !this.has15ComboReward) {
       // 15 Combo Life Reward (one-time per game)
@@ -1860,11 +1891,11 @@ export class GameEngine {
 
       // Celebration
       this.addComboNotification('EPIC 15 COMBO!\n+1 LIFE REWARD!', '#ff6600', 2.0);
-      this.stats.score += 500;
+      this.stats.score += Math.floor(500 * this.scoreMultiplier);
       this.addScreenShake(25);
     } else if (this.stats.combo === 20) {
       this.addComboNotification('AMAZING! x20', '#ec4899', 1.6);
-      this.stats.score += 250;
+      this.stats.score += Math.floor(250 * this.scoreMultiplier);
       this.addScreenShake(15);
     } else if (this.stats.combo === 30 && !this.has30ComboReward) {
       // 30 Combo Life Reward (one-time per game)
@@ -1879,7 +1910,7 @@ export class GameEngine {
 
       // Epic celebration
       this.addComboNotification('INSANE 30 COMBO!\n+1 LIFE REWARD!', '#a855f7', 2.3);
-      this.stats.score += 1000;
+      this.stats.score += Math.floor(1000 * this.scoreMultiplier);
       this.addScreenShake(28);
     } else if (this.stats.combo === 50 && !this.has50ComboReward) {
       // 50 Combo Life Reward (one-time per game)
@@ -1894,11 +1925,11 @@ export class GameEngine {
 
       // Legendary celebration
       this.addComboNotification('LEGENDARY 50 COMBO!\n+1 LIFE REWARD!', '#ff00ff', 2.5);
-      this.stats.score += 2000;
+      this.stats.score += Math.floor(2000 * this.scoreMultiplier);
       this.addScreenShake(30);
     } else if (this.stats.combo % 25 === 0 && this.stats.combo > 50) {
       this.addComboNotification(`UNSTOPPABLE! x${this.stats.combo}`, '#ff6600', 2.2);
-      this.stats.score += 1000;
+      this.stats.score += Math.floor(1000 * this.scoreMultiplier);
       this.addScreenShake(25);
     }
 
@@ -1993,8 +2024,8 @@ export class GameEngine {
   }
 
   hitPlayer() {
-    // Don't take damage if invulnerable or shield is active
-    if (this.player.invulnerable || this.player.shieldActive) {
+    // Don't take damage if invulnerable, shield is active, or invincibility powerup is active
+    if (this.player.invulnerable || this.player.shieldActive || this.player.invincibilityActive) {
       return;
     }
 
@@ -2247,6 +2278,14 @@ export class GameEngine {
       if (this.slowMotionDuration <= 0) this.slowMotionActive = false;
     }
 
+    // Score multiplier countdown
+    if (this.scoreMultiplierDuration > 0) {
+      this.scoreMultiplierDuration -= clampedDelta;
+      if (this.scoreMultiplierDuration <= 0) {
+        this.scoreMultiplier = 1;
+      }
+    }
+
     this.handleInput();
     this.player.update();
 
@@ -2286,6 +2325,23 @@ export class GameEngine {
       p.update();
       return p.position.y < this.canvas.height + 50;
     });
+
+    // Magnet effect - attract powerups to player
+    if (this.player.magnetActive) {
+      for (const powerUp of this.powerUps) {
+        if (!powerUp.isActive) continue;
+
+        const dx = this.player.position.x + this.player.size.width / 2 - (powerUp.position.x + powerUp.size.width / 2);
+        const dy = this.player.position.y + this.player.size.height / 2 - (powerUp.position.y + powerUp.size.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 200) { // Magnet range: 200 pixels
+          const pullStrength = 3;
+          powerUp.velocity.x = (dx / distance) * pullStrength;
+          powerUp.velocity.y = (dy / distance) * pullStrength;
+        }
+      }
+    }
 
     // Update explosions
     this.explosions.forEach((e) => e.update());
@@ -2328,6 +2384,75 @@ export class GameEngine {
         this.waveTransition = null;
         this.nextWave();
       }
+    }
+
+    // Update laser beam
+    if (this.player.laserActive && this.keys.has(' ')) {
+      // Create continuous beam from player to top of screen
+      this.laserBeam = {
+        active: true,
+        startX: this.player.position.x + this.player.size.width / 2,
+        startY: this.player.position.y,
+        endX: this.player.position.x + this.player.size.width / 2,
+        endY: 0
+      };
+
+      // Check laser collision with all enemies
+      for (const enemy of this.enemies) {
+        if (!enemy.isAlive) continue;
+        const beamX = this.laserBeam.startX;
+        // Check if beam intersects enemy hitbox
+        if (beamX >= enemy.position.x && beamX <= enemy.position.x + enemy.size.width) {
+          if (enemy.position.y <= this.player.position.y) {
+            enemy.hit();
+            if (!enemy.isAlive) {
+              // Handle enemy death
+              this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
+              this.stats.enemiesDestroyed++;
+              this.registerKill(enemy.points);
+              const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
+              this.awardXP(xpReward);
+              this.createExplosion(
+                enemy.position.x + enemy.size.width / 2,
+                enemy.position.y + enemy.size.height / 2
+              );
+              this.spawnDebrisParticles(
+                enemy.position.x + enemy.size.width / 2,
+                enemy.position.y + enemy.size.height / 2,
+                enemy.color
+              );
+            }
+          }
+        }
+      }
+
+      // Check laser collision with boss minions
+      for (const minion of this.bossMinions) {
+        if (!minion.isAlive) continue;
+        const beamX = this.laserBeam.startX;
+        if (beamX >= minion.position.x && beamX <= minion.position.x + minion.size.width) {
+          if (minion.position.y <= this.player.position.y) {
+            minion.hit();
+            if (!minion.isAlive) {
+              this.stats.score += Math.floor(minion.points * this.scoreMultiplier);
+              this.stats.enemiesDestroyed++;
+              this.registerKill(minion.points);
+              this.awardXP(15);
+              this.createExplosion(
+                minion.position.x + minion.size.width / 2,
+                minion.position.y + minion.size.height / 2
+              );
+              this.spawnDebrisParticles(
+                minion.position.x + minion.size.width / 2,
+                minion.position.y + minion.size.height / 2,
+                minion.color
+              );
+            }
+          }
+        }
+      }
+    } else {
+      this.laserBeam = null;
     }
 
     this.checkCollisions();
@@ -2403,6 +2528,47 @@ export class GameEngine {
       this.boss.render(this.ctx);
     }
     this.projectiles.forEach((projectile) => projectile.render(this.ctx));
+
+    // Render laser beam
+    if (this.laserBeam && this.laserBeam.active) {
+      this.ctx.save();
+
+      // Outer glow
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 8;
+      this.ctx.shadowBlur = 30;
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.globalAlpha = 0.3;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.laserBeam.startX, this.laserBeam.startY);
+      this.ctx.lineTo(this.laserBeam.endX, this.laserBeam.endY);
+      this.ctx.stroke();
+
+      // Middle beam
+      this.ctx.strokeStyle = '#f87171';
+      this.ctx.lineWidth = 4;
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = '#f87171';
+      this.ctx.globalAlpha = 0.6;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.laserBeam.startX, this.laserBeam.startY);
+      this.ctx.lineTo(this.laserBeam.endX, this.laserBeam.endY);
+      this.ctx.stroke();
+
+      // Core beam (bright white)
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.globalAlpha = 0.9;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.laserBeam.startX, this.laserBeam.startY);
+      this.ctx.lineTo(this.laserBeam.endX, this.laserBeam.endY);
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    }
+
     this.explosions.forEach((explosion) => explosion.render(this.ctx));
 
     // Render combo notifications (centered top, smaller size)
