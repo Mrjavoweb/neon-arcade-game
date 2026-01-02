@@ -1,5 +1,5 @@
 import { Player, Enemy, Boss, Projectile, ExplosionAnimation, PowerUpEntity } from './entities';
-import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState, ComboNotification, WaveTransition } from './types';
+import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState, ComboNotification, WaveTransition, PowerUpType } from './types';
 import { CurrencyManager } from './progression/CurrencyManager';
 import { DailyRewardManager } from './progression/DailyRewardManager';
 import { AchievementManager } from './progression/AchievementManager';
@@ -40,6 +40,16 @@ export class GameEngine {
   slowMotionDuration: number;
   lastPowerUpSpawn: number;
   powerUpSpawnRate: number;
+  // New powerup system properties
+  scoreMultiplier: number;
+  scoreMultiplierDuration: number;
+  laserBeam: {
+    active: boolean;
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+  } | null;
   bossState: BossState;
   levelUpCallback?: (level: number, upgrade: string) => void;
   pendingLevelUp: boolean;
@@ -107,6 +117,10 @@ export class GameEngine {
     this.slowMotionDuration = 0;
     this.lastPowerUpSpawn = 0;
     this.powerUpSpawnRate = 12000; // 12 seconds between spawn attempts
+    // New powerup properties
+    this.scoreMultiplier = 1;
+    this.scoreMultiplierDuration = 0;
+    this.laserBeam = null;
     this.pendingLevelUp = false;
     this.lastCheckpoint = this.loadCheckpoint(); // Load checkpoint from localStorage
     this.lastFrameTime = performance.now();
@@ -968,34 +982,58 @@ export class GameEngine {
 
     this.lastPowerUpSpawn = now;
 
-    // Weighted rarity system for power-up types
-    // Common: Rapid Fire, Plasma (70% combined)
-    // Uncommon: Shield (20%)
-    // Rare: Slow Motion (10%)
+    // Rarity-based weighted spawn system with 12 powerup types
     const rand = Math.random();
-    let type: 'plasma' | 'rapid' | 'shield' | 'slowmo';
+    let type: PowerUpType;
 
-    if (rand < 0.35) {
-      type = 'rapid'; // 35% - Common offensive boost
-    } else if (rand < 0.70) {
-      type = 'plasma'; // 35% - Common offensive boost
-    } else if (rand < 0.90) {
-      type = 'shield'; // 20% - Uncommon defensive boost
+    // Common (60% total) - Basic powerups
+    if (rand < 0.25) {
+      type = 'rapid';      // 25% - Most common
+    } else if (rand < 0.45) {
+      type = 'plasma';     // 20%
+    } else if (rand < 0.60) {
+      type = 'shield';     // 15%
+    }
+    // Uncommon (25% total) - Utility and tactical
+    else if (rand < 0.70) {
+      type = 'magnet';     // 10%
+    } else if (rand < 0.78) {
+      type = 'slowmo';     // 8%
+    } else if (rand < 0.85) {
+      type = 'homing';     // 7%
+    }
+    // Rare (12% total) - Powerful effects
+    else if (rand < 0.90) {
+      type = 'freeze';     // 5%
+    } else if (rand < 0.94) {
+      type = 'multiplier'; // 4%
+    } else if (rand < 0.97) {
+      type = 'laser';      // 3%
+    }
+    // Legendary (3% total) - Game-changing
+    else if (rand < 0.985) {
+      type = 'invincibility'; // 1.5%
+    } else if (rand < 0.995) {
+      type = 'nuke';       // 1%
     } else {
-      type = 'slowmo'; // 10% - Rare tactical advantage
+      type = 'extralife';  // 0.5% - Ultra rare
     }
 
     const x = Math.random() * (this.canvas.width - 40) + 20;
 
     const powerUp = new PowerUpEntity(x, -40, type);
+    // Only set images for original powerups (new ones will use colored fallback)
     if (this.assets) {
-      const imageMap = {
+      const imageMap: Partial<Record<PowerUpType, HTMLImageElement>> = {
         plasma: this.assets.powerUpPlasma,
         rapid: this.assets.powerUpRapid,
         shield: this.assets.powerUpShield,
         slowmo: this.assets.powerUpSlowmo
       };
-      powerUp.setImage(imageMap[type]);
+      if (imageMap[type]) {
+        powerUp.setImage(imageMap[type]!);
+      }
+      // New powerups will render with their assigned colors
     }
     this.powerUps.push(powerUp);
   }
@@ -1365,8 +1403,11 @@ export class GameEngine {
             this.addScreenShake(25);
             this.spawnDebrisParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#dc2626');
 
-            // Guaranteed power-up
-            const types: Array<'plasma' | 'rapid' | 'shield' | 'slowmo'> = ['plasma', 'rapid', 'shield', 'slowmo'];
+            // Guaranteed power-up (better drops from bosses - include new powerups)
+            const types: Array<PowerUpType> = [
+              'plasma', 'rapid', 'shield', 'slowmo',
+              'homing', 'laser', 'freeze', 'magnet', 'multiplier'
+            ];
             const type = types[Math.floor(Math.random() * types.length)];
             const powerUp = new PowerUpEntity(
               this.boss.position.x + this.boss.size.width / 2 - 20,
@@ -1374,13 +1415,15 @@ export class GameEngine {
               type
             );
             if (this.assets) {
-              const imageMap = {
+              const imageMap: Partial<Record<PowerUpType, HTMLImageElement>> = {
                 plasma: this.assets.powerUpPlasma,
                 rapid: this.assets.powerUpRapid,
                 shield: this.assets.powerUpShield,
                 slowmo: this.assets.powerUpSlowmo
               };
-              powerUp.setImage(imageMap[type]);
+              if (imageMap[type]) {
+                powerUp.setImage(imageMap[type]!);
+              }
             }
             this.powerUps.push(powerUp);
 
@@ -1460,7 +1503,7 @@ export class GameEngine {
     }
   }
 
-  activatePowerUp(type: 'plasma' | 'rapid' | 'shield' | 'slowmo') {
+  activatePowerUp(type: PowerUpType) {
     // Play powerup collect sound
     this.audioManager.playSound('powerup_collect', 0.5);
 
@@ -1469,6 +1512,7 @@ export class GameEngine {
     const bonusDuration = superpower.type === 'gravity_bullets' && superpower.value ? superpower.value * 60 : 0;
 
     switch (type) {
+      // Original powerups
       case 'plasma':
         this.player.activatePlasma(bonusDuration);
         this.audioManager.playSound('powerup_plasma', 0.6);
@@ -1486,6 +1530,45 @@ export class GameEngine {
         this.slowMotionActive = true;
         this.slowMotionDuration = 360 + bonusDuration; // 6 seconds + bonus
         this.audioManager.playSound('powerup_slowmo', 0.6);
+        break;
+
+      // New offensive powerups
+      case 'homing':
+        this.player.activateHoming(bonusDuration);
+        this.audioManager.playSound('powerup_collect', 0.6);
+        break;
+      case 'laser':
+        this.player.activateLaser(bonusDuration);
+        this.audioManager.playSound('powerup_plasma', 0.7); // Similar to plasma sound
+        break;
+      case 'nuke':
+        this.activateNuke();
+        this.audioManager.playSound('boss_death', 0.8); // Big explosion sound
+        break;
+
+      // New defensive powerups
+      case 'invincibility':
+        this.player.activateInvincibility(bonusDuration);
+        this.audioManager.playSound('powerup_shield_activate', 0.7);
+        break;
+      case 'freeze':
+        this.player.activateFreeze(bonusDuration);
+        this.audioManager.playSound('powerup_slowmo', 0.6); // Similar to slowmo
+        break;
+
+      // New utility powerups
+      case 'extralife':
+        this.stats.lives++;
+        this.audioManager.playSound('powerup_collect', 0.8);
+        break;
+      case 'multiplier':
+        this.scoreMultiplier = 2;
+        this.scoreMultiplierDuration = 360 + bonusDuration; // 6 seconds + bonus
+        this.audioManager.playSound('powerup_collect', 0.7);
+        break;
+      case 'magnet':
+        this.player.activateMagnet(bonusDuration);
+        this.audioManager.playSound('powerup_collect', 0.6);
         break;
     }
 
@@ -1610,6 +1693,66 @@ export class GameEngine {
         minion.position.y += pullY;
       }
     }
+  }
+
+  activateNuke() {
+    // Nuke powerup - destroy all visible enemies with massive explosion
+    let enemiesDestroyed = 0;
+
+    // Destroy all regular enemies
+    for (const enemy of this.enemies) {
+      if (enemy.isAlive) {
+        enemy.hit();
+        if (!enemy.isAlive) {
+          enemiesDestroyed++;
+          this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
+          this.stats.enemiesDestroyed++;
+          this.registerKill(enemy.points);
+          const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
+          this.awardXP(xpReward);
+          this.createExplosion(
+            enemy.position.x + enemy.size.width / 2,
+            enemy.position.y + enemy.size.height / 2
+          );
+          this.spawnDebrisParticles(
+            enemy.position.x + enemy.size.width / 2,
+            enemy.position.y + enemy.size.height / 2,
+            enemy.color
+          );
+        }
+      }
+    }
+
+    // Destroy all boss minions
+    for (const minion of this.bossMinions) {
+      if (minion.isAlive) {
+        minion.hit();
+        if (!minion.isAlive) {
+          enemiesDestroyed++;
+          this.stats.score += Math.floor(minion.points * this.scoreMultiplier);
+          this.stats.enemiesDestroyed++;
+          this.registerKill(minion.points);
+          this.awardXP(15);
+          this.createExplosion(
+            minion.position.x + minion.size.width / 2,
+            minion.position.y + minion.size.height / 2
+          );
+          this.spawnDebrisParticles(
+            minion.position.x + minion.size.width / 2,
+            minion.position.y + minion.size.height / 2,
+            minion.color
+          );
+        }
+      }
+    }
+
+    // Massive screen shake
+    this.addScreenShake(35);
+
+    // White flash effect
+    this.hitFlashAlpha = 0.7;
+
+    console.log(`💥 NUKE activated! Destroyed ${enemiesDestroyed} enemies!`);
   }
 
   createImpactParticles(x: number, y: number, color: string) {
@@ -2448,6 +2591,10 @@ export class GameEngine {
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
     this.lastPowerUpSpawn = 0;
+    // Reset new powerup properties
+    this.scoreMultiplier = 1;
+    this.scoreMultiplierDuration = 0;
+    this.laserBeam = null;
     this.has15ComboReward = false;
     this.has30ComboReward = false;
     this.has50ComboReward = false;
