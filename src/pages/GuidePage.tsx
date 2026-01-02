@@ -94,84 +94,127 @@ export default function GuidePage() {
           transition={{ duration: 0.5, delay: 0.2 }}>
           <h2 className="text-2xl font-black text-cyan-400 mb-4 font-['Sora'] flex items-center gap-2">
             <Zap className="w-6 h-6" />
-            Power-Ups
+            Power-Ups (12 Types by Rarity)
           </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp"
-                    alt="Plasma Cannon"
-                    className="w-10 h-10 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #a855f7)' }}
-                  />
+
+          {/* Common Power-Ups (60%) */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-green-300 mb-3 font-['Space_Grotesk']">⚪ Common (60% drop rate)</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-lg p-3 border border-cyan-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-lg">🔵</div>
+                  <h4 className="text-md font-bold text-cyan-300 font-['Space_Grotesk']">Rapid Fire (25%)</h4>
                 </div>
-                <h3 className="text-lg font-bold text-cyan-300 font-['Space_Grotesk']">Plasma Cannon</h3>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Doubles fire rate for 10 seconds</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Powerful triple-shot for 10 seconds</p>
-            </div>
-
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp"
-                    alt="Rapid Fire"
-                    className="w-10 h-10 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #22d3ee)' }}
-                  />
+              <div className="bg-black/30 rounded-lg p-3 border border-purple-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-lg">🟣</div>
+                  <h4 className="text-md font-bold text-purple-300 font-['Space_Grotesk']">Plasma Shot (20%)</h4>
                 </div>
-                <h3 className="text-lg font-bold text-orange-300 font-['Space_Grotesk']">Rapid Fire</h3>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Fires 3 bullets in a spread for 10 seconds</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Super fast shooting for 10 seconds</p>
-            </div>
-
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp"
-                    alt="Energy Shield"
-                    className="w-10 h-10 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #10b981)' }}
-                  />
+              <div className="bg-black/30 rounded-lg p-3 border border-green-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-lg">🟢</div>
+                  <h4 className="text-md font-bold text-green-300 font-['Space_Grotesk']">Shield (15%)</h4>
                 </div>
-                <h3 className="text-lg font-bold text-blue-300 font-['Space_Grotesk']">Energy Shield</h3>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Temporary invincibility for 10 seconds</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Temporary invincibility</p>
             </div>
+          </div>
 
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp"
-                    alt="Slow Motion"
-                    className="w-10 h-10 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }}
-                  />
+          {/* Uncommon Power-Ups (25%) */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-blue-300 mb-3 font-['Space_Grotesk']">🔷 Uncommon (25% drop rate)</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-lg p-3 border border-emerald-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-lg">🧲</div>
+                  <h4 className="text-md font-bold text-emerald-300 font-['Space_Grotesk']">Magnet (10%)</h4>
                 </div>
-                <h3 className="text-lg font-bold text-purple-300 font-['Space_Grotesk']">Slow Motion</h3>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Attracts all powerups within 200px range</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Slows down all enemies</p>
+              <div className="bg-black/30 rounded-lg p-3 border border-orange-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-lg">🟠</div>
+                  <h4 className="text-md font-bold text-orange-300 font-['Space_Grotesk']">Slow Motion (8%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Slows down all enemies and projectiles</p>
+              </div>
+              <div className="bg-black/30 rounded-lg p-3 border border-pink-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-lg">🌸</div>
+                  <h4 className="text-md font-bold text-pink-300 font-['Space_Grotesk']">Homing Missiles (7%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Bullets track nearest enemy automatically</p>
+              </div>
             </div>
+          </div>
 
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-2xl">❤️</div>
-                <h3 className="text-lg font-bold text-red-300 font-['Space_Grotesk']">Extra Life</h3>
+          {/* Rare Power-Ups (12%) */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-purple-300 mb-3 font-['Space_Grotesk']">💜 Rare (12% drop rate)</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-lg p-3 border border-blue-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-lg">❄️</div>
+                  <h4 className="text-md font-bold text-blue-300 font-['Space_Grotesk']">Freeze Ray (5%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Freezes all enemy movement and firing</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Adds one more life</p>
+              <div className="bg-black/30 rounded-lg p-3 border border-purple-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-purple-400 rounded-full flex items-center justify-center text-lg">💜</div>
+                  <h4 className="text-md font-bold text-purple-300 font-['Space_Grotesk']">Score Multiplier (4%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">2x score for all kills and bonuses (6 sec)</p>
+              </div>
+              <div className="bg-black/30 rounded-lg p-3 border border-red-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-lg">🔴</div>
+                  <h4 className="text-md font-bold text-red-300 font-['Space_Grotesk']">Laser Beam (3%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Hold spacebar for continuous piercing beam</p>
+              </div>
             </div>
+          </div>
 
-            <div className="bg-black/30 rounded-lg p-4 border border-cyan-400/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-2xl">💎</div>
-                <h3 className="text-lg font-bold text-purple-300 font-['Space_Grotesk']">Stardust</h3>
+          {/* Legendary Power-Ups (3%) */}
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-yellow-300 mb-3 font-['Space_Grotesk']">⭐ Legendary (3% drop rate)</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-lg">⭐</div>
+                  <h4 className="text-md font-bold text-yellow-300 font-['Space_Grotesk']">Invincibility (1.5%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Complete invulnerability - no damage taken</p>
               </div>
-              <p className="text-cyan-200 text-sm font-['Space_Grotesk']">Currency for unlocking ships</p>
+              <div className="bg-black/30 rounded-lg p-3 border border-red-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-lg">💥</div>
+                  <h4 className="text-md font-bold text-red-300 font-['Space_Grotesk']">Nuke (1.0%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Destroys all on-screen enemies instantly</p>
+              </div>
+              <div className="bg-black/30 rounded-lg p-3 border border-pink-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-lg">❤️</div>
+                  <h4 className="text-md font-bold text-pink-300 font-['Space_Grotesk']">Extra Life (0.5%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Adds +1 life immediately (ultra rare!)</p>
+              </div>
             </div>
+          </div>
+
+          {/* Tip */}
+          <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-400/30 rounded-lg">
+            <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
+              <strong className="text-cyan-300">💡 Pro Tip:</strong> Ship superpowers extend powerup durations!
+              The Cosmic Void ship grants +5 seconds to all timed powerups.
+            </p>
           </div>
         </motion.section>
 
