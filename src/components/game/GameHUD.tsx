@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface GameHUDProps {
   stats: GameStats;
   stardust?: number;
+  activePowerUps?: any;
 }
 
-export default function GameHUD({ stats, stardust = 0 }: GameHUDProps) {
+export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUDProps) {
   const [stardustEarned, setStardustEarned] = useState<number | null>(null);
   const [prevStardust, setPrevStardust] = useState(stardust);
 
@@ -47,12 +48,12 @@ export default function GameHUD({ stats, stardust = 0 }: GameHUDProps) {
           {/* Stardust Display */}
           <div className={`mt-1 relative ${isLandscape ? 'mt-0.5' : 'mt-1'}`}>
             <div className={`text-purple-400 font-bold tracking-wider ${
-              isLandscape ? 'text-[0.4rem]' : 'text-[0.5rem] sm:text-[0.6rem]'
+              isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
             }`}>STARDUST</div>
             <div className={`font-bold text-purple-300 flex items-center gap-1 ${
-              isLandscape ? 'text-[0.65rem]' : 'text-xs sm:text-sm'
+              isLandscape ? 'text-sm' : 'text-sm sm:text-base'
             }`} style={{ textShadow: '0 0 8px rgba(192, 132, 252, 0.8)' }}>
-              <span className="inline-block">💎</span>
+              <span className="inline-block text-base sm:text-lg">💎</span>
               <span>{stardust.toLocaleString()}</span>
             </div>
 
@@ -79,6 +80,95 @@ export default function GameHUD({ stats, stardust = 0 }: GameHUDProps) {
           </div>
         </div>
 
+        {/* Center-Left - Active Power-Ups (Left of Wave) */}
+        <div className="flex items-center mr-2">
+          <AnimatePresence>
+            {activePowerUps && (
+              <div className={`flex flex-col gap-1.5 ${
+                isLandscape ? 'max-w-[200px]' : 'max-w-[220px]'
+              }`}>
+                {Object.entries(activePowerUps).map(([key, value]: [string, any]) => {
+                  if (!value.active) return null;
+
+                  const powerUpIcons: Record<string, string> = {
+                    plasma: '🟣',
+                    rapid: '🔵',
+                    shield: '🟢',
+                    slowmo: '🟠',
+                    homing: '🌸',
+                    laser: '🔴',
+                    invincibility: '⭐',
+                    freeze: '❄️',
+                    magnet: '🧲',
+                    multiplier: '2×'
+                  };
+
+                  const powerUpNames: Record<string, string> = {
+                    plasma: 'Plasma',
+                    rapid: 'Rapid',
+                    shield: 'Shield',
+                    slowmo: 'Slowmo',
+                    homing: 'Homing',
+                    laser: 'Laser',
+                    invincibility: 'Invincible',
+                    freeze: 'Freeze',
+                    magnet: 'Magnet',
+                    multiplier: '2x Score'
+                  };
+
+                  const seconds = Math.ceil(value.duration / 60);
+                  const isExpiring = seconds <= 2;
+
+                  return (
+                    <motion.div
+                      key={key}
+                      initial={{ scale: 0, opacity: 0, x: -20 }}
+                      animate={{
+                        scale: 1,
+                        opacity: 1,
+                        x: 0,
+                        backgroundColor: isExpiring ? ['rgba(0, 0, 0, 0.8)', 'rgba(220, 38, 38, 0.9)', 'rgba(0, 0, 0, 0.8)'] : 'rgba(0, 0, 0, 0.8)'
+                      }}
+                      exit={{ scale: 0, opacity: 0, x: -20 }}
+                      transition={{
+                        backgroundColor: isExpiring ? {
+                          duration: 0.6,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        } : {}
+                      }}
+                      className={`flex items-center gap-2.5 border-2 rounded-lg backdrop-blur-sm ${
+                        isExpiring ? 'border-red-400' : 'border-cyan-400/70'
+                      } ${isLandscape ? 'px-3 py-2' : 'px-4 py-2.5'}`}
+                      style={{
+                        boxShadow: isExpiring
+                          ? '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4)'
+                          : '0 0 12px rgba(34, 211, 238, 0.6)'
+                      }}
+                    >
+                      <div className={`${isLandscape ? 'text-3xl' : 'text-4xl'}`}>
+                        {powerUpIcons[key] || '⚡'}
+                      </div>
+                      <div className="flex flex-col">
+                        <div className={`text-cyan-300 font-bold leading-tight ${
+                          isLandscape ? 'text-[0.75rem]' : 'text-[0.85rem]'
+                        }`}>
+                          {powerUpNames[key]}
+                        </div>
+                        <div className={`text-white font-bold leading-tight ${
+                          isLandscape ? 'text-[0.65rem]' : 'text-[0.75rem]'
+                        }`}>
+                          {seconds}s
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+
         {/* Center - Wave */}
         <div className="text-center">
           <div className={`text-pink-400 font-bold tracking-wider ${
@@ -91,19 +181,29 @@ export default function GameHUD({ stats, stardust = 0 }: GameHUDProps) {
           </div>
         </div>
 
+        {/* Center-Right - Game Controls (Pause & Sound) - Placeholder for positioning */}
+        <div className="flex items-center gap-2" style={{
+          visibility: 'hidden',
+          pointerEvents: 'none'
+        }}>
+          {/* Invisible placeholders to reserve space - actual buttons are positioned absolutely in GamePage */}
+          <div className={isLandscape ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'} />
+          <div className={isLandscape ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'} />
+        </div>
+
         {/* Right side - Lives */}
         <div className="text-right">
           <div className={`text-yellow-400 font-bold tracking-wider ${
             isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
           }`}>HEALTH</div>
           <div className={`flex justify-end flex-wrap ${
-            isLandscape ? 'gap-0.5 mt-0 max-w-[60px]' : 'gap-0.5 sm:gap-1 mt-0.5 max-w-[90px] sm:max-w-[120px]'
+            isLandscape ? 'gap-0.5 mt-0 max-w-[70px]' : 'gap-1 sm:gap-1.5 mt-0.5 max-w-[110px] sm:max-w-[140px]'
           }`}>
             {Array.from({ length: stats.maxHealth }).map((_, i) =>
             <div
               key={i}
               className={`rounded-sm transition-all ${
-                isLandscape ? 'w-3 h-3' : 'w-4 h-4 sm:w-5 sm:h-5'
+                isLandscape ? 'w-4 h-4' : 'w-5 h-5 sm:w-6 sm:h-6'
               } ${
               i < stats.lives ?
               'bg-yellow-400' :
@@ -111,7 +211,7 @@ export default function GameHUD({ stats, stardust = 0 }: GameHUDProps) {
               }
               style={{
                 clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-                boxShadow: i < stats.lives ? '0 0 10px rgba(251, 191, 36, 0.8)' : 'none'
+                boxShadow: i < stats.lives ? '0 0 12px rgba(251, 191, 36, 0.9)' : 'none'
               }} />
 
             )}

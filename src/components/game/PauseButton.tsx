@@ -12,11 +12,12 @@ export default function PauseButton({ onPause }: PauseButtonProps) {
       onClick={onPause}
       className={`absolute z-50 pointer-events-auto ${
       isMobile && isLandscape ?
-      'top-1 left-1/2 -translate-x-1/2' :
-      'top-2 right-[140px] sm:top-4 sm:right-[160px]'}`
+      'top-1 right-[25%]' :
+      'top-2 right-[22%] sm:top-4 sm:right-[20%]'}`
       }
       style={{
-        paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined
+        paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined,
+        transform: 'translateX(50%)'
       }}
       aria-label="Pause game">
 

@@ -35,11 +35,12 @@ export default function SoundToggleButton() {
       onClick={handleToggle}
       className={`absolute z-50 pointer-events-auto ${
         isMobile && isLandscape
-          ? 'top-1 left-[40%] -translate-x-1/2'
-          : 'top-2 right-[200px] sm:top-4 sm:right-[230px]'
+          ? 'top-1 right-[30%]'
+          : 'top-2 right-[28%] sm:top-4 sm:right-[26%]'
       }`}
       style={{
-        paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined
+        paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined,
+        transform: 'translateX(50%)'
       }}
       aria-label={isEnabled ? 'Mute audio' : 'Unmute audio'}>
 

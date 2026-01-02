@@ -580,6 +580,11 @@ export class GameEngine {
         console.log('🎮 CHEAT: +1 Life!');
         this.stats.lives = Math.min(this.stats.maxHealth, this.stats.lives + 1);
       }
+      if (e.key === 'r' || e.key === 'R') {
+        // Restart from wave 1
+        console.log('🎮 CHEAT: Restarting from Wave 1!');
+        this.resetFromWave1();
+      }
       this.keys.add(e.key);
     });
 
@@ -2605,8 +2610,8 @@ export class GameEngine {
     if (this.stats.combo >= 3) {
       this.ctx.save();
 
-      // Position: top-center, below wave
-      const fontSize = this.isMobile ? 13 : 18;
+      // Position: top-center, below wave - made smaller
+      const fontSize = this.isMobile ? 10 : 14;
       const x = this.canvas.width / 2;
       const y = this.isMobile ? 72 : 90;
 
@@ -2614,8 +2619,8 @@ export class GameEngine {
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'top';
 
-      // Reduced pulse
-      const pulse = 1 + Math.sin(Date.now() / 300) * 0.05;
+      // Reduced pulse - even less movement
+      const pulse = 1 + Math.sin(Date.now() / 300) * 0.03;
       this.ctx.save();
       this.ctx.translate(x, y);
       this.ctx.scale(pulse, pulse);
@@ -2627,13 +2632,13 @@ export class GameEngine {
       else if (this.stats.combo >= 20) color = '#ec4899'; // Pink for amazing
       else if (this.stats.combo >= 10) color = '#fbbf24'; // Yellow for great
 
-      // Reduced glow
-      this.ctx.shadowBlur = 10;
+      // Reduced glow - much subtler
+      this.ctx.shadowBlur = 6;
       this.ctx.shadowColor = color;
 
-      // Stroke
+      // Stroke - thinner
       this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      this.ctx.lineWidth = 2;
+      this.ctx.lineWidth = 1.5;
       this.ctx.strokeText(`COMBO ${this.stats.combo}x`, x, y);
 
       this.ctx.fillStyle = color;
@@ -2957,6 +2962,21 @@ export class GameEngine {
   getEnemyDifficultyMultiplier(): number {
     // 2% stronger per player level
     return 1 + (this.stats.level - 1) * 0.02;
+  }
+
+  getActivePowerUps() {
+    return {
+      plasma: { active: this.player.plasmaActive, duration: this.player.plasmaDuration },
+      rapid: { active: this.player.rapidActive, duration: this.player.rapidDuration },
+      shield: { active: this.player.shieldActive, duration: this.player.shieldDuration },
+      slowmo: { active: this.slowMotionActive, duration: this.slowMotionDuration },
+      homing: { active: this.player.homingActive, duration: this.player.homingDuration },
+      laser: { active: this.player.laserActive, duration: this.player.laserDuration },
+      invincibility: { active: this.player.invincibilityActive, duration: this.player.invincibilityDuration },
+      freeze: { active: this.player.freezeActive, duration: this.player.freezeDuration },
+      magnet: { active: this.player.magnetActive, duration: this.player.magnetDuration },
+      multiplier: { active: this.scoreMultiplier > 1, duration: this.scoreMultiplierDuration }
+    };
   }
 
   cleanup() {

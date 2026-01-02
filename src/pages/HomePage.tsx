@@ -17,6 +17,19 @@ export default function HomePage() {
   const [stardust, setStardust] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  // Check orientation
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsPortrait(window.innerWidth <= window.innerHeight);
+    };
+
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
 
   // Initialize game engine for persistence
   useEffect(() => {
@@ -132,6 +145,22 @@ export default function HomePage() {
             Fast-paced • Power-ups • Boss Battles • High Scores
           </motion.p>
         </motion.div>
+
+        {/* Best Experience Notice - Mobile/Portrait Only */}
+        {isMobile && isPortrait && (
+          <motion.div
+            className="mt-4 mb-6 px-4 py-3 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
+          >
+            <p className="text-yellow-300 font-bold text-sm sm:text-base font-['Space_Grotesk'] text-center"
+               style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
+              💡 Best experience on desktop or landscape view
+            </p>
+          </motion.div>
+        )}
 
         {/* Buttons - Two Row Layout */}
         <motion.div

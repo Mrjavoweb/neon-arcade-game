@@ -28,6 +28,7 @@ export default function GamePage() {
     state: GameState;
     stats: GameStats;
     bossState: BossState;
+    activePowerUps?: any;
   }>({
     state: 'playing',
     stats: {
@@ -177,7 +178,8 @@ export default function GamePage() {
         setGameState({
           state: engine.state,
           stats: { ...engine.stats },
-          bossState: { ...engine.bossState }
+          bossState: { ...engine.bossState },
+          activePowerUps: engine.getActivePowerUps()
         });
 
         animationFrameRef.current = requestAnimationFrame(gameLoop);
@@ -297,7 +299,7 @@ export default function GamePage() {
           className="absolute inset-0 w-full h-full" />
 
 
-        <GameHUD stats={gameState.stats} stardust={stardust} />
+        <GameHUD stats={gameState.stats} stardust={stardust} activePowerUps={gameState.activePowerUps} />
 
         <SoundToggleButton />
         <PauseButton onPause={handlePause} />
