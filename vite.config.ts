@@ -13,8 +13,11 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: [
     'mack-pretimely-cindi.ngrok-free.dev',
     '.ngrok-free.dev',
-    '.ngrok.io']
-
+    '.ngrok.io'],
+    watch: {
+      usePolling: false,
+      interval: 100
+    }
   },
   plugins: [
   react()],
@@ -25,6 +28,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src")
     }
   },
+
+  // Prevent dependency optimization issues
+  optimizeDeps: {
+    force: false,
+    exclude: []
+  },
+
+  // Use a stable cache directory
+  cacheDir: 'node_modules/.vite',
 
   // Optimize build for better performance
   build: {
