@@ -91,13 +91,13 @@ export type PowerUpType =
   | 'homing'
   | 'laser'
   | 'nuke'
+  | 'piercing'
   // New defensive powerups
   | 'invincibility'
   | 'freeze'
   // New utility powerups
   | 'extralife'
-  | 'multiplier'
-  | 'magnet';
+  | 'multiplier';
 
 export interface PowerUp {
   position: Position;

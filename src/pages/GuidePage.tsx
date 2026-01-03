@@ -125,16 +125,16 @@ export default function GuidePage() {
             </div>
           </div>
 
-          {/* Uncommon Power-Ups (25%) */}
+          {/* Uncommon Power-Ups (18%) */}
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-blue-300 mb-3 font-['Space_Grotesk']">🔷 Uncommon (25% drop rate)</h3>
+            <h3 className="text-lg font-bold text-blue-300 mb-3 font-['Space_Grotesk']">🔷 Uncommon (18% drop rate)</h3>
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="bg-black/30 rounded-lg p-3 border border-emerald-400/20">
+              <div className="bg-black/30 rounded-lg p-3 border border-pink-400/20">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-lg">🧲</div>
-                  <h4 className="text-md font-bold text-emerald-300 font-['Space_Grotesk']">Magnet (10%)</h4>
+                  <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-lg">🌸</div>
+                  <h4 className="text-md font-bold text-pink-300 font-['Space_Grotesk']">Homing Missiles (10%)</h4>
                 </div>
-                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Attracts all powerups within 200px range</p>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Bullets track nearest enemy automatically</p>
               </div>
               <div className="bg-black/30 rounded-lg p-3 border border-orange-400/20">
                 <div className="flex items-center gap-2 mb-1">
@@ -143,40 +143,40 @@ export default function GuidePage() {
                 </div>
                 <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Slows down all enemies and projectiles</p>
               </div>
-              <div className="bg-black/30 rounded-lg p-3 border border-pink-400/20">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-lg">🌸</div>
-                  <h4 className="text-md font-bold text-pink-300 font-['Space_Grotesk']">Homing Missiles (7%)</h4>
-                </div>
-                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Bullets track nearest enemy automatically</p>
-              </div>
             </div>
           </div>
 
-          {/* Rare Power-Ups (12%) */}
+          {/* Rare Power-Ups (19%) */}
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-purple-300 mb-3 font-['Space_Grotesk']">💜 Rare (12% drop rate)</h3>
+            <h3 className="text-lg font-bold text-purple-300 mb-3 font-['Space_Grotesk']">💜 Rare (19% drop rate)</h3>
             <div className="grid md:grid-cols-2 gap-3">
               <div className="bg-black/30 rounded-lg p-3 border border-blue-400/20">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-lg">❄️</div>
-                  <h4 className="text-md font-bold text-blue-300 font-['Space_Grotesk']">Freeze Ray (5%)</h4>
+                  <h4 className="text-md font-bold text-blue-300 font-['Space_Grotesk']">Freeze Ray (6%)</h4>
                 </div>
                 <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Freezes all enemy movement and firing</p>
               </div>
               <div className="bg-black/30 rounded-lg p-3 border border-purple-400/20">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 bg-purple-400 rounded-full flex items-center justify-center text-lg">💜</div>
-                  <h4 className="text-md font-bold text-purple-300 font-['Space_Grotesk']">Score Multiplier (4%)</h4>
+                  <h4 className="text-md font-bold text-purple-300 font-['Space_Grotesk']">Score Multiplier (6%)</h4>
                 </div>
                 <p className="text-cyan-200 text-xs font-['Space_Grotesk']">2x score for all kills and bonuses (6 sec)</p>
               </div>
               <div className="bg-black/30 rounded-lg p-3 border border-red-400/20">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-lg">🔴</div>
-                  <h4 className="text-md font-bold text-red-300 font-['Space_Grotesk']">Laser Beam (3%)</h4>
+                  <h4 className="text-md font-bold text-red-300 font-['Space_Grotesk']">Laser Beam (4%)</h4>
                 </div>
                 <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Hold spacebar for continuous piercing beam</p>
+              </div>
+              <div className="bg-black/30 rounded-lg p-3 border border-cyan-400/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center text-lg">🎯</div>
+                  <h4 className="text-md font-bold text-cyan-300 font-['Space_Grotesk']">Piercing Shot (3%)</h4>
+                </div>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Bullets pierce through ALL enemies + deal 2x damage to boss</p>
               </div>
             </div>
           </div>

@@ -24,8 +24,8 @@ export class Player {
   invincibilityDuration: number;
   freezeActive: boolean;
   freezeDuration: number;
-  magnetActive: boolean;
-  magnetDuration: number;
+  piercingActive: boolean;
+  piercingDuration: number;
   // Other properties
   engineParticles: Particle[];
   level: number;
@@ -61,8 +61,8 @@ export class Player {
     this.invincibilityDuration = 0;
     this.freezeActive = false;
     this.freezeDuration = 0;
-    this.magnetActive = false;
-    this.magnetDuration = 0;
+    this.piercingActive = false;
+    this.piercingDuration = 0;
     // Other properties
     this.engineParticles = [];
     this.invulnerable = false;
@@ -123,9 +123,9 @@ export class Player {
       this.freezeDuration--;
       if (this.freezeDuration <= 0) this.freezeActive = false;
     }
-    if (this.magnetDuration > 0) {
-      this.magnetDuration--;
-      if (this.magnetDuration <= 0) this.magnetActive = false;
+    if (this.piercingDuration > 0) {
+      this.piercingDuration--;
+      if (this.piercingDuration <= 0) this.piercingActive = false;
     }
 
     // Update invulnerability
@@ -357,17 +357,19 @@ export class Player {
     this.shieldDuration = baseDuration + bonusDuration;
   }
 
-  activatePlasma(bonusDuration: number = 0, isDualGuns: boolean = false) {
+  activatePlasma(bonusDuration: number = 0, isDualGuns: boolean = false, isBossMode: boolean = false) {
     this.plasmaActive = true;
-    // Dual guns gets shorter duration (4s) for balance, others get 7s
-    const baseDuration = isDualGuns ? 240 : 420; // 4 or 7 seconds
+    // Boss mode: 5 seconds (300 frames), Dual guns: 4s, Normal: 7s
+    let baseDuration = isDualGuns ? 240 : 420; // 4 or 7 seconds
+    if (isBossMode) baseDuration = 300; // 5 seconds for boss mode
     this.plasmaDuration = baseDuration + bonusDuration;
   }
 
-  activateRapid(bonusDuration: number = 0, isDualGuns: boolean = false) {
+  activateRapid(bonusDuration: number = 0, isDualGuns: boolean = false, isBossMode: boolean = false) {
     this.rapidActive = true;
-    // Dual guns gets shorter duration (3.5s) for balance, others get 7s
-    const baseDuration = isDualGuns ? 210 : 420; // 3.5 or 7 seconds
+    // Boss mode: 5 seconds (300 frames), Dual guns: 3.5s, Normal: 7s
+    let baseDuration = isDualGuns ? 210 : 420; // 3.5 or 7 seconds
+    if (isBossMode) baseDuration = 300; // 5 seconds for boss mode
     this.rapidDuration = baseDuration + bonusDuration;
   }
 
@@ -391,9 +393,9 @@ export class Player {
     this.freezeDuration = 240 + bonusDuration; // 4 seconds + bonus
   }
 
-  activateMagnet(bonusDuration: number = 0) {
-    this.magnetActive = true;
-    this.magnetDuration = 480 + bonusDuration; // 8 seconds + bonus
+  activatePiercing(bonusDuration: number = 0) {
+    this.piercingActive = true;
+    this.piercingDuration = 480 + bonusDuration; // 8 seconds + bonus
   }
 }
 
@@ -800,28 +802,57 @@ export class Projectile {
       ctx.restore();
     });
 
-    // Render projectile with enhanced glow
-    ctx.save();
+    // Piercing bullets - elongated cyan bullets with enhanced trail
+    if (this.piercing && this.isPlayerProjectile) {
+      ctx.save();
 
-    // Outer glow
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+      // Elongated size for piercing bullets
+      const piercingHeight = this.size.height * 1.8; // 80% longer
 
-    // Inner glow
-    ctx.shadowBlur = 15;
-    ctx.fillStyle = this.isPlayerProjectile ? '#ffffff' : '#ff6666';
-    ctx.globalAlpha = 0.8;
-    ctx.fillRect(this.position.x + 0.5, this.position.y + 2, this.size.width - 1, this.size.height - 4);
+      // Bright cyan outer glow
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = '#00ffff';
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(this.position.x, this.position.y, this.size.width, piercingHeight);
 
-    // Bright core
-    ctx.fillStyle = 'white';
-    ctx.globalAlpha = 0.6;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = 'white';
-    ctx.fillRect(this.position.x + 1, this.position.y + 4, this.size.width - 2, this.size.height - 8);
-    ctx.restore();
+      // Bright cyan inner glow
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#00ffff';
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(this.position.x + 0.5, this.position.y + 2, this.size.width - 1, piercingHeight - 4);
+
+      // Bright white core
+      ctx.fillStyle = 'white';
+      ctx.globalAlpha = 0.8;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00ffff';
+      ctx.fillRect(this.position.x + 1, this.position.y + 4, this.size.width - 2, piercingHeight - 8);
+
+      ctx.restore();
+    } else {
+      // Normal projectile rendering
+      ctx.save();
+
+      // Outer glow
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = this.color;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+
+      // Inner glow
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = this.isPlayerProjectile ? '#ffffff' : '#ff6666';
+      ctx.globalAlpha = 0.8;
+      ctx.fillRect(this.position.x + 0.5, this.position.y + 2, this.size.width - 1, this.size.height - 4);
+
+      // Bright core
+      ctx.fillStyle = 'white';
+      ctx.globalAlpha = 0.6;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'white';
+      ctx.fillRect(this.position.x + 1, this.position.y + 4, this.size.width - 2, this.size.height - 8);
+      ctx.restore();
+    }
   }
 
   getBounds() {

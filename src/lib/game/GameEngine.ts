@@ -801,7 +801,7 @@ export class GameEngine {
           this.config.projectileSpeed
         );
         projectile.color = this.cosmeticManager.getBulletColor();
-        if (isPiercing) projectile.piercing = true;
+        if (isPiercing || this.player.piercingActive) projectile.piercing = true;
         if (isExplosive) projectile.explosive = true;
         if (isGravity) projectile.gravity = true;
         this.projectiles.push(projectile);
@@ -829,7 +829,7 @@ export class GameEngine {
           this.config.projectileSpeed
         );
         projectile.color = this.cosmeticManager.getBulletColor();
-        if (isPiercing) projectile.piercing = true;
+        if (isPiercing || this.player.piercingActive) projectile.piercing = true;
         if (isExplosive) projectile.explosive = true;
         if (isGravity) projectile.gravity = true;
         this.projectiles.push(projectile);
@@ -845,7 +845,7 @@ export class GameEngine {
           this.config.projectileSpeed
         );
         projectile.color = this.cosmeticManager.getBulletColor();
-        if (isPiercing) projectile.piercing = true;
+        if (isPiercing || this.player.piercingActive) projectile.piercing = true;
         if (isExplosive) projectile.explosive = true;
         if (isGravity) projectile.gravity = true;
         this.projectiles.push(projectile);
@@ -860,7 +860,7 @@ export class GameEngine {
         this.config.projectileSpeed
       );
       projectile.color = this.cosmeticManager.getBulletColor();
-      if (isPiercing) projectile.piercing = true;
+      if (isPiercing || this.player.piercingActive) projectile.piercing = true;
       if (isExplosive) projectile.explosive = true;
       if (isGravity) projectile.gravity = true;
       this.projectiles.push(projectile);
@@ -1055,21 +1055,21 @@ export class GameEngine {
     } else if (rand < 0.60) {
       type = 'shield';     // 15%
     }
-    // Uncommon (25% total) - Utility and tactical
-    else if (rand < 0.70) {
-      type = 'magnet';     // 10%
-    } else if (rand < 0.78) {
+    // Uncommon (18% total) - Utility and tactical
+    else if (rand < 0.68) {
       type = 'slowmo';     // 8%
-    } else if (rand < 0.85) {
-      type = 'homing';     // 7%
+    } else if (rand < 0.78) {
+      type = 'homing';     // 10%
     }
-    // Rare (12% total) - Powerful effects
-    else if (rand < 0.90) {
-      type = 'freeze';     // 5%
+    // Rare (19% total) - Powerful effects
+    else if (rand < 0.84) {
+      type = 'freeze';     // 6%
+    } else if (rand < 0.90) {
+      type = 'multiplier'; // 6%
     } else if (rand < 0.94) {
-      type = 'multiplier'; // 4%
+      type = 'laser';      // 4%
     } else if (rand < 0.97) {
-      type = 'laser';      // 3%
+      type = 'piercing';   // 3%
     }
     // Legendary (3% total) - Game-changing
     else if (rand < 0.985) {
@@ -1372,8 +1372,8 @@ export class GameEngine {
         if (!enemy.isAlive) continue;
 
         if (this.checkCollision(projectile.getBounds(), enemy.getBounds())) {
-          // Piercing shots - allow bullet to continue through first enemy
-          const isPiercing = projectile.piercing && projectile.piercedEnemies < 1;
+          // Piercing shots - unlimited piercing (from powerup or superpower)
+          const isPiercing = projectile.piercing;
           if (!isPiercing) {
             projectile.deactivate();
           } else {
@@ -1423,7 +1423,14 @@ export class GameEngine {
         if (!minion.isAlive) continue;
 
         if (this.checkCollision(projectile.getBounds(), minion.getBounds())) {
-          projectile.deactivate();
+          // Piercing shots - unlimited piercing
+          const isPiercing = projectile.piercing;
+          if (!isPiercing) {
+            projectile.deactivate();
+          } else {
+            projectile.piercedEnemies++;
+          }
+
           minion.hit();
 
           if (!minion.isAlive) {
@@ -1439,15 +1446,24 @@ export class GameEngine {
           } else {
             this.createImpactParticles(minion.position.x + minion.size.width / 2, minion.position.y + minion.size.height / 2, '#ffff00');
           }
-          break;
+          if (!isPiercing) break;
         }
       }
 
       // Player projectiles vs boss
       if (this.boss && this.boss.isAlive && this.bossState.bossIntroTimer <= 0) {
         if (this.checkCollision(projectile.getBounds(), this.boss.getBounds())) {
-          projectile.deactivate();
-          this.boss.hit(1);
+          // Piercing shots - unlimited piercing AND deal 2 damage to boss
+          const isPiercing = projectile.piercing;
+          const bossDamage = isPiercing ? 2 : 1;
+
+          if (!isPiercing) {
+            projectile.deactivate();
+          } else {
+            projectile.piercedEnemies++;
+          }
+
+          this.boss.hit(bossDamage);
 
           if (!this.boss.isAlive) {
             // Boss defeated!
@@ -1469,7 +1485,7 @@ export class GameEngine {
             // Guaranteed power-up (better drops from bosses - include new powerups)
             const types: Array<PowerUpType> = [
               'plasma', 'rapid', 'shield', 'slowmo',
-              'homing', 'laser', 'freeze', 'magnet', 'multiplier'
+              'homing', 'laser', 'freeze', 'piercing', 'multiplier'
             ];
             const type = types[Math.floor(Math.random() * types.length)];
             const powerUp = new PowerUpEntity(
@@ -1504,7 +1520,8 @@ export class GameEngine {
             this.createImpactParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#ffff00');
             this.addScreenShake(5);
           }
-          break;
+          // Piercing bullets continue through boss, non-piercing stop
+          if (!isPiercing) break;
         }
       }
     }
@@ -1575,14 +1592,17 @@ export class GameEngine {
     const bonusDuration = superpower.type === 'gravity_bullets' && superpower.value ? superpower.value * 60 : 0;
     const isDualGuns = superpower.type === 'dual_guns';
 
+    // Check if we're in boss mode for duration adjustments
+    const isBossMode = this.bossState.isBossWave;
+
     switch (type) {
       // Original powerups
       case 'plasma':
-        this.player.activatePlasma(bonusDuration, isDualGuns);
+        this.player.activatePlasma(bonusDuration, isDualGuns, isBossMode);
         this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
-        this.player.activateRapid(bonusDuration, isDualGuns);
+        this.player.activateRapid(bonusDuration, isDualGuns, isBossMode);
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
@@ -1630,9 +1650,9 @@ export class GameEngine {
         this.scoreMultiplierDuration = 360 + bonusDuration; // 6 seconds + bonus
         this.audioManager.playSound('powerup_collect', 0.7);
         break;
-      case 'magnet':
-        this.player.activateMagnet(bonusDuration);
-        this.audioManager.playSound('powerup_collect', 0.6);
+      case 'piercing':
+        this.player.activatePiercing(bonusDuration);
+        this.audioManager.playSound('powerup_rapid_fire', 0.6); // Similar to rapid fire
         break;
     }
 
