@@ -197,7 +197,7 @@ export default function GuidePage() {
                   <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-lg">💥</div>
                   <h4 className="text-md font-bold text-red-300 font-['Space_Grotesk']">Nuke (1.0%)</h4>
                 </div>
-                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Destroys all on-screen enemies instantly</p>
+                <p className="text-cyan-200 text-xs font-['Space_Grotesk']">Destroys all enemies + damages boss (5-10% HP)</p>
               </div>
               <div className="bg-black/30 rounded-lg p-3 border border-pink-400/20">
                 <div className="flex items-center gap-2 mb-1">
