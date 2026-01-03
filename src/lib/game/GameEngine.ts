@@ -2456,6 +2456,20 @@ export class GameEngine {
           }
         }
       }
+
+      // Check laser collision with boss
+      if (this.boss && this.boss.isAlive) {
+        const beamX = this.laserBeam.startX;
+        if (beamX >= this.boss.position.x && beamX <= this.boss.position.x + this.boss.size.width) {
+          if (this.boss.position.y <= this.player.position.y) {
+            this.boss.hit();
+            this.audioManager.playSound('boss_hit', 0.5);
+            if (!this.boss.isAlive) {
+              this.bossDefeated();
+            }
+          }
+        }
+      }
     } else {
       this.laserBeam = null;
     }
