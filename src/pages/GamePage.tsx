@@ -137,30 +137,51 @@ export default function GamePage() {
     const resizeCanvas = () => {
       const oldWidth = canvas.width;
       const oldHeight = canvas.height;
+      const wasPortrait = oldHeight > oldWidth;
+      const isNowLandscape = window.innerWidth > window.innerHeight;
 
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // Update player position to maintain relative position
-      if (engine.player) {
-        engine.player.position.x = engine.player.position.x / oldWidth * canvas.width;
-        engine.player.position.y = engine.player.position.y / oldHeight * canvas.height;
-      }
+      // If we just switched from portrait to landscape, reinitialize enemies
+      // This fixes alien spacing issues from portrait initialization
+      if (wasPortrait && isNowLandscape && engine.state === 'playing') {
+        console.log('🔄 Orientation changed from portrait to landscape - reinitializing enemies for proper layout');
 
-      // Update enemy positions to maintain relative positions
-      if (engine.enemies) {
-        engine.enemies.forEach((enemy) => {
-          if (enemy.isAlive) {
-            enemy.position.x = enemy.position.x / oldWidth * canvas.width;
-            enemy.position.y = enemy.position.y / oldHeight * canvas.height;
-          }
-        });
-      }
+        // Reinitialize enemies for current wave without advancing wave counter
+        engine.initEnemies();
 
-      // Update boss position if active
-      if (engine.boss && engine.boss.isAlive) {
-        engine.boss.position.x = engine.boss.position.x / oldWidth * canvas.width;
-        engine.boss.position.y = engine.boss.position.y / oldHeight * canvas.height;
+        // Clear projectiles to avoid weird positions
+        engine.projectiles = [];
+
+        // Reset player to center bottom
+        if (engine.player) {
+          engine.player.position.x = canvas.width / 2;
+          engine.player.position.y = canvas.height - 100;
+        }
+      } else {
+        // Normal resize - just scale existing positions
+        // Update player position to maintain relative position
+        if (engine.player) {
+          engine.player.position.x = engine.player.position.x / oldWidth * canvas.width;
+          engine.player.position.y = engine.player.position.y / oldHeight * canvas.height;
+        }
+
+        // Update enemy positions to maintain relative positions
+        if (engine.enemies) {
+          engine.enemies.forEach((enemy) => {
+            if (enemy.isAlive) {
+              enemy.position.x = enemy.position.x / oldWidth * canvas.width;
+              enemy.position.y = enemy.position.y / oldHeight * canvas.height;
+            }
+          });
+        }
+
+        // Update boss position if active
+        if (engine.boss && engine.boss.isAlive) {
+          engine.boss.position.x = engine.boss.position.x / oldWidth * canvas.width;
+          engine.boss.position.y = engine.boss.position.y / oldHeight * canvas.height;
+        }
       }
     };
 
