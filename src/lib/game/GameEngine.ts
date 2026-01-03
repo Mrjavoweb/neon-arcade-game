@@ -1782,6 +1782,47 @@ export class GameEngine {
       }
     }
 
+    // Damage boss with phase-based scaling
+    if (this.boss && this.boss.isAlive) {
+      // Phase-based damage: earlier phases take more damage
+      // Phase 1 (100-75% HP): 10% max health damage
+      // Phase 2 (75-50% HP): 8% max health damage
+      // Phase 3 (50-25% HP): 6% max health damage
+      // Phase 4 (25-0% HP): 5% max health damage
+      let damagePercent: number;
+      switch (this.boss.phase) {
+        case 'phase1':
+          damagePercent = 0.10; // 10%
+          break;
+        case 'phase2':
+          damagePercent = 0.08; // 8%
+          break;
+        case 'phase3':
+          damagePercent = 0.06; // 6%
+          break;
+        case 'phase4':
+          damagePercent = 0.05; // 5%
+          break;
+      }
+
+      const damage = Math.floor(this.boss.maxHealth * damagePercent);
+      this.boss.hit(damage);
+      this.audioManager.playSound('boss_hit', 0.6);
+
+      // Create explosion at boss center
+      this.createExplosion(
+        this.boss.position.x + this.boss.size.width / 2,
+        this.boss.position.y + this.boss.size.height / 2
+      );
+
+      // Check if boss died from nuke
+      if (!this.boss.isAlive) {
+        this.bossDefeated();
+      }
+
+      console.log(`💥 NUKE hit boss for ${damage} damage (${(damagePercent * 100).toFixed(0)}% of max HP)!`);
+    }
+
     // Massive screen shake
     this.addScreenShake(35);
 
