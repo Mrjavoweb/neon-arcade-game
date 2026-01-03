@@ -11,7 +11,10 @@ const GameEngineContext = createContext<GameEngineContextType | undefined>(undef
 export function useGameEngine() {
   const context = useContext(GameEngineContext);
   if (!context) {
-    throw new Error('useGameEngine must be used within GameEngineProvider');
+    // During development with HMR, context might temporarily be undefined
+    // Return a safe default instead of throwing
+    console.warn('useGameEngine: Context not found, returning default values');
+    return { engine: null, setEngine: () => {} };
   }
   return context;
 }

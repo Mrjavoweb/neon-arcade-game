@@ -8,6 +8,7 @@ import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LevelUpCelebration from '@/components/game/LevelUpCelebration';
 import AchievementToast from '@/components/game/AchievementToast';
 import DailyRewardPopup from '@/components/game/DailyRewardPopup';
+import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
 import { Achievement, DailyReward } from '@/lib/game/progression/ProgressionTypes';
 import { AnimatePresence } from 'framer-motion';
+import { useOrientationLock } from '@/hooks/useOrientationLock';
 
 export default function GamePage() {
   const navigate = useNavigate();
@@ -24,6 +26,9 @@ export default function GamePage() {
   const engineRef = useRef<GameEngine | null>(null);
   const animationFrameRef = useRef<number>();
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+
+  // Enforce landscape orientation on mobile
+  const { shouldShowPrompt } = useOrientationLock(true);
   const [gameState, setGameState] = useState<{
     state: GameState;
     stats: GameStats;
@@ -376,6 +381,9 @@ export default function GamePage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Landscape Orientation Enforcement (Mobile Only) */}
+      <LandscapePrompt isVisible={shouldShowPrompt} />
 
     </div>);
 
