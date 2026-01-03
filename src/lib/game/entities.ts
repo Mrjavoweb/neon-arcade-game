@@ -357,14 +357,18 @@ export class Player {
     this.shieldDuration = baseDuration + bonusDuration;
   }
 
-  activatePlasma(bonusDuration: number = 0) {
+  activatePlasma(bonusDuration: number = 0, isDualGuns: boolean = false) {
     this.plasmaActive = true;
-    this.plasmaDuration = 420 + bonusDuration; // 7 seconds + bonus
+    // Dual guns gets shorter duration (5s) for balance, others get 7s
+    const baseDuration = isDualGuns ? 300 : 420; // 5 or 7 seconds
+    this.plasmaDuration = baseDuration + bonusDuration;
   }
 
-  activateRapid(bonusDuration: number = 0) {
+  activateRapid(bonusDuration: number = 0, isDualGuns: boolean = false) {
     this.rapidActive = true;
-    this.rapidDuration = 420 + bonusDuration; // 7 seconds + bonus
+    // Dual guns gets shorter duration (5s) for balance, others get 7s
+    const baseDuration = isDualGuns ? 300 : 420; // 5 or 7 seconds
+    this.rapidDuration = baseDuration + bonusDuration;
   }
 
   activateHoming(bonusDuration: number = 0) {

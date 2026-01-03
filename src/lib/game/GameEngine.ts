@@ -807,18 +807,18 @@ export class GameEngine {
         this.projectiles.push(projectile);
       });
     }
-    // Dual Guns superpower (Gold Elite) - Fires 2-6 bullets depending on powerups
+    // Dual Guns superpower (Gold Elite) - Fires 2-4 bullets depending on powerups
     else if (isDualGuns) {
       // Base dual guns pattern
       let offsets = [-8, 8];
 
-      // Plasma powerup: Add center + outer bullets (6 total)
+      // Plasma powerup: 4 bullets with symmetric spread
       if (plasmaActive) {
-        offsets = [-18, -8, 0, 8, 18, 24]; // Wide spread pattern
+        offsets = [-15, -5, 5, 15]; // Wide symmetric spread (4 bullets)
       }
-      // Rapid Fire: Add 2 more bullets (4 total)
+      // Rapid Fire: 3 bullets in tight pattern
       else if (this.player.rapidActive) {
-        offsets = [-12, -4, 4, 12]; // Tighter quad pattern
+        offsets = [-8, 0, 8]; // Center + sides (3 bullets)
       }
 
       offsets.forEach((offset) => {
@@ -868,7 +868,7 @@ export class GameEngine {
 
     // Homing Missiles - assign target to newly created projectiles
     if (this.player.homingActive) {
-      // Find nearest enemy
+      // Find nearest enemy (includes regular enemies and boss minions)
       let nearestEnemy: Enemy | null = null;
       let minDist = Infinity;
       for (const enemy of this.enemies) {
@@ -883,10 +883,23 @@ export class GameEngine {
         }
       }
 
+      // If no enemies exist but boss is alive, target the boss (fallback)
+      if (!nearestEnemy && this.boss && this.boss.isAlive) {
+        // Boss targeting uses weaker homing strength (handled in Projectile.update)
+        nearestEnemy = this.boss as any; // Cast boss as target
+      }
+
+      // Determine bullet count based on fire pattern
+      let bulletCount = 1; // Default single shot
+      if (isTripleShot) bulletCount = 3;
+      else if (isDualGuns) {
+        if (plasmaActive) bulletCount = 4;
+        else if (this.player.rapidActive) bulletCount = 3;
+        else bulletCount = 2;
+      } else if (plasmaActive) bulletCount = 3;
+
       // Assign homing to all newly fired projectiles
-      const newProjectiles = isTripleShot || isDualGuns || plasmaActive ?
-        this.projectiles.slice(-3) :
-        this.projectiles.slice(-1);
+      const newProjectiles = this.projectiles.slice(-bulletCount);
 
       newProjectiles.forEach(projectile => {
         projectile.homing = true;
@@ -1558,15 +1571,16 @@ export class GameEngine {
     // Get superpower for possible duration extensions
     const superpower = this.cosmeticManager.getActiveSuperpower();
     const bonusDuration = superpower.type === 'gravity_bullets' && superpower.value ? superpower.value * 60 : 0;
+    const isDualGuns = superpower.type === 'dual_guns';
 
     switch (type) {
       // Original powerups
       case 'plasma':
-        this.player.activatePlasma(bonusDuration);
+        this.player.activatePlasma(bonusDuration, isDualGuns);
         this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
-        this.player.activateRapid(bonusDuration);
+        this.player.activateRapid(bonusDuration, isDualGuns);
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
