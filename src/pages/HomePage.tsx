@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import StarfieldBackground from '@/components/StarfieldBackground';
 import NeonButton from '@/components/NeonButton';
-import GameInstructions from '@/components/GameInstructions';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
@@ -70,17 +69,17 @@ export default function HomePage() {
       <PWAInstallPrompt />
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-4">
         {/* Hero Section */}
         <motion.div
-          className="text-center mb-12"
+          className="text-center mb-6"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}>
 
           {/* Game Title */}
           <motion.h1
-            className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black mb-6"
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4"
             style={{
               fontFamily: "'Sora', sans-serif",
               background: 'linear-gradient(180deg, #22d3ee 0%, #3b82f6 50%, #ec4899 100%)',
@@ -108,7 +107,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <motion.p
-            className="text-xl sm:text-2xl md:text-3xl text-cyan-300 mb-4"
+            className="text-lg sm:text-xl md:text-2xl text-cyan-300"
             style={{
               fontFamily: "'Space Grotesk', sans-serif",
               textShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
@@ -117,45 +116,20 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.3 }}>
 
-            Defend Earth Against the Alien Horde
-          </motion.p>
-
-          {/* Description */}
-          <motion.p
-            className="text-base sm:text-lg md:text-xl text-blue-200 max-w-2xl mx-auto mb-2"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5 }}>
-
-            Experience the classic arcade action reimagined with cinematic visuals,
-            intense combat, and addictive gameplay.
-          </motion.p>
-
-          <motion.p
-            className="text-sm sm:text-base text-pink-300"
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              textShadow: '0 0 10px rgba(236, 72, 153, 0.5)'
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}>
-
-            Fast-paced • Power-ups • Boss Battles • High Scores
+            Defend Earth against the Cosmic Assault
           </motion.p>
         </motion.div>
 
         {/* Best Experience Notice - Mobile/Portrait Only */}
         {isMobile && isPortrait && (
           <motion.div
-            className="mt-4 mb-6 px-4 py-3 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
+            className="mb-4 px-4 py-2 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
             style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
           >
-            <p className="text-yellow-300 font-bold text-sm sm:text-base font-['Space_Grotesk'] text-center"
+            <p className="text-yellow-300 font-bold text-sm font-['Space_Grotesk'] text-center"
                style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
               💡 Best experience on desktop or landscape view
             </p>
@@ -164,13 +138,13 @@ export default function HomePage() {
 
         {/* Buttons - Two Row Layout */}
         <motion.div
-          className="flex flex-col gap-4 max-w-3xl mx-auto"
+          className="flex flex-col gap-3 max-w-3xl mx-auto"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}>
+          transition={{ duration: 0.8, delay: 0.6 }}>
 
           {/* First Row: Play, Shop, Achievements */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <NeonButton onClick={() => navigate('/game')}>
               ▶ PLAY GAME
             </NeonButton>
@@ -185,7 +159,7 @@ export default function HomePage() {
           </div>
 
           {/* Second Row: Leaderboard, Game Guide, Settings */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <NeonButton onClick={() => navigate('/leaderboard', { state: { from: '/' } })}>
               📊 LEADERBOARD
             </NeonButton>
@@ -210,21 +184,18 @@ export default function HomePage() {
         {/* Stardust Display */}
         {stardust > 0 && (
           <motion.div
-            className="mt-4 px-6 py-3 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
+            className="mt-3 px-5 py-2 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
+            transition={{ delay: 0.8 }}
           >
-            <div className="text-purple-300 font-bold flex items-center gap-2 text-lg"
+            <div className="text-purple-300 font-bold flex items-center gap-2 text-base"
                  style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
               <span>💎</span>
               <span>{stardust.toLocaleString()} Stardust</span>
             </div>
           </motion.div>
         )}
-
-        {/* Instructions */}
-        <GameInstructions />
 
         {/* Settings Overlay */}
         <SettingsOverlay
@@ -234,14 +205,14 @@ export default function HomePage() {
 
         {/* Footer Credits */}
         <motion.div
-          className="mt-16 text-center"
+          className="mt-6 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}>
 
           <p
 
-            className="text-sm text-gray-500"
+            className="text-xs text-gray-500"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
             <a href="https://aliens.digitalpalapp.com" className="hover:text-cyan-400 transition-colors duration-300" rel="noopener">DigitalPal Apps</a> • Optimized for 60fps • Desktop & Mobile
