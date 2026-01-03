@@ -807,14 +807,14 @@ export class GameEngine {
         this.projectiles.push(projectile);
       });
     }
-    // Dual Guns superpower (Gold Elite) - Fires 2-4 bullets depending on powerups
+    // Dual Guns superpower (Gold Elite) - Fires 2-3 bullets depending on powerups
     else if (isDualGuns) {
       // Base dual guns pattern
       let offsets = [-8, 8];
 
-      // Plasma powerup: 4 bullets with symmetric spread
+      // Plasma powerup: 3 bullets with symmetric spread
       if (plasmaActive) {
-        offsets = [-15, -5, 5, 15]; // Wide symmetric spread (4 bullets)
+        offsets = [-10, 0, 10]; // Centered symmetric spread (3 bullets)
       }
       // Rapid Fire: 3 bullets in tight pattern
       else if (this.player.rapidActive) {
@@ -893,7 +893,7 @@ export class GameEngine {
       let bulletCount = 1; // Default single shot
       if (isTripleShot) bulletCount = 3;
       else if (isDualGuns) {
-        if (plasmaActive) bulletCount = 4;
+        if (plasmaActive) bulletCount = 3; // Updated: 3 bullets for dual guns plasma
         else if (this.player.rapidActive) bulletCount = 3;
         else bulletCount = 2;
       } else if (plasmaActive) bulletCount = 3;

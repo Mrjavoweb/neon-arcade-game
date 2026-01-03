@@ -359,15 +359,15 @@ export class Player {
 
   activatePlasma(bonusDuration: number = 0, isDualGuns: boolean = false) {
     this.plasmaActive = true;
-    // Dual guns gets shorter duration (5s) for balance, others get 7s
-    const baseDuration = isDualGuns ? 300 : 420; // 5 or 7 seconds
+    // Dual guns gets shorter duration (4s) for balance, others get 7s
+    const baseDuration = isDualGuns ? 240 : 420; // 4 or 7 seconds
     this.plasmaDuration = baseDuration + bonusDuration;
   }
 
   activateRapid(bonusDuration: number = 0, isDualGuns: boolean = false) {
     this.rapidActive = true;
-    // Dual guns gets shorter duration (5s) for balance, others get 7s
-    const baseDuration = isDualGuns ? 300 : 420; // 5 or 7 seconds
+    // Dual guns gets shorter duration (3.5s) for balance, others get 7s
+    const baseDuration = isDualGuns ? 210 : 420; // 3.5 or 7 seconds
     this.rapidDuration = baseDuration + bonusDuration;
   }
 
@@ -378,7 +378,7 @@ export class Player {
 
   activateLaser(bonusDuration: number = 0) {
     this.laserActive = true;
-    this.laserDuration = 360 + bonusDuration; // 6 seconds + bonus
+    this.laserDuration = 240 + bonusDuration; // 4 seconds + bonus (reduced for balance)
   }
 
   activateInvincibility(bonusDuration: number = 0) {
