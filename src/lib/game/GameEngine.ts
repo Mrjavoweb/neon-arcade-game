@@ -229,8 +229,7 @@ export class GameEngine {
     this.leaderboardManager = getLeaderboardManager();
     console.log('📊 LeaderboardManager initialized in GameEngine');
 
-    // Check for daily reward on game start
-    this.checkDailyReward();
+    // Daily reward check is now called from GameCanvas after event listener is set up
 
     this.initEnemies();
     this.setupControls();

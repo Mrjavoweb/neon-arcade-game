@@ -143,6 +143,9 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       console.log('🎮 GameCanvas: Initializing stardust from GameEngine:', initialStardust);
       setStardust(initialStardust);
 
+      // Check for daily reward AFTER event listener is set up
+      gameEngineRef.current.checkDailyReward();
+
       await gameEngineRef.current.loadAssets();
 
       if (!mounted) return;
