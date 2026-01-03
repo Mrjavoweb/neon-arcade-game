@@ -214,8 +214,17 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     if (gameEngineRef.current) {
       const result = gameEngineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
-        // Apply rewards (lives and maxHealth are handled by GameEngine if needed in future)
+        // Update popup state with milestones if any were unlocked
+        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
+          setDailyReward(prev => prev ? {
+            ...prev,
+            milestonesUnlocked: result.milestonesUnlocked
+          } : null);
+        }
         console.log('Daily reward claimed:', result.reward);
+        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
+          console.log('🎉 Milestones unlocked:', result.milestonesUnlocked);
+        }
       }
     }
   };

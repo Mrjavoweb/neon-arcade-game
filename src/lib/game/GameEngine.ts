@@ -2322,11 +2322,15 @@ export class GameEngine {
         detail: {
           day: rewardCheck.day,
           reward: rewardCheck.reward,
-          streak: rewardCheck.streak
+          streak: rewardCheck.streak,
+          comebackBonus: rewardCheck.comebackBonus
         }
       }));
 
-      console.log(`🎁 Daily Reward Available: Day ${rewardCheck.day} (Streak: ${rewardCheck.streak})`);
+      const bonusMsg = rewardCheck.comebackBonus?.available
+        ? ` (Comeback: ${rewardCheck.comebackBonus.streakRecovery}% recovery)`
+        : '';
+      console.log(`🎁 Daily Reward Available: Day ${rewardCheck.day} (Streak: ${rewardCheck.streak})${bonusMsg}`);
     } else {
       console.log(`✅ Daily reward already claimed today. Current streak: ${rewardCheck.streak}`);
     }
