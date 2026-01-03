@@ -2289,6 +2289,10 @@ export class GameEngine {
       this.audioManager.playSound('powerup_shield_activate', 0.4);
     }
 
+    // Grant 1.5 second invulnerability at wave start
+    this.player.invulnerable = true;
+    this.player.invulnerabilityTimer = 90; // 1.5 seconds at 60fps
+
     this.initEnemies();
     this.projectiles = [];
   }
@@ -2902,6 +2906,11 @@ export class GameEngine {
     }
 
     if (this.assets) this.player.setImage(this.assets.playerShip);
+
+    // Grant 1.5 second invulnerability at game start / checkpoint continuation
+    this.player.invulnerable = true;
+    this.player.invulnerabilityTimer = 90; // 1.5 seconds at 60fps
+
     this.initEnemies();
 
     // Track new game started for achievements
