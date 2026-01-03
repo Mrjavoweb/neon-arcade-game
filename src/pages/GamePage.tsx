@@ -143,10 +143,19 @@ export default function GamePage() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // If we just switched from portrait to landscape, reinitialize enemies
+      // CRITICAL: Update player's canvasWidth to match new canvas dimensions
+      // This fixes movement restriction bug (player stuck on left half)
+      if (engine.player) {
+        engine.player.canvasWidth = canvas.width;
+      }
+
+      // If we just switched from portrait to landscape, reinitialize enemies and pause game
       // This fixes alien spacing issues from portrait initialization
       if (wasPortrait && isNowLandscape && engine.state === 'playing') {
-        console.log('🔄 Orientation changed from portrait to landscape - reinitializing enemies for proper layout');
+        console.log('🔄 Orientation changed from portrait to landscape - reinitializing and pausing');
+
+        // Pause the game when rotating to landscape (better UX)
+        engine.state = 'paused';
 
         // Reinitialize enemies for current wave without advancing wave counter
         engine.initEnemies();
@@ -156,7 +165,7 @@ export default function GamePage() {
 
         // Reset player to center bottom
         if (engine.player) {
-          engine.player.position.x = canvas.width / 2;
+          engine.player.position.x = canvas.width / 2 - engine.player.size.width / 2;
           engine.player.position.y = canvas.height - 100;
         }
       } else {
