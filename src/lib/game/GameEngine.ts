@@ -1111,7 +1111,7 @@ export class GameEngine {
       // Don't return - allow boss to start attacking during descent
     }
 
-    this.boss.update(this.canvas.width);
+    this.boss.update(this.canvas.width, this.player.freezeActive);
     this.bossState.bossHealth = this.boss.health;
 
     // Update boss image when phase changes
@@ -1132,23 +1132,25 @@ export class GameEngine {
       this.boss.setImage(bossImageMap[this.boss.phase]);
     }
 
-    // Boss attacks (scales with both phase AND wave)
-    const now = Date.now();
+    // Boss attacks (scales with both phase AND wave) - but not when frozen
+    if (!this.player.freezeActive) {
+      const now = Date.now();
 
-    // Base attack delay by phase
-    const baseDelay = this.boss.phase === 'phase4' ? 1200 :
-    this.boss.phase === 'phase3' ? 1800 :
-    this.boss.phase === 'phase2' ? 2400 : 3000;
+      // Base attack delay by phase
+      const baseDelay = this.boss.phase === 'phase4' ? 1200 :
+      this.boss.phase === 'phase3' ? 1800 :
+      this.boss.phase === 'phase2' ? 2400 : 3000;
 
-    // Wave-based scaling: Each boss wave increases attack speed progressively
-    // Boss 1: 100% | Boss 2: 85% | Boss 3: 72% | Boss 4: 61% | Boss 5: 52%
-    const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
-    const waveMultiplier = Math.max(0.5, 1 - (bossNumber - 1) * 0.15); // -15% per boss
-    const attackDelay = baseDelay * waveMultiplier;
+      // Wave-based scaling: Each boss wave increases attack speed progressively
+      // Boss 1: 100% | Boss 2: 85% | Boss 3: 72% | Boss 4: 61% | Boss 5: 52%
+      const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
+      const waveMultiplier = Math.max(0.5, 1 - (bossNumber - 1) * 0.15); // -15% per boss
+      const attackDelay = baseDelay * waveMultiplier;
 
-    if (now - this.bossState.lastAttackTime > attackDelay) {
-      this.bossState.lastAttackTime = now;
-      this.executeBossAttack();
+      if (now - this.bossState.lastAttackTime > attackDelay) {
+        this.bossState.lastAttackTime = now;
+        this.executeBossAttack();
+      }
     }
 
     // Update minions with delta time

@@ -445,20 +445,23 @@ export class Boss {
     this.image = img;
   }
 
-  update(canvasWidth: number) {
-    // Smooth horizontal movement with lerp
-    this.targetX += this.moveSpeed * this.moveDirection;
+  update(canvasWidth: number, isFrozen: boolean = false) {
+    // Don't move or change direction when frozen
+    if (!isFrozen) {
+      // Smooth horizontal movement with lerp
+      this.targetX += this.moveSpeed * this.moveDirection;
 
-    // Bounce at edges
-    if (this.targetX <= 0 || this.targetX + this.size.width >= canvasWidth) {
-      this.moveDirection *= -1;
-      this.targetX = Math.max(0, Math.min(canvasWidth - this.size.width, this.targetX));
+      // Bounce at edges
+      if (this.targetX <= 0 || this.targetX + this.size.width >= canvasWidth) {
+        this.moveDirection *= -1;
+        this.targetX = Math.max(0, Math.min(canvasWidth - this.size.width, this.targetX));
+      }
+
+      // Smooth interpolation to target
+      this.position.x += (this.targetX - this.position.x) * this.smoothing;
+
+      this.wobbleOffset += this.wobbleSpeed;
     }
-
-    // Smooth interpolation to target
-    this.position.x += (this.targetX - this.position.x) * this.smoothing;
-
-    this.wobbleOffset += this.wobbleSpeed;
 
     if (this.flashTimer > 0) {
       this.flashTimer--;
@@ -734,12 +737,17 @@ export class Projectile {
       // Calculate direction to target
       const dx = (this.target.position.x + this.target.size.width / 2) - this.position.x;
       const dy = (this.target.position.y + this.target.size.height / 2) - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx);
 
-      // Adjust velocity toward target (slight homing, not perfect tracking)
+      // Stronger homing for distant targets (especially bosses)
+      // Closer = weaker homing (0.5), Farther = stronger homing (1.2)
+      const homingStrength = Math.min(1.2, 0.5 + (distance / 300));
+
+      // Adjust velocity toward target
       const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-      this.velocity.x += Math.cos(angle) * 0.3;
-      this.velocity.y += Math.sin(angle) * 0.3;
+      this.velocity.x += Math.cos(angle) * homingStrength;
+      this.velocity.y += Math.sin(angle) * homingStrength;
 
       // Normalize to maintain speed
       const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
