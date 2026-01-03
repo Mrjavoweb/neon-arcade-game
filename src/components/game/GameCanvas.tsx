@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
-import { Achievement, DailyReward } from '@/lib/game/progression/ProgressionTypes';
+import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
 import GameHUD from './GameHUD';
 import GameOverlay from './GameOverlay';
 import BossHealthBar from './BossHealthBar';
@@ -39,7 +39,14 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
   const [levelUpData, setLevelUpData] = useState({ level: 1, upgrade: '' });
   const [stardust, setStardust] = useState(0);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [dailyReward, setDailyReward] = useState<{ day: number; reward: DailyReward; streak: number } | null>(null);
+  const [dailyReward, setDailyReward] = useState<{
+    day: number;
+    reward: DailyReward;
+    streak: number;
+    comebackBonus?: ComebackBonus;
+    milestonesUnlocked?: MilestoneReward[];
+    nextMilestone?: MilestoneReward & { progress: number };
+  } | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [bossState, setBossState] = useState<BossState>({
     isBossWave: false,
@@ -116,10 +123,16 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       const handleDailyRewardAvailable = (event: Event) => {
         const customEvent = event as CustomEvent;
         if (customEvent.detail?.reward) {
+          // Get next milestone info
+          const nextMilestone = gameEngineRef.current?.dailyRewardManager.getNextMilestone();
+
           setDailyReward({
             day: customEvent.detail.day,
             reward: customEvent.detail.reward,
-            streak: customEvent.detail.streak
+            streak: customEvent.detail.streak,
+            comebackBonus: customEvent.detail.comebackBonus,
+            milestonesUnlocked: customEvent.detail.milestonesUnlocked,
+            nextMilestone
           });
         }
       };
@@ -265,6 +278,9 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
             streak={dailyReward.streak}
             onClaim={handleClaimDailyReward}
             onClose={() => setDailyReward(null)}
+            comebackBonus={dailyReward.comebackBonus}
+            milestonesUnlocked={dailyReward.milestonesUnlocked}
+            nextMilestone={dailyReward.nextMilestone}
           />
         )}
       </AnimatePresence>

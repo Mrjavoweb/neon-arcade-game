@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { DailyReward } from '@/lib/game/progression/ProgressionTypes';
+import { DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
 
 interface DailyRewardPopupProps {
   day: number;
@@ -8,19 +8,31 @@ interface DailyRewardPopupProps {
   streak: number;
   onClaim: () => void;
   onClose: () => void;
+  comebackBonus?: ComebackBonus;
+  milestonesUnlocked?: MilestoneReward[];
+  nextMilestone?: MilestoneReward & { progress: number };
 }
 
-export default function DailyRewardPopup({ day, reward, streak, onClaim, onClose }: DailyRewardPopupProps) {
+export default function DailyRewardPopup({
+  day,
+  reward,
+  streak,
+  onClaim,
+  onClose,
+  comebackBonus,
+  milestonesUnlocked,
+  nextMilestone
+}: DailyRewardPopupProps) {
   const [claimed, setClaimed] = useState(false);
 
   const handleClaim = () => {
     setClaimed(true);
     onClaim();
-    setTimeout(onClose, 1500);
+    setTimeout(onClose, milestonesUnlocked && milestonesUnlocked.length > 0 ? 3000 : 1500);
   };
 
-  // Get all 7 days for calendar view
-  const allDays = [
+  // Get base rewards for calendar view (will show multiplied values)
+  const baseAllDays = [
     { day: 1, stardust: 50, lives: 1 },
     { day: 2, stardust: 100 },
     { day: 3, stardust: 75, maxHealth: 1 },
@@ -29,6 +41,13 @@ export default function DailyRewardPopup({ day, reward, streak, onClaim, onClose
     { day: 6, stardust: 200 },
     { day: 7, stardust: 300, lives: 2, special: 'weeklyBonus' }
   ];
+
+  // Apply week multiplier to calendar if available
+  const weekMultiplier = reward.weekMultiplier || 1.0;
+  const allDays = baseAllDays.map(d => ({
+    ...d,
+    stardust: d.stardust ? Math.floor(d.stardust * weekMultiplier) : undefined
+  }));
 
   return (
     <>
@@ -70,7 +89,36 @@ export default function DailyRewardPopup({ day, reward, streak, onClaim, onClose
             <div className="text-cyan-300 text-sm font-['Space_Grotesk']">
               Day {day} • {streak} Day Streak 🔥
             </div>
+            {weekMultiplier > 1.0 && (
+              <motion.div
+                className="mt-2 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full inline-block"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring' }}
+              >
+                <span className="text-white font-black text-xs">
+                  🚀 {weekMultiplier}x WEEK BONUS!
+                </span>
+              </motion.div>
+            )}
           </div>
+
+          {/* Comeback Bonus Banner */}
+          {comebackBonus && comebackBonus.available && (
+            <motion.div
+              className="mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg border-2 border-green-300"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              style={{ boxShadow: '0 0 20px rgba(16, 185, 129, 0.5)' }}
+            >
+              <div className="text-white font-bold text-sm text-center mb-1">
+                🎉 WELCOME BACK!
+              </div>
+              <div className="text-white text-xs text-center">
+                {comebackBonus.streakRecovery}% streak recovered • +{comebackBonus.bonusStardust} 💎 bonus
+              </div>
+            </motion.div>
+          )}
 
           {/* 7-Day Calendar */}
           <div className="grid grid-cols-7 gap-2 mb-6">
@@ -174,6 +222,58 @@ export default function DailyRewardPopup({ day, reward, streak, onClaim, onClose
             </motion.div>
           )}
 
+          {/* Milestone Celebration */}
+          {claimed && milestonesUnlocked && milestonesUnlocked.length > 0 && (
+            <motion.div
+              className="mt-4 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl border-2 border-yellow-400"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              style={{ boxShadow: '0 0 30px rgba(251, 191, 36, 0.8)' }}
+            >
+              <div className="text-center">
+                <div className="text-3xl mb-2">🏆</div>
+                <div className="text-white font-black text-lg mb-2">
+                  MILESTONE REACHED!
+                </div>
+                {milestonesUnlocked.map((milestone, idx) => (
+                  <div key={milestone.id} className="text-white text-sm mb-1">
+                    <div className="font-bold">{milestone.description}</div>
+                    <div className="text-yellow-300">
+                      +{milestone.stardust.toLocaleString()} 💎
+                      {milestone.lives && ` • +${milestone.lives} ❤️`}
+                      {milestone.maxHealth && ` • +${milestone.maxHealth} 💪`}
+                      {milestone.cosmetic && ` • Ship Unlocked!`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Next Milestone Progress */}
+          {!claimed && nextMilestone && (
+            <div className="mt-4 p-3 bg-black/30 rounded-lg border border-purple-400/30">
+              <div className="text-purple-300 text-xs font-bold mb-1">
+                Next Milestone: {nextMilestone.description}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                    style={{ width: `${nextMilestone.progress}%` }}
+                  />
+                </div>
+                <div className="text-purple-300 text-xs font-bold">
+                  {nextMilestone.progress}%
+                </div>
+              </div>
+              <div className="text-gray-400 text-[0.65rem] mt-1">
+                {nextMilestone.totalLogins - (nextMilestone.totalLogins * nextMilestone.progress / 100)} logins to go
+              </div>
+            </div>
+          )}
+
           {/* Come back tomorrow message */}
           {claimed && (
             <motion.div
@@ -181,7 +281,7 @@ export default function DailyRewardPopup({ day, reward, streak, onClaim, onClose
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              Come back tomorrow for Day {day + 1}!
+              Come back tomorrow for Day {(day % 7) + 1}!
             </motion.div>
           )}
         </div>

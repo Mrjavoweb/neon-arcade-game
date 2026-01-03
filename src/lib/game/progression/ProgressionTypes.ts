@@ -103,10 +103,15 @@ export interface DailyLoginData {
   totalLogins: number;
   rewardsCollected: number[];
 
+  // Milestone tracking
+  milestonesUnlocked: number[]; // Array of milestone IDs claimed
+  lastMilestoneCheck: number; // Last totalLogins count when milestones were checked
+
   // Future expansion
   missedDays?: number;
   streakResetDate?: string;
   premiumPassActive?: boolean;
+  comebackBonusUsed?: string; // ISO date of last comeback bonus
 }
 
 export interface DailyReward {
@@ -117,9 +122,31 @@ export interface DailyReward {
   powerUp?: 'plasma' | 'rapid' | 'shield' | 'slowmo';
   special?: string;
 
+  // Escalation bonus
+  weekMultiplier?: number; // Multiplier based on week number (1.0 - 2.5)
+
   // Premium track (future)
   premiumStardust?: number;
   premiumCosmetic?: string;
+}
+
+export interface MilestoneReward {
+  id: number; // Milestone ID (total logins required)
+  totalLogins: number; // Number of logins required
+  stardust: number;
+  lives?: number;
+  maxHealth?: number;
+  cosmetic?: string; // Ship skin ID
+  title?: string; // Player title/badge
+  description: string;
+}
+
+export interface ComebackBonus {
+  available: boolean;
+  daysAway: number; // How many days player was away
+  streakRecovery: number; // Percentage of streak recovered (0-100)
+  bonusStardust: number;
+  message: string;
 }
 
 // ============================================================================
