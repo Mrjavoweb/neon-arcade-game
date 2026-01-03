@@ -807,9 +807,21 @@ export class GameEngine {
         this.projectiles.push(projectile);
       });
     }
-    // Dual Guns superpower (Gold Elite) - Fires 2 bullets side-by-side
+    // Dual Guns superpower (Gold Elite) - Fires 2-6 bullets depending on powerups
     else if (isDualGuns) {
-      [-8, 8].forEach((offset) => {
+      // Base dual guns pattern
+      let offsets = [-8, 8];
+
+      // Plasma powerup: Add center + outer bullets (6 total)
+      if (plasmaActive) {
+        offsets = [-18, -8, 0, 8, 18, 24]; // Wide spread pattern
+      }
+      // Rapid Fire: Add 2 more bullets (4 total)
+      else if (this.player.rapidActive) {
+        offsets = [-12, -4, 4, 12]; // Tighter quad pattern
+      }
+
+      offsets.forEach((offset) => {
         const projectile = new Projectile(
           this.player.position.x + this.player.size.width / 2 - 2 + offset,
           this.player.position.y,
