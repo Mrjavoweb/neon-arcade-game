@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { RotateCw, Maximize2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -10,18 +10,13 @@ interface LandscapePromptProps {
 export default function LandscapePrompt({ isVisible, onLandscapeReady }: LandscapePromptProps) {
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
-  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [hasRequestedOrientation, setHasRequestedOrientation] = useState(false);
 
-  // Detect orientation change
+  // Detect orientation
   useEffect(() => {
     const checkOrientation = () => {
       const landscape = window.innerWidth > window.innerHeight;
       setIsLandscape(landscape);
-
-      // Show fullscreen prompt when switching to landscape
-      if (landscape && isVisible) {
-        setShowFullscreenPrompt(true);
-      }
     };
 
     checkOrientation();
@@ -32,9 +27,55 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
       window.removeEventListener('resize', checkOrientation);
       window.removeEventListener('orientationchange', checkOrientation);
     };
-  }, [isVisible]);
+  }, []);
 
-  const requestFullscreen = async () => {
+  const switchToLandscapeAndFullscreen = async () => {
+    try {
+      setHasRequestedOrientation(true);
+
+      // Try to lock to landscape orientation first
+      if (screen.orientation && screen.orientation.lock) {
+        try {
+          await screen.orientation.lock('landscape');
+        } catch (orientError) {
+          console.log('Orientation lock requires fullscreen first');
+        }
+      }
+
+      // Request fullscreen
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        await (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).mozRequestFullScreen) {
+        await (elem as any).mozRequestFullScreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        await (elem as any).msRequestFullscreen();
+      }
+
+      // Try orientation lock again after fullscreen
+      if (screen.orientation && screen.orientation.lock) {
+        try {
+          await screen.orientation.lock('landscape');
+        } catch (orientError) {
+          console.log('Could not lock orientation:', orientError);
+        }
+      }
+
+      // Notify parent
+      if (onLandscapeReady) {
+        onLandscapeReady();
+      }
+    } catch (error) {
+      console.error('Fullscreen request failed:', error);
+      setFullscreenError('Please rotate device and tap again');
+      setTimeout(() => setFullscreenError(null), 3000);
+      setHasRequestedOrientation(false);
+    }
+  };
+
+  const enterFullscreen = async () => {
     try {
       const elem = document.documentElement;
 
@@ -48,29 +89,30 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
         await (elem as any).msRequestFullscreen();
       }
 
-      // Hide prompt and notify parent
-      setShowFullscreenPrompt(false);
+      // Try to lock orientation to landscape
+      if (screen.orientation && screen.orientation.lock) {
+        try {
+          await screen.orientation.lock('landscape');
+        } catch (err) {
+          console.log('Could not lock orientation');
+        }
+      }
+
+      // Notify parent
       if (onLandscapeReady) {
         onLandscapeReady();
       }
     } catch (error) {
       console.error('Fullscreen request failed:', error);
-      setFullscreenError('Could not enter fullscreen');
+      setFullscreenError('Please tap the button to continue');
       setTimeout(() => setFullscreenError(null), 3000);
-    }
-  };
-
-  const skipFullscreen = () => {
-    setShowFullscreenPrompt(false);
-    if (onLandscapeReady) {
-      onLandscapeReady();
     }
   };
 
   if (!isVisible) return null;
 
-  // Show fullscreen prompt when in landscape mode
-  if (isLandscape && showFullscreenPrompt) {
+  // Already in landscape - just need fullscreen
+  if (isLandscape) {
     return (
       <motion.div
         className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-6"
@@ -120,37 +162,23 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
             textShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
           }}
         >
-          For the best gaming experience, switch to fullscreen mode
+          This game is best played in fullscreen
         </p>
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <motion.button
-            onClick={requestFullscreen}
-            className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
-            style={{
-              fontFamily: "'Sora', sans-serif",
-              boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Maximize2 className="w-6 h-6" />
-            <span>Enter Fullscreen</span>
-          </motion.button>
-
-          <motion.button
-            onClick={skipFullscreen}
-            className="px-8 py-4 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-all"
-            style={{
-              fontFamily: "'Sora', sans-serif"
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Skip
-          </motion.button>
-        </div>
+        {/* Single Button */}
+        <motion.button
+          onClick={enterFullscreen}
+          className="px-12 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xl font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
+          }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Maximize2 className="w-8 h-8" />
+          <span>Click for Fullscreen</span>
+        </motion.button>
 
         {/* Error Message */}
         {fullscreenError && (
@@ -166,7 +194,7 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
     );
   }
 
-  // Show portrait rotation prompt (no fullscreen button)
+  // Portrait mode - need to rotate to landscape AND fullscreen
   return (
     <motion.div
       className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-6"
@@ -195,7 +223,7 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
 
       {/* Title */}
       <motion.h1
-        className="text-3xl sm:text-4xl md:text-5xl font-black text-center mb-4"
+        className="text-2xl sm:text-3xl md:text-4xl font-black text-center mb-6"
         style={{
           fontFamily: "'Sora', sans-serif",
           background: 'linear-gradient(180deg, #22d3ee 0%, #3b82f6 50%, #ec4899 100%)',
@@ -218,56 +246,45 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           ease: 'easeInOut'
         }}
       >
-        Rotate Your Device
+        This game is best played in
+        <br />
+        Landscape Fullscreen view
       </motion.h1>
 
-      {/* Description */}
-      <p
-        className="text-lg sm:text-xl text-cyan-300 text-center max-w-md mb-6"
+      {/* Button to switch to landscape and fullscreen */}
+      <motion.button
+        onClick={switchToLandscapeAndFullscreen}
+        className="px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
         style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          textShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
+          fontFamily: "'Sora', sans-serif",
+          boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
         }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        Please rotate your device to landscape mode for the best gaming experience
-      </p>
+        <RotateCw className="w-7 h-7" />
+        <span>Click here for Landscape View</span>
+      </motion.button>
 
-      {/* Visual device illustration */}
-      <div className="flex gap-4 items-center">
-        {/* Phone in portrait (crossed out) */}
-        <div className="relative">
-          <div
-            className="w-16 h-24 border-4 border-red-400 rounded-lg opacity-50"
-            style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-20 h-1 bg-red-400 rotate-45" style={{ filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))' }} />
-          </div>
-        </div>
-
-        {/* Arrow */}
-        <div className="text-cyan-400 text-3xl font-bold">→</div>
-
-        {/* Phone in landscape (checkmark) */}
-        <div className="relative">
-          <div
-            className="w-24 h-16 border-4 border-green-400 rounded-lg"
-            style={{ boxShadow: '0 0 15px rgba(74, 222, 128, 0.6)' }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center text-green-400 text-3xl font-bold">
-            ✓
-          </div>
-        </div>
-      </div>
+      {/* Error Message */}
+      {fullscreenError && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm"
+        >
+          {fullscreenError}
+        </motion.div>
+      )}
 
       {/* Pulsing hint */}
       <motion.p
-        className="text-sm text-gray-400 text-center mt-8"
+        className="text-sm text-gray-400 text-center mt-6"
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 2, repeat: Infinity }}
       >
-        Turn your device sideways to continue
+        {hasRequestedOrientation ? 'Please rotate your device now' : 'Tap the button to continue'}
       </motion.p>
     </motion.div>
   );
