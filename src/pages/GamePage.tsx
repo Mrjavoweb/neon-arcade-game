@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
-import { Achievement, DailyReward } from '@/lib/game/progression/ProgressionTypes';
+import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
 import { AnimatePresence } from 'framer-motion';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
 
@@ -66,7 +66,14 @@ export default function GamePage() {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpData, setLevelUpData] = useState({ level: 1, upgrade: '' });
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [dailyReward, setDailyReward] = useState<{ day: number; reward: DailyReward; streak: number } | null>(null);
+  const [dailyReward, setDailyReward] = useState<{
+    day: number;
+    reward: DailyReward;
+    streak: number;
+    comebackBonus?: ComebackBonus;
+    milestonesUnlocked?: MilestoneReward[];
+    nextMilestone?: MilestoneReward & { progress: number };
+  } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
@@ -119,10 +126,16 @@ export default function GamePage() {
     const handleDailyRewardAvailable = (event: Event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.reward) {
+        // Get next milestone info
+        const nextMilestone = engine.dailyRewardManager.getNextMilestone();
+
         setDailyReward({
           day: customEvent.detail.day,
           reward: customEvent.detail.reward,
-          streak: customEvent.detail.streak
+          streak: customEvent.detail.streak,
+          comebackBonus: customEvent.detail.comebackBonus,
+          milestonesUnlocked: customEvent.detail.milestonesUnlocked,
+          nextMilestone
         });
       }
     };
@@ -132,6 +145,9 @@ export default function GamePage() {
     const initialStardust = engine.currencyManager.getStardust();
     console.log('🎮 GamePage: Initializing stardust from GameEngine:', initialStardust);
     setStardust(initialStardust);
+
+    // Check for daily reward AFTER event listener is set up
+    engine.checkDailyReward();
 
     // Handle resize events
     const resizeCanvas = () => {
@@ -281,10 +297,19 @@ export default function GamePage() {
     if (engineRef.current) {
       const result = engineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
+        // Update popup state with milestones if any were unlocked
+        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
+          setDailyReward(prev => prev ? {
+            ...prev,
+            milestonesUnlocked: result.milestonesUnlocked
+          } : null);
+        }
         console.log('Daily reward claimed:', result.reward);
+        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
+          console.log('🎉 Milestones unlocked:', result.milestonesUnlocked);
+        }
       }
     }
-    setDailyReward(null);
   };
 
   const handleShop = () => {
@@ -408,6 +433,9 @@ export default function GamePage() {
             streak={dailyReward.streak}
             onClaim={handleClaimDailyReward}
             onClose={() => setDailyReward(null)}
+            comebackBonus={dailyReward.comebackBonus}
+            milestonesUnlocked={dailyReward.milestonesUnlocked}
+            nextMilestone={dailyReward.nextMilestone}
           />
         )}
       </AnimatePresence>
