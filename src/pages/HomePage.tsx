@@ -6,9 +6,11 @@ import NeonButton from '@/components/NeonButton';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
+import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { getAudioManager } from '@/lib/game/audio/AudioManager';
+import { useOrientationLock } from '@/hooks/useOrientationLock';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -16,6 +18,9 @@ export default function HomePage() {
   const [stardust, setStardust] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+
+  // Use orientation lock hook for mobile
+  const { shouldShowPrompt } = useOrientationLock(isMobile);
   const [isPortrait, setIsPortrait] = useState(false);
 
   // Check orientation
@@ -233,6 +238,9 @@ export default function HomePage() {
           }} />
 
       </div>
+
+      {/* Landscape/Fullscreen Prompt for Mobile */}
+      <LandscapePrompt isVisible={shouldShowPrompt} />
     </div>);
 
 }

@@ -489,7 +489,10 @@ export default function GamePage() {
       </AnimatePresence>
 
       {/* Landscape Orientation Enforcement (Mobile Only) */}
-      <LandscapePrompt isVisible={shouldShowPrompt} />
+      <LandscapePrompt
+        isVisible={shouldShowPrompt}
+        onLandscapeReady={() => navigate('/')}
+      />
 
     </div>);
 
