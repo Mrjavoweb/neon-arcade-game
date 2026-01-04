@@ -153,7 +153,7 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
               }
             }
           }}
-          src="/video/Commander-start-video.mp4"
+          src="/video/Commander-Start-Video.mp4"
         >
           Your browser does not support the video tag.
         </video>
