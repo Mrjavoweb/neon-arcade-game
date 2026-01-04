@@ -63,6 +63,16 @@
 				navigator.serviceWorker.getRegistrations().then(registrations => {
 					registrations.forEach(registration => registration.unregister());
 				});
+
+				// Simulate PWA install on localhost for testing
+				window.installPWA = async function() {
+					console.log('⚠️ PWA install simulation (localhost only - won\'t actually install)');
+					alert('PWA install would trigger here in production');
+				};
+				// Trigger install available event for localhost testing
+				setTimeout(() => {
+					window.dispatchEvent(new CustomEvent('pwa-install-available'));
+				}, 1000);
 			}
 
 			// Register Service Worker for PWA functionality (production only)
