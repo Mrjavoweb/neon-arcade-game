@@ -11,6 +11,7 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMuted, setIsMuted] = useState(true); // Start muted for mobile compatibility
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -43,6 +44,7 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
         playPromise
           .then(() => {
             console.log('🎬 Video playback started successfully');
+            setIsPlaying(true);
             // Try to unmute after playback starts
             setTimeout(() => {
               if (video && !video.paused) {
@@ -54,9 +56,20 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
           })
           .catch(err => {
             console.error('🎬 Video autoplay failed:', err.name, err.message);
-            setError('Autoplay blocked. Click to play.');
+            setIsPlaying(false);
+            // Don't set error, just show play button
           });
       }
+    };
+
+    const handlePlay = () => {
+      console.log('🎬 Video started playing');
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      console.log('🎬 Video paused');
+      setIsPlaying(false);
     };
 
     const handleError = (e: Event) => {
@@ -78,6 +91,8 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
     video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('error', handleError);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
 
     // Force load
     console.log('🎬 Calling video.load()');
@@ -89,6 +104,8 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
       video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('error', handleError);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
     };
   }, []);
 
@@ -119,21 +136,25 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
           preload="auto"
           muted={isMuted}
           autoPlay
+          webkit-playsinline="true"
+          x5-playsinline="true"
           onEnded={onEnded}
           onClick={() => {
             // Allow clicking video to play if autoplay failed or toggle mute
             if (videoRef.current) {
               if (videoRef.current.paused) {
+                console.log('🎬 Video clicked - attempting to play');
                 videoRef.current.play();
               } else {
                 // Toggle mute on click
+                console.log('🎬 Video clicked - toggling mute');
                 videoRef.current.muted = !videoRef.current.muted;
-                setIsMuted(!videoRef.current.muted);
+                setIsMuted(videoRef.current.muted);
               }
             }
           }}
+          src="/video/Commander-start-video.mp4"
         >
-          <source src="/video/Commander-start-video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
@@ -150,6 +171,27 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
         {!isLoaded && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-white text-xl font-bold">Loading video...</div>
+          </div>
+        )}
+
+        {/* Manual Play Button - Show if loaded but not playing */}
+        {isLoaded && !isPlaying && !error && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <button
+              onClick={() => {
+                console.log('🎬 Manual play button clicked');
+                if (videoRef.current) {
+                  videoRef.current.play();
+                }
+              }}
+              className="px-12 py-6 bg-green-600 hover:bg-green-500 border-4 border-green-400 rounded-2xl text-white font-bold text-2xl shadow-2xl cursor-pointer"
+              style={{
+                pointerEvents: 'auto',
+                zIndex: 9999
+              }}
+            >
+              ▶ PLAY VIDEO
+            </button>
           </div>
         )}
 
