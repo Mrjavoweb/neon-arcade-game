@@ -79,7 +79,18 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
       console.error('🎬 Video error message:', target.error?.message);
       console.error('🎬 Video src:', target.src);
       console.error('🎬 Video currentSrc:', target.currentSrc);
-      setError(`Failed to load video (Error ${target.error?.code})`);
+
+      // Error 4 = MEDIA_ERR_SRC_NOT_SUPPORTED (video format not supported)
+      if (target.error?.code === 4) {
+        console.error('🎬 Video format not supported on this device - skipping video');
+        // Auto-skip video if format not supported
+        setTimeout(() => {
+          onSkip();
+        }, 1500);
+        setError('Video format not supported on this device. Skipping...');
+      } else {
+        setError(`Failed to load video (Error ${target.error?.code})`);
+      }
     };
 
     const handleCanPlay = () => {
@@ -153,8 +164,9 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
               }
             }
           }}
-          src="/video/Commander-Start-Video.mp4"
         >
+          <source src="/video/Commander-Start-Video.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' />
+          <source src="/video/Commander-Start-Video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
