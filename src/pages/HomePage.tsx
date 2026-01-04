@@ -61,7 +61,7 @@ export default function HomePage() {
   }, [engine, setEngine]);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative h-screen w-full overflow-hidden">
       {/* Animated starfield background */}
       <StarfieldBackground />
 
@@ -69,17 +69,17 @@ export default function HomePage() {
       <PWAInstallPrompt />
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-4">
+      <div className="relative z-10 flex flex-col items-center justify-center h-screen px-4 py-2">
         {/* Hero Section */}
         <motion.div
-          className="text-center mb-6"
+          className="text-center mb-2 sm:mb-4"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}>
 
           {/* Game Title */}
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-2 sm:mb-4"
             style={{
               fontFamily: "'Sora', sans-serif",
               background: 'linear-gradient(180deg, #22d3ee 0%, #3b82f6 50%, #ec4899 100%)',
@@ -107,7 +107,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <motion.p
-            className="text-lg sm:text-xl md:text-2xl text-cyan-300"
+            className="text-base sm:text-lg md:text-xl text-cyan-300"
             style={{
               fontFamily: "'Space Grotesk', sans-serif",
               textShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
@@ -123,13 +123,13 @@ export default function HomePage() {
         {/* Best Experience Notice - Mobile/Portrait Only */}
         {isMobile && isPortrait && (
           <motion.div
-            className="mb-4 px-4 py-2 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
+            className="mb-2 px-3 py-1.5 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
             style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
           >
-            <p className="text-yellow-300 font-bold text-sm font-['Space_Grotesk'] text-center"
+            <p className="text-yellow-300 font-bold text-xs font-['Space_Grotesk'] text-center"
                style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
               💡 Best experience on desktop or landscape view
             </p>
@@ -138,13 +138,13 @@ export default function HomePage() {
 
         {/* Buttons - Two Row Layout */}
         <motion.div
-          className="flex flex-col gap-3 max-w-3xl mx-auto"
+          className="flex flex-col gap-2 sm:gap-3 max-w-3xl mx-auto"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}>
 
           {/* First Row: Play, Shop, Achievements */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <NeonButton onClick={() => navigate('/game')}>
               ▶ PLAY GAME
             </NeonButton>
@@ -159,7 +159,7 @@ export default function HomePage() {
           </div>
 
           {/* Second Row: Leaderboard, Game Guide, Settings */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <NeonButton onClick={() => navigate('/leaderboard', { state: { from: '/' } })}>
               📊 LEADERBOARD
             </NeonButton>
@@ -184,12 +184,12 @@ export default function HomePage() {
         {/* Stardust Display */}
         {stardust > 0 && (
           <motion.div
-            className="mt-3 px-5 py-2 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
+            className="mt-2 sm:mt-3 px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <div className="text-purple-300 font-bold flex items-center gap-2 text-base"
+            <div className="text-purple-300 font-bold flex items-center gap-2 text-sm sm:text-base"
                  style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
               <span>💎</span>
               <span>{stardust.toLocaleString()} Stardust</span>
@@ -205,14 +205,14 @@ export default function HomePage() {
 
         {/* Footer Credits */}
         <motion.div
-          className="mt-6 text-center"
+          className="mt-2 sm:mt-4 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}>
 
           <p
 
-            className="text-xs text-gray-500"
+            className="text-[0.65rem] sm:text-xs text-gray-500"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
             <a href="https://aliens.digitalpalapp.com" className="hover:text-cyan-400 transition-colors duration-300" rel="noopener">DigitalPal Apps</a> • Optimized for 60fps • Desktop & Mobile
