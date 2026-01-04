@@ -137,6 +137,12 @@ export default function GamePage() {
           milestonesUnlocked: customEvent.detail.milestonesUnlocked,
           nextMilestone
         });
+
+        // Pause the game when daily reward popup appears
+        if (engine.state === 'playing') {
+          engine.state = 'paused';
+          console.log('🎁 Game paused for daily reward popup');
+        }
       }
     };
     window.addEventListener('daily-reward-available', handleDailyRewardAvailable);
@@ -312,6 +318,15 @@ export default function GamePage() {
     }
   };
 
+  const handleCloseDailyReward = () => {
+    setDailyReward(null);
+    // Resume the game when daily reward popup is closed
+    if (engineRef.current && engineRef.current.state === 'paused') {
+      engineRef.current.state = 'playing';
+      console.log('🎁 Game resumed after daily reward popup closed');
+    }
+  };
+
   const handleShop = () => {
     // Pause the game before navigating
     if (engineRef.current && engineRef.current.state !== 'paused') {
@@ -432,7 +447,7 @@ export default function GamePage() {
             reward={dailyReward.reward}
             streak={dailyReward.streak}
             onClaim={handleClaimDailyReward}
-            onClose={() => setDailyReward(null)}
+            onClose={handleCloseDailyReward}
             comebackBonus={dailyReward.comebackBonus}
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}

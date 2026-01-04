@@ -31,6 +31,13 @@ export default function DailyRewardPopup({
     setTimeout(onClose, milestonesUnlocked && milestonesUnlocked.length > 0 ? 3000 : 1500);
   };
 
+  const handleBackdropClick = () => {
+    // Only allow closing via backdrop after claiming
+    if (claimed) {
+      onClose();
+    }
+  };
+
   // Get base rewards for calendar view (will show multiplied values)
   const baseAllDays = [
     { day: 1, stardust: 50, lives: 1 },
@@ -57,7 +64,7 @@ export default function DailyRewardPopup({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={handleBackdropClick}
       />
 
       {/* Popup */}
