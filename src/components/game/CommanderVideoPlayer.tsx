@@ -10,6 +10,7 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Start muted for mobile compatibility
 
   useEffect(() => {
     const video = videoRef.current;
@@ -35,13 +36,21 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
       console.log('🎬 Video data loaded successfully');
       setIsLoaded(true);
 
-      // Try to play the video
+      // Try to play the video (muted initially for mobile compatibility)
       const playPromise = video.play();
 
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             console.log('🎬 Video playback started successfully');
+            // Try to unmute after playback starts
+            setTimeout(() => {
+              if (video && !video.paused) {
+                video.muted = false;
+                setIsMuted(false);
+                console.log('🎬 Video unmuted');
+              }
+            }, 100);
           })
           .catch(err => {
             console.error('🎬 Video autoplay failed:', err.name, err.message);
@@ -108,11 +117,19 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
           className="w-full h-full object-cover"
           playsInline
           preload="auto"
+          muted={isMuted}
+          autoPlay
           onEnded={onEnded}
           onClick={() => {
-            // Allow clicking video to play if autoplay failed
-            if (videoRef.current && videoRef.current.paused) {
-              videoRef.current.play();
+            // Allow clicking video to play if autoplay failed or toggle mute
+            if (videoRef.current) {
+              if (videoRef.current.paused) {
+                videoRef.current.play();
+              } else {
+                // Toggle mute on click
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(!videoRef.current.muted);
+              }
             }
           }}
         >
@@ -134,6 +151,28 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-white text-xl font-bold">Loading video...</div>
           </div>
+        )}
+
+        {/* Sound Toggle Button */}
+        {isLoaded && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(videoRef.current.muted);
+                console.log('🎬 Sound toggled:', videoRef.current.muted ? 'muted' : 'unmuted');
+              }
+            }}
+            className="absolute top-4 left-4 px-4 py-3 bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg text-white font-bold text-2xl shadow-lg cursor-pointer"
+            style={{
+              pointerEvents: 'auto',
+              zIndex: 9999
+            }}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
         )}
 
         {/* Skip Button */}
