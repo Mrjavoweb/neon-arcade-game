@@ -139,7 +139,7 @@ export default function PWAInstallButton() {
       {/* Install Button */}
       <motion.button
       onClick={handleInstall}
-      className="relative w-full px-12 py-5 text-2xl md:text-3xl font-bold text-white bg-transparent border-2 border-green-400 rounded-lg overflow-hidden group"
+      className="relative w-full px-4 py-2 sm:px-6 sm:py-3 md:px-12 md:py-5 text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white bg-transparent border-2 border-green-400 rounded-lg overflow-hidden group"
       style={{
         fontFamily: "'Sora', sans-serif",
         textShadow: '0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.5)',
@@ -176,7 +176,7 @@ export default function PWAInstallButton() {
 
       {/* Button content */}
       <span className="relative z-10 flex items-center justify-center gap-2">
-        <Download size={24} />
+        <Download size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
         <span>INSTALL APP</span>
       </span>
 

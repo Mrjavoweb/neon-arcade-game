@@ -182,20 +182,18 @@ export default function HomePage() {
         </motion.div>
 
         {/* Stardust Display */}
-        {stardust > 0 && (
-          <motion.div
-            className="mt-2 sm:mt-3 px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <div className="text-purple-300 font-bold flex items-center gap-2 text-sm sm:text-base"
-                 style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
-              <span>💎</span>
-              <span>{stardust.toLocaleString()} Stardust</span>
-            </div>
-          </motion.div>
-        )}
+        <motion.div
+          className="mt-2 sm:mt-3 px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+        >
+          <div className="text-purple-300 font-bold flex items-center gap-2 text-sm sm:text-base"
+               style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
+            <span>💎</span>
+            <span>{stardust.toLocaleString()} Stardust</span>
+          </div>
+        </motion.div>
 
         {/* Settings Overlay */}
         <SettingsOverlay
