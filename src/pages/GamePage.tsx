@@ -8,7 +8,6 @@ import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LevelUpCelebration from '@/components/game/LevelUpCelebration';
 import AchievementToast from '@/components/game/AchievementToast';
 import DailyRewardPopup from '@/components/game/DailyRewardPopup';
-import CommanderVideoPlayer from '@/components/game/CommanderVideoPlayer';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -76,7 +75,6 @@ export default function GamePage() {
     nextMilestone?: MilestoneReward & { progress: number };
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showCommanderVideo, setShowCommanderVideo] = useState(false);
   const dailyRewardClaimedRef = useRef(false);
 
   useEffect(() => {
@@ -330,11 +328,28 @@ export default function GamePage() {
     console.log('🎁 Daily reward popup closing, claimed flag:', dailyRewardClaimedRef.current);
     setDailyReward(null);
 
-    // If daily reward was just claimed, show commander video
+    // Resume game with invulnerability shield if reward was claimed
     if (dailyRewardClaimedRef.current) {
-      console.log('🎬 Showing commander video after daily reward claimed');
-      setShowCommanderVideo(true);
-      // Keep game paused during video
+      console.log('🎁 Resuming game after daily reward claimed');
+
+      // Wait 1 second before resuming with invulnerability
+      setTimeout(() => {
+        if (engineRef.current && engineRef.current.state === 'paused') {
+          // Apply 1.5s invulnerability shield (90 frames at 60fps)
+          if (engineRef.current.player) {
+            engineRef.current.player.invulnerable = true;
+            engineRef.current.player.invulnerabilityTimer = 90;
+            console.log('🛡️ Applied 1.5s invulnerability shield after daily reward');
+          }
+
+          // Resume game
+          engineRef.current.state = 'playing';
+          console.log('🎮 Game resumed after daily reward');
+        }
+
+        // Reset daily reward claimed flag
+        dailyRewardClaimedRef.current = false;
+      }, 1000); // 1 second delay
     } else {
       // If popup was closed without claiming, resume game
       console.log('🎁 Daily reward not claimed, resuming game normally');
@@ -343,36 +358,6 @@ export default function GamePage() {
         console.log('🎁 Game resumed after daily reward popup closed');
       }
     }
-  };
-
-  const handleVideoEnd = () => {
-    console.log('🎬 Commander video ended, waiting 1 second before resuming game');
-    setShowCommanderVideo(false);
-
-    // Wait 1 second, then resume game with invulnerability
-    setTimeout(() => {
-      if (engineRef.current && engineRef.current.state === 'paused') {
-        // Apply 1.5s invulnerability shield (90 frames at 60fps)
-        if (engineRef.current.player) {
-          engineRef.current.player.invulnerable = true;
-          engineRef.current.player.invulnerabilityTimer = 90;
-          console.log('🛡️ Applied 1.5s invulnerability shield after commander video');
-        }
-
-        // Resume game
-        engineRef.current.state = 'playing';
-        console.log('🎮 Game resumed after commander video');
-      }
-
-      // Reset daily reward claimed flag
-      dailyRewardClaimedRef.current = false;
-    }, 1000); // 1 second delay
-  };
-
-  const handleVideoSkip = () => {
-    console.log('⏭ Commander video skipped');
-    // Use same logic as video end
-    handleVideoEnd();
   };
 
   const handleShop = () => {
@@ -499,16 +484,6 @@ export default function GamePage() {
             comebackBonus={dailyReward.comebackBonus}
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Commander Video */}
-      <AnimatePresence>
-        {showCommanderVideo && (
-          <CommanderVideoPlayer
-            onEnded={handleVideoEnd}
-            onSkip={handleVideoSkip}
           />
         )}
       </AnimatePresence>
