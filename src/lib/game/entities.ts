@@ -320,6 +320,32 @@ export class Player {
       );
     }
 
+    // Invulnerability shield visual (cyan/blue pulsing circle)
+    if (this.invulnerable) {
+      ctx.save();
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 100) * 0.3;
+      ctx.strokeStyle = '#22d3ee'; // Cyan color
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#22d3ee';
+
+      // Draw pulsing circle around ship
+      const centerX = this.position.x + this.size.width / 2;
+      const centerY = this.position.y + this.size.height / 2;
+      const radius = Math.max(this.size.width, this.size.height) / 2 + 15 + Math.sin(Date.now() / 150) * 5;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Add inner glow
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#22d3ee';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 

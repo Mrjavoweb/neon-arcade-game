@@ -8,6 +8,7 @@ import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LevelUpCelebration from '@/components/game/LevelUpCelebration';
 import AchievementToast from '@/components/game/AchievementToast';
 import DailyRewardPopup from '@/components/game/DailyRewardPopup';
+import CommanderVideoPlayer from '@/components/game/CommanderVideoPlayer';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -75,6 +76,8 @@ export default function GamePage() {
     nextMilestone?: MilestoneReward & { progress: number };
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCommanderVideo, setShowCommanderVideo] = useState(false);
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -304,6 +307,9 @@ export default function GamePage() {
     if (engineRef.current) {
       const result = engineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
+        // Set flag to trigger video when popup closes
+        setDailyRewardClaimed(true);
+
         // Update popup state with milestones if any were unlocked
         if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
           setDailyReward(prev => prev ? {
@@ -321,11 +327,49 @@ export default function GamePage() {
 
   const handleCloseDailyReward = () => {
     setDailyReward(null);
-    // Resume the game when daily reward popup is closed
-    if (engineRef.current && engineRef.current.state === 'paused') {
-      engineRef.current.state = 'playing';
-      console.log('🎁 Game resumed after daily reward popup closed');
+
+    // If daily reward was just claimed, show commander video
+    if (dailyRewardClaimed) {
+      console.log('🎬 Showing commander video after daily reward claimed');
+      setShowCommanderVideo(true);
+      // Keep game paused during video
+    } else {
+      // If popup was closed without claiming, resume game
+      if (engineRef.current && engineRef.current.state === 'paused') {
+        engineRef.current.state = 'playing';
+        console.log('🎁 Game resumed after daily reward popup closed');
+      }
     }
+  };
+
+  const handleVideoEnd = () => {
+    console.log('🎬 Commander video ended, waiting 1 second before resuming game');
+    setShowCommanderVideo(false);
+
+    // Wait 1 second, then resume game with invulnerability
+    setTimeout(() => {
+      if (engineRef.current && engineRef.current.state === 'paused') {
+        // Apply 1.5s invulnerability shield
+        if (engineRef.current.player) {
+          engineRef.current.player.invulnerable = true;
+          engineRef.current.player.invulnerabilityTimer = 1.5;
+          console.log('🛡️ Applied 1.5s invulnerability shield after commander video');
+        }
+
+        // Resume game
+        engineRef.current.state = 'playing';
+        console.log('🎮 Game resumed after commander video');
+      }
+
+      // Reset daily reward claimed flag
+      setDailyRewardClaimed(false);
+    }, 1000); // 1 second delay
+  };
+
+  const handleVideoSkip = () => {
+    console.log('⏭ Commander video skipped');
+    // Use same logic as video end
+    handleVideoEnd();
   };
 
   const handleShop = () => {
@@ -452,6 +496,16 @@ export default function GamePage() {
             comebackBonus={dailyReward.comebackBonus}
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Commander Video */}
+      <AnimatePresence>
+        {showCommanderVideo && (
+          <CommanderVideoPlayer
+            onEnded={handleVideoEnd}
+            onSkip={handleVideoSkip}
           />
         )}
       </AnimatePresence>
