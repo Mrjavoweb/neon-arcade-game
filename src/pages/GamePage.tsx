@@ -152,9 +152,6 @@ export default function GamePage() {
     console.log('🎮 GamePage: Initializing stardust from GameEngine:', initialStardust);
     setStardust(initialStardust);
 
-    // Check for daily reward AFTER event listener is set up
-    engine.checkDailyReward();
-
     // Handle resize events
     const resizeCanvas = () => {
       const oldWidth = canvas.width;
@@ -243,6 +240,10 @@ export default function GamePage() {
       };
 
       gameLoop();
+
+      // Check for daily reward AFTER assets loaded and game loop started
+      // This ensures enemies are properly initialized before pausing
+      engine.checkDailyReward();
     };
 
     init();
