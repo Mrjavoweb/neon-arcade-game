@@ -85,7 +85,7 @@ export default function HomePage() {
       <PWAInstallPrompt />
 
       {/* Sound Toggle Button */}
-      <SoundToggleButton />
+      <SoundToggleButton variant="homepage" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-screen px-4 py-2">

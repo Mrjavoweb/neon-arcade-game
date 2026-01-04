@@ -2,7 +2,11 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getAudioManager } from '@/lib/game/audio/AudioManager';
 
-export default function SoundToggleButton() {
+interface SoundToggleButtonProps {
+  variant?: 'game' | 'homepage';
+}
+
+export default function SoundToggleButton({ variant = 'game' }: SoundToggleButtonProps) {
   const audioManager = getAudioManager();
   const [isEnabled, setIsEnabled] = useState(audioManager.isAnyAudioEnabled());
 
@@ -30,17 +34,38 @@ export default function SoundToggleButton() {
     }
   };
 
+  // Position and size based on variant
+  const getPositionClass = () => {
+    if (variant === 'homepage') {
+      return 'top-4 right-4 sm:top-6 sm:right-6';
+    }
+    // Game variant - original positioning
+    return isMobile && isLandscape
+      ? 'top-1 right-[30%]'
+      : 'top-2 right-[28%] sm:top-4 sm:right-[26%]';
+  };
+
+  const getPaddingClass = () => {
+    if (variant === 'homepage') {
+      return 'p-3 sm:p-4';
+    }
+    return isMobile && isLandscape ? 'p-1.5' : 'p-2 sm:p-3';
+  };
+
+  const getIconSizeClass = () => {
+    if (variant === 'homepage') {
+      return 'w-6 h-6 sm:w-8 sm:h-8';
+    }
+    return isMobile && isLandscape ? 'w-3 h-3' : 'w-4 h-4 sm:w-6 sm:h-6';
+  };
+
   return (
     <button
       onClick={handleToggle}
-      className={`absolute z-50 pointer-events-auto ${
-        isMobile && isLandscape
-          ? 'top-1 right-[30%]'
-          : 'top-2 right-[28%] sm:top-4 sm:right-[26%]'
-      }`}
+      className={`absolute z-50 pointer-events-auto ${getPositionClass()}`}
       style={{
-        paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined,
-        transform: 'translateX(50%)'
+        paddingTop: variant === 'game' && isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined,
+        transform: variant === 'game' ? 'translateX(50%)' : undefined
       }}
       aria-label={isEnabled ? 'Mute audio' : 'Unmute audio'}>
 
@@ -49,29 +74,23 @@ export default function SoundToggleButton() {
           isEnabled
             ? 'border-cyan-400/60 hover:bg-black/80 hover:border-cyan-400'
             : 'border-red-400/60 hover:bg-black/80 hover:border-red-400'
-        } rounded-lg ${
-          isMobile && isLandscape ? 'p-1.5' : 'p-2 sm:p-3'
-        }`}
+        } rounded-lg ${getPaddingClass()}`}
         style={{
           boxShadow: isEnabled
-            ? '0 0 15px rgba(34, 211, 238, 0.3)'
-            : '0 0 15px rgba(239, 68, 68, 0.3)'
+            ? '0 0 20px rgba(34, 211, 238, 0.5)'
+            : '0 0 20px rgba(239, 68, 68, 0.5)'
         }}>
 
         {/* Sound icon */}
         {isEnabled ? (
           <Volume2
-            className={`${
-              isMobile && isLandscape ? 'w-3 h-3' : 'w-4 h-4 sm:w-6 sm:h-6'
-            } text-cyan-400`}
-            style={{ filter: 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.8))' }}
+            className={`${getIconSizeClass()} text-cyan-400`}
+            style={{ filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))' }}
           />
         ) : (
           <VolumeX
-            className={`${
-              isMobile && isLandscape ? 'w-3 h-3' : 'w-4 h-4 sm:w-6 sm:h-6'
-            } text-red-400`}
-            style={{ filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))' }}
+            className={`${getIconSizeClass()} text-red-400`}
+            style={{ filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))' }}
           />
         )}
       </div>
