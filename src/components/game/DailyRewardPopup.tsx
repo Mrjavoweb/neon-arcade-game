@@ -69,20 +69,20 @@ export default function DailyRewardPopup({
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       >
         <div
-          className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 border-4 border-cyan-400 rounded-3xl p-6 max-w-md w-full shadow-2xl pointer-events-auto"
+          className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 border-4 border-cyan-400 rounded-3xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto"
           style={{ boxShadow: '0 0 50px rgba(34, 211, 238, 0.5)' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4 sm:mb-6">
             <motion.div
-              className="text-6xl mb-2"
+              className="text-4xl sm:text-6xl mb-1 sm:mb-2"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 2 }}
             >
               🎁
             </motion.div>
-            <h2 className="text-3xl font-black text-white font-['Sora'] mb-1"
+            <h2 className="text-2xl sm:text-3xl font-black text-white font-['Sora'] mb-1"
                 style={{ textShadow: '0 0 20px rgba(34, 211, 238, 0.8)' }}>
               DAILY REWARD
             </h2>
@@ -121,7 +121,7 @@ export default function DailyRewardPopup({
           )}
 
           {/* 7-Day Calendar */}
-          <div className="grid grid-cols-7 gap-2 mb-6">
+          <div className="grid grid-cols-7 gap-2 mb-4 sm:mb-6">
             {allDays.map((d) => (
               <div
                 key={d.day}
@@ -151,7 +151,7 @@ export default function DailyRewardPopup({
 
           {/* Today's Reward */}
           <motion.div
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 mb-6 text-center"
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 text-center"
             animate={claimed ? { scale: [1, 1.05, 1] } : {}}
             transition={{ duration: 0.5 }}
           >
