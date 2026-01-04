@@ -77,7 +77,7 @@ export default function GamePage() {
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showCommanderVideo, setShowCommanderVideo] = useState(false);
-  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+  const dailyRewardClaimedRef = useRef(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -308,7 +308,8 @@ export default function GamePage() {
       const result = engineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
         // Set flag to trigger video when popup closes
-        setDailyRewardClaimed(true);
+        dailyRewardClaimedRef.current = true;
+        console.log('🎁 Daily reward claimed, flag set to trigger video');
 
         // Update popup state with milestones if any were unlocked
         if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
@@ -326,15 +327,17 @@ export default function GamePage() {
   };
 
   const handleCloseDailyReward = () => {
+    console.log('🎁 Daily reward popup closing, claimed flag:', dailyRewardClaimedRef.current);
     setDailyReward(null);
 
     // If daily reward was just claimed, show commander video
-    if (dailyRewardClaimed) {
+    if (dailyRewardClaimedRef.current) {
       console.log('🎬 Showing commander video after daily reward claimed');
       setShowCommanderVideo(true);
       // Keep game paused during video
     } else {
       // If popup was closed without claiming, resume game
+      console.log('🎁 Daily reward not claimed, resuming game normally');
       if (engineRef.current && engineRef.current.state === 'paused') {
         engineRef.current.state = 'playing';
         console.log('🎁 Game resumed after daily reward popup closed');
@@ -349,10 +352,10 @@ export default function GamePage() {
     // Wait 1 second, then resume game with invulnerability
     setTimeout(() => {
       if (engineRef.current && engineRef.current.state === 'paused') {
-        // Apply 1.5s invulnerability shield
+        // Apply 1.5s invulnerability shield (90 frames at 60fps)
         if (engineRef.current.player) {
           engineRef.current.player.invulnerable = true;
-          engineRef.current.player.invulnerabilityTimer = 1.5;
+          engineRef.current.player.invulnerabilityTimer = 90;
           console.log('🛡️ Applied 1.5s invulnerability shield after commander video');
         }
 
@@ -362,7 +365,7 @@ export default function GamePage() {
       }
 
       // Reset daily reward claimed flag
-      setDailyRewardClaimed(false);
+      dailyRewardClaimedRef.current = false;
     }, 1000); // 1 second delay
   };
 
