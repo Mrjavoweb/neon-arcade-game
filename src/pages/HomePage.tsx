@@ -18,21 +18,31 @@ export default function HomePage() {
   const [stardust, setStardust] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  const [isPortrait, setIsPortrait] = useState(() => window.innerWidth <= window.innerHeight);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Use orientation lock hook for mobile
-  const { shouldShowPrompt } = useOrientationLock(isMobile);
-  const [isPortrait, setIsPortrait] = useState(false);
-
-  // Check orientation
+  // Check orientation and fullscreen status
   useEffect(() => {
     const checkOrientation = () => {
       setIsPortrait(window.innerWidth <= window.innerHeight);
     };
 
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
+    const checkFullscreen = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
 
-    return () => window.removeEventListener('resize', checkOrientation);
+    checkOrientation();
+    checkFullscreen();
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    document.addEventListener('fullscreenchange', checkFullscreen);
+
+    return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
+      document.removeEventListener('fullscreenchange', checkFullscreen);
+    };
   }, []);
 
   // Initialize game engine for persistence
@@ -240,7 +250,7 @@ export default function HomePage() {
       </div>
 
       {/* Landscape/Fullscreen Prompt for Mobile */}
-      <LandscapePrompt isVisible={shouldShowPrompt} />
+      {isMobile && <LandscapePrompt isVisible={isPortrait || !isFullscreen} />}
     </div>);
 
 }

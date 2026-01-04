@@ -29,6 +29,13 @@ export default function GamePage() {
 
   // Enforce landscape orientation on mobile
   const { shouldShowPrompt } = useOrientationLock(true);
+
+  // Redirect to home page if mobile user is in portrait or not fullscreen
+  useEffect(() => {
+    if (isMobile && shouldShowPrompt) {
+      navigate('/');
+    }
+  }, [isMobile, shouldShowPrompt, navigate]);
   const [gameState, setGameState] = useState<{
     state: GameState;
     stats: GameStats;
