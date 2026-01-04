@@ -76,12 +76,29 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       if (gameEngineRef.current) {
         const oldStats = gameEngineRef.current.stats;
         const oldState = gameEngineRef.current.state;
+        const oldPlayer = gameEngineRef.current.player;
+        const wasPlaying = oldState === 'playing';
+
         gameEngineRef.current.cleanup();
 
         gameEngineRef.current = new GameEngine(canvas, isMobile);
         gameEngineRef.current.stats = oldStats;
         gameEngineRef.current.state = oldState;
+
+        // Restore player position if it existed
+        if (oldPlayer && gameEngineRef.current.player) {
+          gameEngineRef.current.player.position.x = oldPlayer.position.x;
+          gameEngineRef.current.player.position.y = oldPlayer.position.y;
+          gameEngineRef.current.player.invulnerable = oldPlayer.invulnerable;
+          gameEngineRef.current.player.invulnerabilityTimer = oldPlayer.invulnerabilityTimer;
+        }
+
         gameEngineRef.current.loadAssets();
+
+        // Regenerate enemy grid with proper spacing for new orientation
+        if (wasPlaying && gameEngineRef.current.enemies.length === 0) {
+          gameEngineRef.current.createEnemyWave(oldStats.wave);
+        }
       }
     };
 
