@@ -1,11 +1,37 @@
 import { motion } from 'framer-motion';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Maximize2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface LandscapePromptProps {
   isVisible: boolean;
 }
 
 export default function LandscapePrompt({ isVisible }: LandscapePromptProps) {
+  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
+
+  const requestFullscreen = async () => {
+    try {
+      const elem = document.documentElement;
+
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        await (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).mozRequestFullScreen) {
+        await (elem as any).mozRequestFullScreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        await (elem as any).msRequestFullscreen();
+      } else {
+        setFullscreenError('Fullscreen not supported');
+        setTimeout(() => setFullscreenError(null), 3000);
+      }
+    } catch (error) {
+      console.error('Fullscreen request failed:', error);
+      setFullscreenError('Could not enter fullscreen');
+      setTimeout(() => setFullscreenError(null), 3000);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -101,9 +127,35 @@ export default function LandscapePrompt({ isVisible }: LandscapePromptProps) {
         </div>
       </div>
 
+      {/* Fullscreen Button */}
+      <motion.button
+        onClick={requestFullscreen}
+        className="mt-8 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
+        style={{
+          fontFamily: "'Sora', sans-serif",
+          boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
+        }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Maximize2 className="w-6 h-6" />
+        <span>Enter Fullscreen</span>
+      </motion.button>
+
+      {/* Error Message */}
+      {fullscreenError && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm"
+        >
+          {fullscreenError}
+        </motion.div>
+      )}
+
       {/* Pulsing hint */}
       <motion.p
-        className="text-sm text-gray-400 text-center mt-8"
+        className="text-sm text-gray-400 text-center mt-6"
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 2, repeat: Infinity }}
