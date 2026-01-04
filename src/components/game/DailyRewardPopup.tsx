@@ -76,20 +76,20 @@ export default function DailyRewardPopup({
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       >
         <div
-          className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 border-4 border-cyan-400 rounded-3xl p-3 sm:p-6 max-w-2xl w-full shadow-2xl pointer-events-auto"
+          className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 border-4 border-cyan-400 rounded-3xl p-2 sm:p-6 max-w-2xl w-full shadow-2xl pointer-events-auto"
           style={{ boxShadow: '0 0 50px rgba(34, 211, 238, 0.5)' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="text-center mb-3 sm:mb-6">
+          <div className="text-center mb-2 sm:mb-6">
             <motion.div
-              className="text-3xl sm:text-6xl mb-0.5 sm:mb-2"
+              className="text-2xl sm:text-6xl mb-0 sm:mb-2"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 2 }}
             >
               🎁
             </motion.div>
-            <h2 className="text-xl sm:text-3xl font-black text-white font-['Sora'] mb-0.5 sm:mb-1"
+            <h2 className="text-lg sm:text-3xl font-black text-white font-['Sora'] mb-0 sm:mb-1"
                 style={{ textShadow: '0 0 20px rgba(34, 211, 238, 0.8)' }}>
               DAILY REWARD
             </h2>
@@ -113,7 +113,7 @@ export default function DailyRewardPopup({
           {/* Comeback Bonus Banner */}
           {comebackBonus && comebackBonus.available && (
             <motion.div
-              className="mb-2 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg border-2 border-green-300"
+              className="mb-1.5 sm:mb-4 p-1.5 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg border-2 border-green-300"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               style={{ boxShadow: '0 0 20px rgba(16, 185, 129, 0.5)' }}
@@ -128,7 +128,7 @@ export default function DailyRewardPopup({
           )}
 
           {/* 7-Day Calendar */}
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-3 sm:mb-6">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-6">
             {allDays.map((d) => (
               <div
                 key={d.day}
@@ -158,46 +158,46 @@ export default function DailyRewardPopup({
 
           {/* Today's Reward */}
           <motion.div
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-3 sm:p-6 mb-3 sm:mb-6 text-center"
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-2 sm:p-6 mb-2 sm:mb-6 text-center"
             animate={claimed ? { scale: [1, 1.05, 1] } : {}}
             transition={{ duration: 0.5 }}
           >
-            <div className="text-white/80 text-xs font-bold tracking-widest mb-2">
+            <div className="text-white/80 text-xs font-bold tracking-widest mb-1 sm:mb-2">
               TODAY'S REWARD
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-center">
+            <div className="flex flex-wrap gap-1.5 sm:gap-3 justify-center items-center">
               {reward.stardust && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-3xl sm:text-4xl">💎</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-2xl sm:text-4xl">💎</span>
                   <div>
-                    <div className="text-xl sm:text-2xl font-black text-white">+{reward.stardust}</div>
+                    <div className="text-lg sm:text-2xl font-black text-white">+{reward.stardust}</div>
                     <div className="text-xs text-white/80">Stardust</div>
                   </div>
                 </div>
               )}
               {reward.lives && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-2xl sm:text-3xl">❤️</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-xl sm:text-3xl">❤️</span>
                   <div>
-                    <div className="text-lg sm:text-xl font-black text-white">+{reward.lives}</div>
+                    <div className="text-base sm:text-xl font-black text-white">+{reward.lives}</div>
                     <div className="text-xs text-white/80">Lives</div>
                   </div>
                 </div>
               )}
               {reward.maxHealth && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-2xl sm:text-3xl">💪</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-xl sm:text-3xl">💪</span>
                   <div>
-                    <div className="text-lg sm:text-xl font-black text-white">+{reward.maxHealth}</div>
+                    <div className="text-base sm:text-xl font-black text-white">+{reward.maxHealth}</div>
                     <div className="text-xs text-white/80">Max HP</div>
                   </div>
                 </div>
               )}
               {reward.powerUp && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-2xl sm:text-3xl">🛡️</span>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-xl sm:text-3xl">🛡️</span>
                   <div>
-                    <div className="text-lg sm:text-xl font-black text-white">Shield</div>
+                    <div className="text-base sm:text-xl font-black text-white">Shield</div>
                     <div className="text-xs text-white/80">Power-Up</div>
                   </div>
                 </div>
