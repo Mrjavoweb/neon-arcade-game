@@ -6,6 +6,7 @@ import NeonButton from '@/components/NeonButton';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
+import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
@@ -82,6 +83,9 @@ export default function HomePage() {
 
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+
+      {/* Sound Toggle Button */}
+      <SoundToggleButton />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-screen px-4 py-2">
