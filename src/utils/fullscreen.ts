@@ -66,3 +66,4 @@ export const exitFullscreenAndUnlock = async (): Promise<boolean> => {
   unlockOrientation();
   return await exitFullscreen();
 };
+// Build trigger: 1768040210
