@@ -21,15 +21,28 @@ export default function HomePage() {
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth <= window.innerHeight);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [promptDismissed, setPromptDismissed] = useState(false);
 
   // Check orientation and fullscreen status
   useEffect(() => {
     const checkOrientation = () => {
-      setIsPortrait(window.innerWidth <= window.innerHeight);
+      const newIsPortrait = window.innerWidth <= window.innerHeight;
+      setIsPortrait(newIsPortrait);
+
+      // Reset prompt dismissed state when rotating to landscape
+      if (!newIsPortrait && promptDismissed) {
+        setPromptDismissed(false);
+      }
     };
 
     const checkFullscreen = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const newIsFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(newIsFullscreen);
+
+      // Reset prompt dismissed state when entering fullscreen
+      if (newIsFullscreen && promptDismissed) {
+        setPromptDismissed(false);
+      }
     };
 
     checkOrientation();
@@ -44,7 +57,7 @@ export default function HomePage() {
       window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', checkFullscreen);
     };
-  }, []);
+  }, [promptDismissed]);
 
   // Initialize game engine for persistence
   useEffect(() => {
@@ -254,7 +267,12 @@ export default function HomePage() {
       </div>
 
       {/* Landscape/Fullscreen Prompt for Mobile */}
-      {isMobile && <LandscapePrompt isVisible={isPortrait || !isFullscreen} />}
+      {isMobile && (
+        <LandscapePrompt
+          isVisible={(isPortrait || !isFullscreen) && !promptDismissed}
+          onDismiss={() => setPromptDismissed(true)}
+        />
+      )}
     </div>);
 
 }

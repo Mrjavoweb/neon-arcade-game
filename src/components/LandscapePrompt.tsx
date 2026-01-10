@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 interface LandscapePromptProps {
   isVisible: boolean;
   onLandscapeReady?: () => void;
+  onDismiss?: () => void;
 }
 
-export default function LandscapePrompt({ isVisible, onLandscapeReady }: LandscapePromptProps) {
+export default function LandscapePrompt({ isVisible, onLandscapeReady, onDismiss }: LandscapePromptProps) {
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
   const [hasRequestedOrientation, setHasRequestedOrientation] = useState(false);
@@ -165,7 +166,7 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           This game is best played in fullscreen
         </p>
 
-        {/* Single Button */}
+        {/* Fullscreen Button */}
         <motion.button
           onClick={enterFullscreen}
           className="px-12 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xl font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
@@ -179,6 +180,19 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           <Maximize2 className="w-8 h-8" />
           <span>Click for Fullscreen</span>
         </motion.button>
+
+        {/* Dismiss Button */}
+        {onDismiss && (
+          <motion.button
+            onClick={() => onDismiss?.()}
+            className="mt-4 px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold rounded-lg transition-all"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Continue Without Fullscreen
+          </motion.button>
+        )}
 
         {/* Error Message */}
         {fullscreenError && (
@@ -251,7 +265,7 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
         Landscape Fullscreen view
       </motion.h1>
 
-      {/* Button to switch to landscape and fullscreen */}
+      {/* Landscape Button */}
       <motion.button
         onClick={switchToLandscapeAndFullscreen}
         className="px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
@@ -265,6 +279,19 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
         <RotateCw className="w-7 h-7" />
         <span>Click here for Landscape View</span>
       </motion.button>
+
+      {/* Dismiss Button */}
+      {onDismiss && (
+        <motion.button
+          onClick={() => onDismiss?.()}
+          className="mt-4 px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold rounded-lg transition-all"
+          style={{ fontFamily: "'Sora', sans-serif" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Continue in Portrait Mode
+        </motion.button>
+      )}
 
       {/* Error Message */}
       {fullscreenError && (

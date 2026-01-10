@@ -206,6 +206,10 @@ export class GameEngine {
 
     this.player = new Player(canvas.width, canvas.height, playerSpeed);
 
+    // Grant immediate invulnerability at game start (prevents race condition with enemy fire)
+    this.player.invulnerable = true;
+    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
+
     // Move spaceship up in portrait mode for better visibility
     if (this.isMobile && canvas.height > canvas.width) {
       this.player.position.y = canvas.height - this.player.size.height - 50; // 50px from bottom instead of 30px
@@ -771,6 +775,9 @@ export class GameEngine {
 
     // Apply fire rate boost if applicable
     let fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
+    if (this.player.rapidActive) {
+      console.log('⚡ Rapid fire active - fire rate:', fireRate);
+    }
     if (superpower.type === 'fire_rate_boost' && superpower.value) {
       fireRate = fireRate * (1 - superpower.value / 100);
     }
@@ -1601,7 +1608,9 @@ export class GameEngine {
         this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
+        console.log('⚡ RAPID FIRE POWERUP COLLECTED');
         this.player.activateRapid(bonusDuration, isDualGuns, isBossMode);
+        console.log('⚡ rapidActive:', this.player.rapidActive, 'duration:', this.player.rapidDuration);
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
@@ -1610,8 +1619,10 @@ export class GameEngine {
         this.audioManager.playSound('powerup_shield_activate', 0.6);
         break;
       case 'slowmo':
+        console.log('🕐 SLOWMO POWERUP COLLECTED');
         this.slowMotionActive = true;
         this.slowMotionDuration = 360 + bonusDuration; // 6 seconds + bonus
+        console.log('🕐 slowMotionActive:', this.slowMotionActive, 'duration:', this.slowMotionDuration);
         this.audioManager.playSound('powerup_slowmo', 0.6);
         break;
 
@@ -1621,10 +1632,13 @@ export class GameEngine {
         this.audioManager.playSound('powerup_collect', 0.6);
         break;
       case 'laser':
+        console.log('🔴 LASER POWERUP COLLECTED');
         this.player.activateLaser(bonusDuration);
+        console.log('🔴 laserActive:', this.player.laserActive, 'duration:', this.player.laserDuration);
         this.audioManager.playSound('powerup_plasma', 0.7); // Similar to plasma sound
         break;
       case 'nuke':
+        console.log('💥 NUKE POWERUP COLLECTED');
         this.activateNuke();
         this.audioManager.playSound('boss_death', 0.8); // Big explosion sound
         break;
@@ -1635,7 +1649,9 @@ export class GameEngine {
         this.audioManager.playSound('powerup_shield_activate', 0.7);
         break;
       case 'freeze':
+        console.log('❄️ FREEZE POWERUP COLLECTED');
         this.player.activateFreeze(bonusDuration);
+        console.log('❄️ freezeActive:', this.player.freezeActive, 'duration:', this.player.freezeDuration);
         this.audioManager.playSound('powerup_slowmo', 0.6); // Similar to slowmo
         break;
 
@@ -1780,6 +1796,7 @@ export class GameEngine {
 
   activateNuke() {
     // Nuke powerup - destroy all visible enemies with massive explosion
+    console.log('💥 Enemies before nuke:', this.enemies.length, 'Boss alive:', this.boss?.isAlive);
     let enemiesDestroyed = 0;
 
     // Destroy all regular enemies
@@ -2288,9 +2305,9 @@ export class GameEngine {
       this.audioManager.playSound('powerup_shield_activate', 0.4);
     }
 
-    // Grant 1.5 second invulnerability at wave start
+    // Grant invulnerability at wave start
     this.player.invulnerable = true;
-    this.player.invulnerabilityTimer = 90; // 1.5 seconds at 60fps
+    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
 
     this.initEnemies();
     this.projectiles = [];
@@ -2489,6 +2506,7 @@ export class GameEngine {
 
     // Update laser beam
     if (this.player.laserActive && this.keys.has(' ')) {
+      console.log('🔴 Creating laser beam');
       // Create continuous beam from player to top of screen
       this.laserBeam = {
         active: true,
@@ -2910,9 +2928,9 @@ export class GameEngine {
 
     if (this.assets) this.player.setImage(this.assets.playerShip);
 
-    // Grant 1.5 second invulnerability at game start / checkpoint continuation
+    // Grant invulnerability at game start / checkpoint continuation
     this.player.invulnerable = true;
-    this.player.invulnerabilityTimer = 90; // 1.5 seconds at 60fps
+    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
 
     this.initEnemies();
 
