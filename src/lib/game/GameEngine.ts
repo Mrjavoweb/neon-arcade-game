@@ -1938,6 +1938,66 @@ export class GameEngine {
     console.log(`💥 NUKE activated! Destroyed ${enemiesDestroyed} enemies!`);
   }
 
+  private bossDefeated(): void {
+    if (!this.boss) return;
+
+    // Play victory sounds
+    this.audioManager.playSound('boss_death', 0.9);
+    this.audioManager.playMusic('victory_theme', false);
+
+    // Award points and stats
+    this.stats.score += Math.floor(this.boss.points * 5 * this.scoreMultiplier); // 5x score + multiplier
+    this.stats.enemiesDestroyed++;
+    this.registerKill(this.boss.points * 5); // Track combo (boss counts!)
+    this.awardXP(200); // Boss XP
+
+    // Visual effects
+    this.createExplosion(
+      this.boss.position.x + this.boss.size.width / 2,
+      this.boss.position.y + this.boss.size.height / 2
+    );
+    this.addScreenShake(25);
+    this.spawnDebrisParticles(
+      this.boss.position.x + this.boss.size.width / 2,
+      this.boss.position.y + this.boss.size.height / 2,
+      '#dc2626'
+    );
+
+    // Guaranteed power-up (better drops from bosses - include new powerups)
+    const types: Array<PowerUpType> = [
+      'plasma', 'rapid', 'shield', 'slowmo',
+      'homing', 'laser', 'freeze', 'piercing', 'multiplier'
+    ];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const powerUp = new PowerUpEntity(
+      this.boss.position.x + this.boss.size.width / 2 - 20,
+      this.boss.position.y + this.boss.size.height / 2,
+      type
+    );
+    if (this.assets) {
+      const imageMap: Partial<Record<PowerUpType, HTMLImageElement>> = {
+        plasma: this.assets.powerUpPlasma,
+        rapid: this.assets.powerUpRapid,
+        shield: this.assets.powerUpShield,
+        slowmo: this.assets.powerUpSlowmo
+      };
+      if (imageMap[type]) {
+        powerUp.setImage(imageMap[type]!);
+      }
+    }
+    this.powerUps.push(powerUp);
+
+    // Set victory state
+    this.bossState.bossActive = false;
+    this.bossState.bossHealth = 0;
+    this.bossState.bossVictoryTimer = 120; // 2 second victory pause
+    this.state = 'bossVictory';
+
+    // Progression tracking for boss defeat
+    this.currencyManager.earnStardust(100, 'boss_defeat');
+    this.achievementManager.trackBossDefeat();
+  }
+
   createImpactParticles(x: number, y: number, color: string) {
     // Drastically reduced particles for mobile performance
     const particleCount = this.isMobile ? 3 : 8;
