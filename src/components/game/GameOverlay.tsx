@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { GameState, GameStats } from '@/lib/game/types';
 import PWAInstallButton from '@/components/PWAInstallButton';
-import { toggleFullscreen } from '@/utils/fullscreen';
+import { toggleFullscreen, exitFullscreenAndUnlock } from '@/utils/fullscreen';
 
 interface GameOverlayProps {
   state: GameState;
@@ -143,13 +143,17 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onResta
 
               <button
               onClick={async () => {
-                await toggleFullscreen();
+                if (isFullscreen) {
+                  await exitFullscreenAndUnlock();
+                } else {
+                  await toggleFullscreen();
+                }
               }}
               className={`w-full bg-indigo-500/30 hover:bg-indigo-500/50 text-white font-bold rounded-lg border border-indigo-400 transition-all font-['Space_Grotesk'] ${
                 isLandscape ? 'px-3 py-2 text-sm' : 'px-6 py-3'
               }`}>
 
-                {isFullscreen ? '⊙ Exit Fullscreen' : '⊕ Fullscreen'}
+                {isFullscreen ? '📱 Exit to Portrait' : '⊕ Fullscreen'}
               </button>
 
               <button

@@ -208,7 +208,7 @@ export class GameEngine {
 
     // Grant immediate invulnerability at game start (prevents race condition with enemy fire)
     this.player.invulnerable = true;
-    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
+    this.player.invulnerabilityTimer = this.isMobile ? 45 : 60; // 0.75s mobile, 1.0s desktop
 
     // Move spaceship up in portrait mode for better visibility
     if (this.isMobile && canvas.height > canvas.width) {
@@ -2367,7 +2367,7 @@ export class GameEngine {
 
     // Grant invulnerability at wave start
     this.player.invulnerable = true;
-    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
+    this.player.invulnerabilityTimer = this.isMobile ? 45 : 60; // 0.75s mobile, 1.0s desktop
 
     this.initEnemies();
     this.projectiles = [];
@@ -2566,7 +2566,6 @@ export class GameEngine {
 
     // Update laser beam
     if (this.player.laserActive) {
-      console.log('🔴 Creating laser beam');
       // Create continuous beam from player to top of screen
       this.laserBeam = {
         active: true,
@@ -2990,7 +2989,7 @@ export class GameEngine {
 
     // Grant invulnerability at game start / checkpoint continuation
     this.player.invulnerable = true;
-    this.player.invulnerabilityTimer = this.isMobile ? 60 : 90; // 1.0s mobile, 1.5s desktop
+    this.player.invulnerabilityTimer = this.isMobile ? 45 : 60; // 0.75s mobile, 1.0s desktop
 
     this.initEnemies();
 

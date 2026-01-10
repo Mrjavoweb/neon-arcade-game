@@ -51,3 +51,18 @@ export const toggleFullscreen = async (): Promise<boolean> => {
     return await enterFullscreen();
   }
 };
+
+export const unlockOrientation = (): void => {
+  try {
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  } catch (error) {
+    console.log('Orientation unlock not available:', error);
+  }
+};
+
+export const exitFullscreenAndUnlock = async (): Promise<boolean> => {
+  unlockOrientation();
+  return await exitFullscreen();
+};
