@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { GameState, GameStats } from '@/lib/game/types';
 import PWAInstallButton from '@/components/PWAInstallButton';
+import { toggleFullscreen } from '@/utils/fullscreen';
 
 interface GameOverlayProps {
   state: GameState;
@@ -20,19 +21,26 @@ interface GameOverlayProps {
 
 export default function GameOverlay({ state, stats, onResume, onRestart, onRestartFromWave1, onMainMenu, onShop, onAchievements, onGuide, onSettings, onLeaderboard, lastCheckpoint }: GameOverlayProps) {
   const [isLandscape, setIsLandscape] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(() => !!document.fullscreenElement);
 
   useEffect(() => {
     const checkOrientation = () => {
       setIsLandscape(window.innerWidth > window.innerHeight);
     };
 
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
     checkOrientation();
     window.addEventListener('resize', checkOrientation);
     window.addEventListener('orientationchange', checkOrientation);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     return () => {
       window.removeEventListener('resize', checkOrientation);
       window.removeEventListener('orientationchange', checkOrientation);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
 
@@ -132,6 +140,17 @@ export default function GameOverlay({ state, stats, onResume, onRestart, onResta
                   ⚙️ Settings
                 </button>
               )}
+
+              <button
+              onClick={async () => {
+                await toggleFullscreen();
+              }}
+              className={`w-full bg-indigo-500/30 hover:bg-indigo-500/50 text-white font-bold rounded-lg border border-indigo-400 transition-all font-['Space_Grotesk'] ${
+                isLandscape ? 'px-3 py-2 text-sm' : 'px-6 py-3'
+              }`}>
+
+                {isFullscreen ? '⊙ Exit Fullscreen' : '⊕ Fullscreen'}
+              </button>
 
               <button
               onClick={onMainMenu}

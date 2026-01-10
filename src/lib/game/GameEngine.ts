@@ -2565,7 +2565,7 @@ export class GameEngine {
     }
 
     // Update laser beam
-    if (this.player.laserActive && this.keys.has(' ')) {
+    if (this.player.laserActive) {
       console.log('🔴 Creating laser beam');
       // Create continuous beam from player to top of screen
       this.laserBeam = {
