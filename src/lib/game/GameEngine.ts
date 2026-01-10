@@ -9,10 +9,6 @@ import { GameSettings } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
 import { getLeaderboardManager, LeaderboardManager } from './leaderboard/LeaderboardManager';
 
-// Static asset cache to prevent re-downloading images on every game start
-let cachedAssets: SpriteAssets | null = null;
-let assetsLoadingPromise: Promise<SpriteAssets> | null = null;
-
 export class GameEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -260,26 +256,6 @@ export class GameEngine {
   }
 
   async loadAssets(): Promise<void> {
-    // Check if assets are already cached
-    if (cachedAssets) {
-      console.log('⚡ Using cached assets (instant load)');
-      this.assets = cachedAssets;
-      this.assignSpritesToEntities();
-      return;
-    }
-
-    // Check if assets are currently being loaded
-    if (assetsLoadingPromise) {
-      console.log('⏳ Assets already loading, waiting for completion...');
-      this.assets = await assetsLoadingPromise;
-      this.assignSpritesToEntities();
-      return;
-    }
-
-    // Start loading assets
-    console.log('🎨 Loading assets from S3 (first time)...');
-    const startTime = performance.now();
-
     const loadImage = (src: string, name: string = 'image'): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -314,9 +290,41 @@ export class GameEngine {
     };
 
     try {
-      // Store the loading promise so other instances can wait for it
-      assetsLoadingPromise = (async () => {
-        const [
+      const [
+      playerShip,
+      alienBasic,
+      alienHeavy,
+      alienFast,
+      bossAlien,
+      bossPhase1,
+      bossPhase2,
+      bossPhase3,
+      bossPhase4,
+      explosion,
+      powerUpPlasma,
+      powerUpRapid,
+      powerUpShield,
+      powerUpSlowmo,
+      shieldEffect] =
+      await Promise.all([
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp', 'playerShip'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp', 'alienBasic'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp', 'alienHeavy'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp', 'alienFast'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp', 'bossAlien'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp', 'bossPhase1'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/a9af17d6-1d6a-46e4-916b-90492bd7b4d2.webp', 'bossPhase2'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/d0c7b32c-6d54-4092-8588-a5d09cbe60d3.webp', 'bossPhase3'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/3595b35a-b995-4194-9445-3963d9199a8d.webp', 'bossPhase4'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp', 'explosion'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp', 'powerUpPlasma'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp', 'powerUpRapid'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp', 'powerUpShield'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp', 'powerUpSlowmo'),
+      loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/969a16ba-05c1-4406-8632-b5809c2e3b85.webp', 'shieldEffect')]
+      );
+
+      this.assets = {
         playerShip,
         alienBasic,
         alienHeavy,
@@ -331,55 +339,26 @@ export class GameEngine {
         powerUpRapid,
         powerUpShield,
         powerUpSlowmo,
-        shieldEffect] =
-        await Promise.all([
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp', 'playerShip'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp', 'alienBasic'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp', 'alienHeavy'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp', 'alienFast'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/038a876a-d68c-4444-b8b0-2ae9ab25580c.webp', 'bossAlien'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp', 'bossPhase1'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/a9af17d6-1d6a-46e4-916b-90492bd7b4d2.webp', 'bossPhase2'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/d0c7b32c-6d54-4092-8588-a5d09cbe60d3.webp', 'bossPhase3'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/3595b35a-b995-4194-9445-3963d9199a8d.webp', 'bossPhase4'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/bf008940-7261-4765-8c6d-32086670999c.webp', 'explosion'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/652b9540-094e-4c3a-b9b9-64f112b28744.webp', 'powerUpPlasma'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/30aacb08-5108-4c70-8580-1823f93620ed.webp', 'powerUpRapid'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/c52e69ca-3469-4246-88ce-38a9fde77993.webp', 'powerUpShield'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f825721c-8221-4dff-919b-1365add27ab7.webp', 'powerUpSlowmo'),
-        loadImage('https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/969a16ba-05c1-4406-8632-b5809c2e3b85.webp', 'shieldEffect')]
-        );
+        shieldEffect
+      };
 
-        return {
-          playerShip,
-          alienBasic,
-          alienHeavy,
-          alienFast,
-          bossAlien,
-          bossPhase1,
-          bossPhase2,
-          bossPhase3,
-          bossPhase4,
-          explosion,
-          powerUpPlasma,
-          powerUpRapid,
-          powerUpShield,
-          powerUpSlowmo,
-          shieldEffect
-        };
-      })();
+      // Assign sprites to entities
+      console.log('🎨 Assigning sprites to entities...', {
+        playerShipLoaded: !!playerShip,
+        playerShipSize: playerShip ? `${playerShip.width}x${playerShip.height}` : 'N/A'
+      });
+      this.player.setImage(playerShip);
+      console.log('✅ Player ship image assigned');
 
-      this.assets = await assetsLoadingPromise;
+      this.enemies.forEach((enemy) => {
+        if (enemy.type === 'boss') enemy.setImage(bossAlien);else
+        if (enemy.type === 'heavy') enemy.setImage(alienHeavy);else
+        if (enemy.type === 'fast') enemy.setImage(alienFast);else
+        enemy.setImage(alienBasic);
+      });
+      console.log('✅ All sprites assigned successfully');
 
-      // Cache the loaded assets
-      cachedAssets = this.assets;
-
-      const loadTime = performance.now() - startTime;
-      console.log(`⚡ Assets loaded and cached in ${loadTime.toFixed(0)}ms`);
-
-      this.assignSpritesToEntities();
-
-      // Preload audio files (only on first load)
+      // Preload audio files
       console.log('🔊 Preloading audio files...');
       this.audioManager.preloadSounds([
         // Player sounds
@@ -429,29 +408,8 @@ export class GameEngine {
 
     } catch (error) {
       console.error('❌ Failed to load assets:', error);
-      assetsLoadingPromise = null; // Reset so it can be retried
       // Even if assets fail, the game should still work with fallback shapes
     }
-  }
-
-  private assignSpritesToEntities(): void {
-    if (!this.assets) return;
-
-    // Assign sprites to entities
-    console.log('🎨 Assigning sprites to entities...', {
-      playerShipLoaded: !!this.assets.playerShip,
-      playerShipSize: this.assets.playerShip ? `${this.assets.playerShip.width}x${this.assets.playerShip.height}` : 'N/A'
-    });
-    this.player.setImage(this.assets.playerShip);
-    console.log('✅ Player ship image assigned');
-
-    this.enemies.forEach((enemy) => {
-      if (enemy.type === 'boss') enemy.setImage(this.assets!.bossAlien);else
-      if (enemy.type === 'heavy') enemy.setImage(this.assets!.alienHeavy);else
-      if (enemy.type === 'fast') enemy.setImage(this.assets!.alienFast);else
-      enemy.setImage(this.assets!.alienBasic);
-    });
-    console.log('✅ All sprites assigned successfully');
   }
 
   initEnemies() {
