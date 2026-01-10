@@ -21,13 +21,17 @@ interface ShipSkin {
 export default function ShopPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { engine, setEngine } = useGameEngine();
+  const { engine: contextEngine, setEngine } = useGameEngine();
+  const [localEngine, setLocalEngine] = useState<GameEngine | null>(null);
   const [skins, setSkins] = useState<ShipSkin[]>([]);
   const [stardust, setStardust] = useState(0);
   const [activeSkinId, setActiveSkinId] = useState('default');
   const [selectedSkin, setSelectedSkin] = useState<ShipSkin | null>(null);
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
   const [purchasedSkinName, setPurchasedSkinName] = useState('');
+
+  // Use context engine if available, otherwise local engine
+  const engine = contextEngine || localEngine;
 
   // Get return path from location state, default to /game
   const returnPath = (location.state as { from?: string })?.from || '/game';
@@ -50,14 +54,17 @@ export default function ShopPage() {
     }
   };
 
-  // Initialize engine if it doesn't exist
+  // Initialize local engine if context engine doesn't exist
   useEffect(() => {
-    if (!engine) {
+    if (!contextEngine && !localEngine) {
+      console.log('🛍️ ShopPage: Creating local engine instance');
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
+      setLocalEngine(newEngine);
+      // Also try to set it in context for persistence
       setEngine(newEngine);
     }
-  }, [engine, setEngine]);
+  }, [contextEngine, localEngine, setEngine]);
 
   useEffect(() => {
     if (engine) {

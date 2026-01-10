@@ -35,7 +35,8 @@ interface AchievementProgress {
 export default function AchievementsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { engine, setEngine } = useGameEngine();
+  const { engine: contextEngine, setEngine } = useGameEngine();
+  const [localEngine, setLocalEngine] = useState<GameEngine | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [progress, setProgress] = useState<AchievementProgress>({
     totalAchievements: 0,
@@ -46,17 +47,23 @@ export default function AchievementsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'unlocked' | 'locked'>('all');
   const [filterCategory, setFilterCategory] = useState<'all' | 'combat' | 'survival' | 'mastery' | 'collection' | 'special'>('all');
 
+  // Use context engine if available, otherwise local engine
+  const engine = contextEngine || localEngine;
+
   // Get return path from location state, default to /game
   const returnPath = (location.state as { from?: string })?.from || '/game';
 
-  // Initialize engine if it doesn't exist
+  // Initialize local engine if context engine doesn't exist
   useEffect(() => {
-    if (!engine) {
+    if (!contextEngine && !localEngine) {
+      console.log('🏆 AchievementsPage: Creating local engine instance');
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
+      setLocalEngine(newEngine);
+      // Also try to set it in context for persistence
       setEngine(newEngine);
     }
-  }, [engine, setEngine]);
+  }, [contextEngine, localEngine, setEngine]);
 
   useEffect(() => {
     if (engine) {
