@@ -473,11 +473,11 @@ export class Boss {
     this.image = img;
   }
 
-  update(canvasWidth: number, isFrozen: boolean = false) {
+  update(canvasWidth: number, isFrozen: boolean = false, deltaTime: number = 1) {
     // Don't move or change direction when frozen
     if (!isFrozen) {
-      // Smooth horizontal movement with lerp
-      this.targetX += this.moveSpeed * this.moveDirection;
+      // Smooth horizontal movement with lerp (scaled by deltaTime for slow-mo support)
+      this.targetX += this.moveSpeed * this.moveDirection * deltaTime;
 
       // Bounce at edges
       if (this.targetX <= 0 || this.targetX + this.size.width >= canvasWidth) {
@@ -486,9 +486,9 @@ export class Boss {
       }
 
       // Smooth interpolation to target
-      this.position.x += (this.targetX - this.position.x) * this.smoothing;
+      this.position.x += (this.targetX - this.position.x) * this.smoothing * deltaTime;
 
-      this.wobbleOffset += this.wobbleSpeed;
+      this.wobbleOffset += this.wobbleSpeed * deltaTime;
     }
 
     if (this.flashTimer > 0) {

@@ -255,7 +255,10 @@ export class GameEngine {
     }
   }
 
-  async loadAssets(): Promise<void> {
+  async loadAssets(onProgress?: (progress: number) => void): Promise<void> {
+    const totalAssets = 15; // Total number of images to load
+    let loadedAssets = 0;
+
     const loadImage = (src: string, name: string = 'image'): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -266,6 +269,10 @@ export class GameEngine {
 
         img.onload = () => {
           console.log(`✅ Loaded ${name}:`, src.substring(0, 60) + '...');
+          loadedAssets++;
+          if (onProgress) {
+            onProgress((loadedAssets / totalAssets) * 100);
+          }
           resolve(img);
         };
 
@@ -276,6 +283,10 @@ export class GameEngine {
           retryImg.crossOrigin = 'anonymous';
           retryImg.onload = () => {
             console.log(`✅ Loaded ${name} (with CORS):`, src.substring(0, 60) + '...');
+            loadedAssets++;
+            if (onProgress) {
+              onProgress((loadedAssets / totalAssets) * 100);
+            }
             resolve(retryImg);
           };
           retryImg.onerror = () => {
@@ -603,11 +614,16 @@ export class GameEngine {
       this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
       this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
 
-      this.autoFireInterval = window.setInterval(() => {
+      // Dynamic auto-fire that adjusts based on rapid fire powerup
+      const autoFire = () => {
         if (this.state === 'playing') {
           this.fire();
         }
-      }, 400);
+        // Adjust interval based on rapid fire status
+        const interval = this.player.rapidActive ? 200 : 400;
+        this.autoFireInterval = window.setTimeout(autoFire, interval);
+      };
+      this.autoFireInterval = window.setTimeout(autoFire, 400);
     }
   }
 
@@ -775,9 +791,6 @@ export class GameEngine {
 
     // Apply fire rate boost if applicable
     let fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
-    if (this.player.rapidActive) {
-      console.log('⚡ Rapid fire active - fire rate:', fireRate);
-    }
     if (superpower.type === 'fire_rate_boost' && superpower.value) {
       fireRate = fireRate * (1 - superpower.value / 100);
     }
@@ -1117,7 +1130,7 @@ export class GameEngine {
       // Don't return - allow boss to start attacking during descent
     }
 
-    this.boss.update(this.canvas.width, this.player.freezeActive);
+    this.boss.update(this.canvas.width, this.player.freezeActive, deltaTime);
     this.bossState.bossHealth = this.boss.health;
 
     // Update boss image when phase changes
@@ -1608,9 +1621,7 @@ export class GameEngine {
         this.audioManager.playSound('powerup_plasma', 0.6);
         break;
       case 'rapid':
-        console.log('⚡ RAPID FIRE POWERUP COLLECTED');
         this.player.activateRapid(bonusDuration, isDualGuns, isBossMode);
-        console.log('⚡ rapidActive:', this.player.rapidActive, 'duration:', this.player.rapidDuration);
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
@@ -1619,10 +1630,8 @@ export class GameEngine {
         this.audioManager.playSound('powerup_shield_activate', 0.6);
         break;
       case 'slowmo':
-        console.log('🕐 SLOWMO POWERUP COLLECTED');
         this.slowMotionActive = true;
         this.slowMotionDuration = 360 + bonusDuration; // 6 seconds + bonus
-        console.log('🕐 slowMotionActive:', this.slowMotionActive, 'duration:', this.slowMotionDuration);
         this.audioManager.playSound('powerup_slowmo', 0.6);
         break;
 
@@ -1632,13 +1641,10 @@ export class GameEngine {
         this.audioManager.playSound('powerup_collect', 0.6);
         break;
       case 'laser':
-        console.log('🔴 LASER POWERUP COLLECTED');
         this.player.activateLaser(bonusDuration);
-        console.log('🔴 laserActive:', this.player.laserActive, 'duration:', this.player.laserDuration);
         this.audioManager.playSound('powerup_plasma', 0.7); // Similar to plasma sound
         break;
       case 'nuke':
-        console.log('💥 NUKE POWERUP COLLECTED');
         this.activateNuke();
         this.audioManager.playSound('boss_death', 0.8); // Big explosion sound
         break;
@@ -1649,9 +1655,7 @@ export class GameEngine {
         this.audioManager.playSound('powerup_shield_activate', 0.7);
         break;
       case 'freeze':
-        console.log('❄️ FREEZE POWERUP COLLECTED');
         this.player.activateFreeze(bonusDuration);
-        console.log('❄️ freezeActive:', this.player.freezeActive, 'duration:', this.player.freezeDuration);
         this.audioManager.playSound('powerup_slowmo', 0.6); // Similar to slowmo
         break;
 
@@ -1883,8 +1887,6 @@ export class GameEngine {
       if (!this.boss.isAlive) {
         this.bossDefeated();
       }
-
-      console.log(`💥 NUKE hit boss for ${damage} damage (${(damagePercent * 100).toFixed(0)}% of max HP)!`);
     }
 
     // Massive screen shake
@@ -1892,8 +1894,6 @@ export class GameEngine {
 
     // White flash effect
     this.hitFlashAlpha = 0.7;
-
-    console.log(`💥 NUKE activated! Destroyed ${enemiesDestroyed} enemies!`);
   }
 
   private bossDefeated(): void {
@@ -2449,11 +2449,13 @@ export class GameEngine {
     // Update animated cosmetics (rainbow, galaxy skins)
     this.cosmeticManager.update();
 
-    const timeScale = this.slowMotionActive ? 0.5 : 1;
+    const timeScale = this.slowMotionActive ? 0.3 : 1; // 30% speed for more noticeable slow-mo
 
     if (this.slowMotionDuration > 0) {
       this.slowMotionDuration -= clampedDelta;
-      if (this.slowMotionDuration <= 0) this.slowMotionActive = false;
+      if (this.slowMotionDuration <= 0) {
+        this.slowMotionActive = false;
+      }
     }
 
     // Score multiplier countdown
@@ -2468,9 +2470,9 @@ export class GameEngine {
     this.player.update();
 
     if (this.bossState.isBossWave) {
-      this.updateBoss(clampedDelta);
+      this.updateBoss(clampedDelta * timeScale);
     } else {
-      this.updateEnemies(clampedDelta);
+      this.updateEnemies(clampedDelta * timeScale);
     }
 
     this.enemyFire();
@@ -2478,9 +2480,12 @@ export class GameEngine {
     this.updateScreenShake();
 
     // Update projectiles with delta time
+    // Player projectiles: normal speed (not affected by slow-mo)
+    // Enemy projectiles: slowed down by timeScale
     this.projectiles = this.projectiles.filter((p) => {
       if (!p.isActive) return false;
-      const updates = timeScale * clampedDelta;
+      const projectileTimeScale = p.isPlayerProjectile ? 1 : timeScale;
+      const updates = projectileTimeScale * clampedDelta;
       for (let i = 0; i < Math.floor(updates); i++) {
         p.update();
         // Apply gravity pull to enemies if gravity bullets are active
@@ -2525,14 +2530,15 @@ export class GameEngine {
     this.explosions.forEach((e) => e.update());
     this.explosions = this.explosions.filter((e) => !e.isDone());
 
-    // Update particles with delta time
+    // Update particles with delta time and timeScale for slow-mo effect
     this.particles.forEach((p) => {
-      p.x += p.vx * clampedDelta;
-      p.y += p.vy * clampedDelta;
-      p.alpha -= p.decay * clampedDelta;
-      p.lifetime += clampedDelta;
-      p.size *= Math.pow(0.97, clampedDelta);
-      p.vy += 0.1 * clampedDelta; // Gravity
+      const deltaWithScale = clampedDelta * timeScale;
+      p.x += p.vx * deltaWithScale;
+      p.y += p.vy * deltaWithScale;
+      p.alpha -= p.decay * clampedDelta; // Alpha fades at normal rate
+      p.lifetime += clampedDelta; // Lifetime counts at normal rate
+      p.size *= Math.pow(0.97, deltaWithScale);
+      p.vy += 0.1 * deltaWithScale; // Gravity
     });
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
 
@@ -3173,7 +3179,7 @@ export class GameEngine {
 
   cleanup() {
     if (this.autoFireInterval) {
-      clearInterval(this.autoFireInterval);
+      clearTimeout(this.autoFireInterval);
     }
   }
 }

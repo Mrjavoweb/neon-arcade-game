@@ -60,6 +60,8 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     attackPattern: 'spread',
     teleportCooldown: 0
   });
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -163,7 +165,12 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       // Check for daily reward AFTER event listener is set up
       gameEngineRef.current.checkDailyReward();
 
-      await gameEngineRef.current.loadAssets();
+      // Load assets with progress tracking
+      await gameEngineRef.current.loadAssets((progress) => {
+        setLoadingProgress(progress);
+      });
+
+      setIsLoading(false);
 
       if (!mounted) return;
 
@@ -256,7 +263,33 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
         className="block w-full h-full"
         style={{ touchAction: 'none' }} />
 
-      
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-sm">
+          <div className="text-center">
+            <h2 className="text-4xl md:text-6xl font-black text-cyan-400 mb-8 font-['Sora'] animate-pulse"
+                style={{ textShadow: '0 0 30px rgba(34, 211, 238, 0.8)' }}>
+              ALIEN INVASION
+            </h2>
+
+            {/* Progress Bar */}
+            <div className="w-64 md:w-96 h-4 bg-black/50 rounded-full overflow-hidden border-2 border-cyan-400/50 mb-4">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300 ease-out"
+                style={{
+                  width: `${loadingProgress}%`,
+                  boxShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
+                }}
+              />
+            </div>
+
+            <p className="text-cyan-300 font-['Space_Grotesk'] text-lg">
+              Loading Assets... {Math.floor(loadingProgress)}%
+            </p>
+          </div>
+        </div>
+      )}
+
       <GameHUD stats={stats} stardust={stardust} />
       
       {/* Boss health bar */}
