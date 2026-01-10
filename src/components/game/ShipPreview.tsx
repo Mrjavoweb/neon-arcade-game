@@ -11,12 +11,35 @@ const SHIP_IMAGE_URL = 'https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807
 export default function ShipPreview({ filter, size = 64, showEngineGlow = false }: ShipPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shipImage, setShipImage] = useState<HTMLImageElement | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Load ship image
   useEffect(() => {
     const img = new Image();
+
+    img.onload = () => {
+      console.log('✅ ShipPreview: Ship image loaded successfully');
+      setShipImage(img);
+      setImageError(false);
+    };
+
+    img.onerror = (error) => {
+      console.error('❌ ShipPreview: Failed to load ship image with CORS:', error);
+      // Try without CORS as fallback
+      const fallbackImg = new Image();
+      fallbackImg.onload = () => {
+        console.log('✅ ShipPreview: Ship image loaded without CORS');
+        setShipImage(fallbackImg);
+        setImageError(false);
+      };
+      fallbackImg.onerror = () => {
+        console.error('❌ ShipPreview: Failed to load ship image completely');
+        setImageError(true);
+      };
+      fallbackImg.src = SHIP_IMAGE_URL;
+    };
+
     img.crossOrigin = 'anonymous'; // Enable CORS for filters
-    img.onload = () => setShipImage(img);
     img.src = SHIP_IMAGE_URL;
   }, []);
 
@@ -78,6 +101,18 @@ export default function ShipPreview({ filter, size = 64, showEngineGlow = false 
       ctx.restore();
     }
   }, [shipImage, filter, size, showEngineGlow]);
+
+  // Show fallback if image fails to load
+  if (imageError) {
+    return (
+      <div
+        className="flex items-center justify-center text-cyan-400"
+        style={{ width: size + 20, height: size + (showEngineGlow ? 40 : 20) }}
+      >
+        <span style={{ fontSize: size / 2 }}>🚀</span>
+      </div>
+    );
+  }
 
   return (
     <canvas
