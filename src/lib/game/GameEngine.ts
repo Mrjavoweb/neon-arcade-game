@@ -3182,4 +3182,4 @@ export class GameEngine {
       clearTimeout(this.autoFireInterval);
     }
   }
-}
+}// Build trigger: 1768059093
