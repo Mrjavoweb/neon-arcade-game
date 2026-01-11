@@ -136,10 +136,8 @@ export default function HomePage() {
       const result = currentEngine.dailyRewardManager.claimReward();
       if (result.success) {
         setStardust(currentEngine.currencyManager.getStardust());
-        // Update with milestones if any were unlocked
-        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
-          setDailyReward(prev => prev ? { ...prev, milestonesUnlocked: result.milestonesUnlocked } : null);
-        }
+        // Don't update dailyReward state here - let DailyRewardPopup handle closing via its internal setTimeout
+        // Updating state here causes re-render which can reset the popup's internal "claimed" state
       }
     }
   };
@@ -149,8 +147,8 @@ export default function HomePage() {
       {/* Animated starfield background */}
       <StarfieldBackground />
 
-      {/* PWA Install Prompt */}
-      <PWAInstallPrompt />
+      {/* PWA Install Prompt - hide when daily reward is showing to avoid z-index conflicts */}
+      {!dailyReward && <PWAInstallPrompt />}
 
       {/* Sound Toggle Button */}
       <SoundToggleButton variant="homepage" />
