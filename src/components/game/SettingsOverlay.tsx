@@ -119,7 +119,6 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             description="Weapon fire, explosions, and game sounds"
             value={settings.soundEffects}
             onChange={(value) => updateSetting('soundEffects', value)}
-            badge="Coming Soon"
           />
 
           {/* Music */}
@@ -129,7 +128,6 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             description="Epic space battle soundtrack"
             value={settings.music}
             onChange={(value) => updateSetting('music', value)}
-            badge="Coming Soon"
           />
         </div>
 
@@ -162,7 +160,6 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
               description="Vibration on hits and damage"
               value={settings.hapticFeedback}
               onChange={(value) => updateSetting('hapticFeedback', value)}
-              badge="Coming Soon"
             />
           </div>
         )}

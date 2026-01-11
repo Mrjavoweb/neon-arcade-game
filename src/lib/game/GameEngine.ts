@@ -7,6 +7,8 @@ import { CosmeticManager } from './progression/CosmeticManager';
 import { getSettingsManager } from './settings/SettingsManager';
 import { GameSettings } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
+import { getHapticManager, HapticManager } from './haptic/HapticManager';
+import { getHintManager, HintManager } from './hints/HintManager';
 import { getLeaderboardManager, LeaderboardManager } from './leaderboard/LeaderboardManager';
 
 // Module-level asset cache - persists across GameEngine instances for instant subsequent loads
@@ -85,6 +87,12 @@ export class GameEngine {
   // Audio system
   audioManager: AudioManager;
 
+  // Haptic feedback system
+  hapticManager: HapticManager;
+
+  // Tutorial hints system
+  hintManager: HintManager;
+
   // Leaderboard system
   leaderboardManager: LeaderboardManager;
 
@@ -93,6 +101,11 @@ export class GameEngine {
   readonly MAX_PROJECTILES: number;
   readonly MAX_EXPLOSIONS: number;
   private performanceLogTimer = 0;
+
+  // FPS counter
+  private fpsFrameCount = 0;
+  private fpsLastTime = 0;
+  private currentFPS = 0;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
@@ -232,6 +245,14 @@ export class GameEngine {
     // Initialize audio system
     this.audioManager = getAudioManager();
     console.log('🔊 AudioManager initialized in GameEngine');
+
+    // Initialize haptic feedback system
+    this.hapticManager = getHapticManager();
+    console.log('📳 HapticManager initialized in GameEngine');
+
+    // Initialize tutorial hints system
+    this.hintManager = getHintManager(isMobile);
+    console.log('💡 HintManager initialized in GameEngine');
 
     // Initialize leaderboard system
     this.leaderboardManager = getLeaderboardManager();
@@ -474,6 +495,7 @@ export class GameEngine {
     // Boss wave every 5 waves
     if (wave % 5 === 0) {
       this.bossState.isBossWave = true;
+      this.hintManager.onBossWave(); // Show boss hint
       // Shorter intro on mobile for immediate engagement, disable on desktop
       this.bossState.bossIntroTimer = this.isMobile ? 0 : 60; // Instant on mobile, 1 sec on desktop
       // Keep game state as 'playing' - don't block gameplay
@@ -1445,8 +1467,9 @@ export class GameEngine {
           enemy.hit();
 
           if (!enemy.isAlive) {
-            // Play enemy death sound
+            // Play enemy death sound and haptic
             this.audioManager.playSound('enemy_death', 0.4);
+            this.hapticManager.onEnemyKill();
 
             this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
             this.stats.enemiesDestroyed++;
@@ -1529,9 +1552,10 @@ export class GameEngine {
 
           if (!this.boss.isAlive) {
             // Boss defeated!
-            // Play boss death sound and victory theme
+            // Play boss death sound, victory theme, and haptic
             this.audioManager.playSound('boss_death', 0.9);
             this.audioManager.playMusic('victory_theme', false);
+            this.hapticManager.onBossDefeat();
 
             this.stats.score += Math.floor(this.boss.points * 5 * this.scoreMultiplier); // 5x score + multiplier
             this.stats.enemiesDestroyed++;
@@ -1577,8 +1601,9 @@ export class GameEngine {
             this.currencyManager.earnStardust(100, 'boss_defeat');
             this.achievementManager.trackBossDefeat();
           } else {
-            // Play boss hit sound (not dead yet)
+            // Play boss hit sound and haptic (not dead yet)
             this.audioManager.playSound('boss_hit', 0.5);
+            this.hapticManager.onBossHit();
             this.createImpactParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#ffff00');
             this.addScreenShake(5);
           }
@@ -1600,8 +1625,9 @@ export class GameEngine {
           // 1 = lose 1 life (regular enemy bullets)
           // 2 = lose 2 lives (boss orange spread shots)
           // 3 = lose 3 lives (boss red laser beams)
-          // Play player hit sound
+          // Play player hit sound and haptic feedback
           this.audioManager.playSound('player_hit', 0.6);
+          this.hapticManager.onPlayerHit();
 
           // 999 = instant death (not used)
           if (projectile.damage >= 999) {
@@ -1646,8 +1672,10 @@ export class GameEngine {
   }
 
   activatePowerUp(type: PowerUpType) {
-    // Play powerup collect sound
+    // Play powerup collect sound and haptic
     this.audioManager.playSound('powerup_collect', 0.5);
+    this.hapticManager.onPowerUpCollect();
+    this.hintManager.onFirstPowerUp(); // Show hint on first power-up
 
     // Get superpower for possible duration extensions
     const superpower = this.cosmeticManager.getActiveSuperpower();
@@ -1671,6 +1699,7 @@ export class GameEngine {
         const shieldBoost = superpower.type === 'shield_duration_boost' && superpower.value ? superpower.value : 0;
         this.player.activateShield(bonusDuration, shieldBoost);
         this.audioManager.playSound('powerup_shield_activate', 0.6);
+        this.hintManager.onShieldCollected();
         break;
       case 'slowmo':
         this.slowMotionActive = true;
@@ -1686,10 +1715,12 @@ export class GameEngine {
       case 'laser':
         this.player.activateLaser(bonusDuration);
         this.audioManager.playSound('powerup_plasma', 0.7); // Similar to plasma sound
+        this.hintManager.onLaserCollected();
         break;
       case 'nuke':
         this.activateNuke();
         this.audioManager.playSound('boss_death', 0.8); // Big explosion sound
+        this.hintManager.onNukeCollected();
         break;
 
       // New defensive powerups
@@ -1706,6 +1737,7 @@ export class GameEngine {
       case 'extralife':
         this.stats.lives++;
         this.audioManager.playSound('powerup_collect', 0.8);
+        this.hintManager.onExtraLifeCollected();
         break;
       case 'multiplier':
         this.scoreMultiplier = 2;
@@ -1784,6 +1816,7 @@ export class GameEngine {
         enemy.hit();
         if (!enemy.isAlive) {
           this.audioManager.playSound('enemy_death', 0.3);
+          this.hapticManager.onEnemyKill();
           this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
           this.stats.enemiesDestroyed++;
           this.registerKill(enemy.points);
@@ -1919,6 +1952,7 @@ export class GameEngine {
       const damage = Math.floor(this.boss.maxHealth * damagePercent);
       this.boss.hit(damage);
       this.audioManager.playSound('boss_hit', 0.6);
+      this.hapticManager.onBossHit();
 
       // Create explosion at boss center
       this.createExplosion(
@@ -1942,9 +1976,10 @@ export class GameEngine {
   private bossDefeated(): void {
     if (!this.boss) return;
 
-    // Play victory sounds
+    // Play victory sounds and haptic
     this.audioManager.playSound('boss_death', 0.9);
     this.audioManager.playMusic('victory_theme', false);
+    this.hapticManager.onBossDefeat();
 
     // Award points and stats
     this.stats.score += Math.floor(this.boss.points * 5 * this.scoreMultiplier); // 5x score + multiplier
@@ -2084,7 +2119,9 @@ export class GameEngine {
     }
 
     // Show combo notification at milestones
-    if (this.stats.combo === 5) {
+    if (this.stats.combo === 3) {
+      this.hintManager.onFirstCombo(); // First combo hint
+    } else if (this.stats.combo === 5) {
       this.addComboNotification('NICE! x5', '#22d3ee', 1.2);
       this.stats.score += Math.floor(50 * this.scoreMultiplier);
     } else if (this.stats.combo === 10) {
@@ -2245,6 +2282,11 @@ export class GameEngine {
     // Lose a life
     this.stats.lives--;
 
+    // Show low health hint when down to 1 life
+    if (this.stats.lives === 1) {
+      this.hintManager.onLowHealth();
+    }
+
     // Lifesteal superpower (Dark Matter) - convert damage to score bonus
     const superpower = this.cosmeticManager.getActiveSuperpower();
     if (superpower.type === 'lifesteal' && superpower.value) {
@@ -2300,9 +2342,10 @@ export class GameEngine {
   gameOver() {
     this.state = 'gameOver';
 
-    // Play game over sound and game over theme
+    // Play game over sound, theme, and haptic
     this.audioManager.playSound('game_over', 0.7);
     this.audioManager.playMusic('game_over_theme', false);
+    this.hapticManager.onGameOver();
 
     // Submit to leaderboard
     const leaderboardResult = this.leaderboardManager.submitScore(this.stats);
@@ -2354,8 +2397,9 @@ export class GameEngine {
   }
 
   nextWave() {
-    // Play wave complete sound
+    // Play wave complete sound and haptic
     this.audioManager.playSound('wave_complete', 0.6);
+    this.hapticManager.onWaveComplete();
 
     // Save checkpoint after completing every wave
     this.lastCheckpoint = this.stats.wave;
@@ -2461,6 +2505,14 @@ export class GameEngine {
     const deltaTime = (currentTime - this.lastFrameTime) / (1000 / this.targetFPS);
     this.lastFrameTime = currentTime;
 
+    // Update FPS counter
+    this.fpsFrameCount++;
+    if (currentTime - this.fpsLastTime >= 1000) {
+      this.currentFPS = this.fpsFrameCount;
+      this.fpsFrameCount = 0;
+      this.fpsLastTime = currentTime;
+    }
+
     // Clamp delta time to prevent huge jumps (e.g., when tab is inactive)
     const clampedDelta = Math.min(deltaTime, 3);
 
@@ -2488,6 +2540,9 @@ export class GameEngine {
     }
 
     if (this.state !== 'playing') return;
+
+    // Update tutorial hints
+    this.hintManager.update();
 
     // Update animated cosmetics (rainbow, galaxy skins)
     this.cosmeticManager.update();
@@ -2686,6 +2741,7 @@ export class GameEngine {
           if (this.boss.position.y <= this.player.position.y) {
             this.boss.hit();
             this.audioManager.playSound('boss_hit', 0.5);
+            this.hapticManager.onBossHit();
             if (!this.boss.isAlive) {
               this.bossDefeated();
             }
@@ -2953,6 +3009,44 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    // Render FPS counter if enabled
+    if (this.settings.showFPS) {
+      this.ctx.save();
+      const fontSize = this.isMobile ? 12 : 14;
+      this.ctx.font = `bold ${fontSize}px 'Space Grotesk', monospace`;
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'top';
+
+      // Position in top-left corner with padding
+      const x = 10;
+      const y = 10;
+
+      // Color based on FPS (green = good, yellow = okay, red = bad)
+      let fpsColor = '#22c55e'; // Green for 50+
+      if (this.currentFPS < 30) {
+        fpsColor = '#ef4444'; // Red for < 30
+      } else if (this.currentFPS < 50) {
+        fpsColor = '#fbbf24'; // Yellow for 30-49
+      }
+
+      // Background for readability
+      const text = `FPS: ${this.currentFPS}`;
+      const metrics = this.ctx.measureText(text);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      this.ctx.fillRect(x - 4, y - 2, metrics.width + 8, fontSize + 6);
+
+      // FPS text with glow
+      this.ctx.shadowBlur = 8;
+      this.ctx.shadowColor = fpsColor;
+      this.ctx.fillStyle = fpsColor;
+      this.ctx.fillText(text, x, y);
+
+      this.ctx.restore();
+    }
+
+    // Render tutorial hints
+    this.hintManager.render(this.ctx, this.canvas.width, this.canvas.height);
+
     this.ctx.restore();
   }
 
@@ -3048,6 +3142,9 @@ export class GameEngine {
 
     // Start gameplay music
     this.audioManager.playMusic('gameplay_theme', true);
+
+    // Show tutorial hints for new players
+    this.hintManager.onGameStart();
   }
 
   resetFromWave1() {
