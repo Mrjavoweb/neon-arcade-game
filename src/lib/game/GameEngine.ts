@@ -9,6 +9,10 @@ import { GameSettings } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
 import { getLeaderboardManager, LeaderboardManager } from './leaderboard/LeaderboardManager';
 
+// Module-level asset cache - persists across GameEngine instances for instant subsequent loads
+let cachedAssets: SpriteAssets | null = null;
+let assetsLoading: Promise<void> | null = null;
+
 export class GameEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -256,6 +260,34 @@ export class GameEngine {
   }
 
   async loadAssets(onProgress?: (progress: number) => void): Promise<void> {
+    // Return immediately if assets are already cached (instant load)
+    if (cachedAssets) {
+      console.log('⚡ Using cached assets (instant load)');
+      this.assets = cachedAssets;
+      this.assignSpritesToEntities();
+      if (onProgress) onProgress(100);
+      return;
+    }
+
+    // Prevent duplicate loading if already in progress (wait for existing load)
+    if (assetsLoading) {
+      console.log('⏳ Waiting for assets loading in progress...');
+      await assetsLoading;
+      if (cachedAssets) {
+        this.assets = cachedAssets;
+        this.assignSpritesToEntities();
+        if (onProgress) onProgress(100);
+      }
+      return;
+    }
+
+    // First time loading - proceed with full load
+    assetsLoading = this._loadAssetsInternal(onProgress);
+    await assetsLoading;
+    assetsLoading = null;
+  }
+
+  private async _loadAssetsInternal(onProgress?: (progress: number) => void): Promise<void> {
     const totalAssets = 15; // Total number of images to load
     let loadedAssets = 0;
 
@@ -353,21 +385,12 @@ export class GameEngine {
         shieldEffect
       };
 
-      // Assign sprites to entities
-      console.log('🎨 Assigning sprites to entities...', {
-        playerShipLoaded: !!playerShip,
-        playerShipSize: playerShip ? `${playerShip.width}x${playerShip.height}` : 'N/A'
-      });
-      this.player.setImage(playerShip);
-      console.log('✅ Player ship image assigned');
+      // Cache assets for instant future loads
+      cachedAssets = this.assets;
+      console.log('💾 Assets cached for instant future loads');
 
-      this.enemies.forEach((enemy) => {
-        if (enemy.type === 'boss') enemy.setImage(bossAlien);else
-        if (enemy.type === 'heavy') enemy.setImage(alienHeavy);else
-        if (enemy.type === 'fast') enemy.setImage(alienFast);else
-        enemy.setImage(alienBasic);
-      });
-      console.log('✅ All sprites assigned successfully');
+      // Assign sprites to entities
+      this.assignSpritesToEntities();
 
       // Preload audio files
       console.log('🔊 Preloading audio files...');
@@ -421,6 +444,26 @@ export class GameEngine {
       console.error('❌ Failed to load assets:', error);
       // Even if assets fail, the game should still work with fallback shapes
     }
+  }
+
+  private assignSpritesToEntities(): void {
+    if (!this.assets) return;
+
+    console.log('🎨 Assigning sprites to entities...', {
+      playerShipLoaded: !!this.assets.playerShip,
+      playerShipSize: this.assets.playerShip ? `${this.assets.playerShip.width}x${this.assets.playerShip.height}` : 'N/A'
+    });
+
+    this.player.setImage(this.assets.playerShip);
+    console.log('✅ Player ship image assigned');
+
+    this.enemies.forEach((enemy) => {
+      if (enemy.type === 'boss') enemy.setImage(this.assets!.bossAlien);
+      else if (enemy.type === 'heavy') enemy.setImage(this.assets!.alienHeavy);
+      else if (enemy.type === 'fast') enemy.setImage(this.assets!.alienFast);
+      else enemy.setImage(this.assets!.alienBasic);
+    });
+    console.log('✅ All sprites assigned successfully');
   }
 
   initEnemies() {

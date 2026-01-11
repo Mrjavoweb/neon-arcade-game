@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import StarfieldBackground from '@/components/StarfieldBackground';
@@ -8,10 +8,12 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
 import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LandscapePrompt from '@/components/LandscapePrompt';
+import DailyRewardPopup from '@/components/game/DailyRewardPopup';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { getAudioManager } from '@/lib/game/audio/AudioManager';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
+import { DailyReward, ComebackBonus, MilestoneReward } from '@/lib/game/progression/ProgressionTypes';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -22,6 +24,14 @@ export default function HomePage() {
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth <= window.innerHeight);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [promptDismissed, setPromptDismissed] = useState(false);
+  const [dailyReward, setDailyReward] = useState<{
+    day: number;
+    reward: DailyReward;
+    streak: number;
+    comebackBonus?: ComebackBonus;
+    milestonesUnlocked?: MilestoneReward[];
+    nextMilestone?: MilestoneReward & { progress: number };
+  } | null>(null);
 
   // Check orientation and fullscreen status
   useEffect(() => {
@@ -61,14 +71,44 @@ export default function HomePage() {
 
   // Initialize game engine for persistence
   useEffect(() => {
+    let currentEngine = engine;
+
     if (!engine) {
       // Create a temporary canvas for game engine initialization
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
       setEngine(newEngine);
       setStardust(newEngine.currencyManager.getStardust());
+      currentEngine = newEngine;
+
+      // Preload assets in background so they're ready when user clicks Play
+      newEngine.loadAssets().catch(err => console.warn('Background asset preload:', err));
+
+      // Check for daily reward on homepage
+      const rewardCheck = newEngine.dailyRewardManager.checkReward();
+      if (rewardCheck.available && rewardCheck.reward) {
+        setDailyReward({
+          day: rewardCheck.day,
+          reward: rewardCheck.reward,
+          streak: rewardCheck.streak,
+          comebackBonus: rewardCheck.comebackBonus,
+          nextMilestone: newEngine.dailyRewardManager.getNextMilestone()
+        });
+      }
     } else {
       setStardust(engine.currencyManager.getStardust());
+
+      // Check for daily reward if engine already exists
+      const rewardCheck = engine.dailyRewardManager.checkReward();
+      if (rewardCheck.available && rewardCheck.reward) {
+        setDailyReward({
+          day: rewardCheck.day,
+          reward: rewardCheck.reward,
+          streak: rewardCheck.streak,
+          comebackBonus: rewardCheck.comebackBonus,
+          nextMilestone: engine.dailyRewardManager.getNextMilestone()
+        });
+      }
     }
 
     // Start menu music
@@ -88,6 +128,21 @@ export default function HomePage() {
       window.removeEventListener('currency-changed', handleCurrencyChange);
     };
   }, [engine, setEngine]);
+
+  // Handle daily reward claim
+  const handleClaimDailyReward = () => {
+    const currentEngine = engine;
+    if (currentEngine) {
+      const result = currentEngine.dailyRewardManager.claimReward();
+      if (result.success) {
+        setStardust(currentEngine.currencyManager.getStardust());
+        // Update with milestones if any were unlocked
+        if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
+          setDailyReward(prev => prev ? { ...prev, milestonesUnlocked: result.milestonesUnlocked } : null);
+        }
+      }
+    }
+  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -273,6 +328,22 @@ export default function HomePage() {
           onDismiss={() => setPromptDismissed(true)}
         />
       )}
+
+      {/* Daily Reward Popup */}
+      <AnimatePresence>
+        {dailyReward && (
+          <DailyRewardPopup
+            day={dailyReward.day}
+            reward={dailyReward.reward}
+            streak={dailyReward.streak}
+            onClaim={handleClaimDailyReward}
+            onClose={() => setDailyReward(null)}
+            comebackBonus={dailyReward.comebackBonus}
+            milestonesUnlocked={dailyReward.milestonesUnlocked}
+            nextMilestone={dailyReward.nextMilestone}
+          />
+        )}
+      </AnimatePresence>
     </div>);
 
 }

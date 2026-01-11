@@ -162,15 +162,14 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       console.log('🎮 GameCanvas: Initializing stardust from GameEngine:', initialStardust);
       setStardust(initialStardust);
 
-      // Load assets with progress tracking BEFORE checking daily reward
+      // Load assets with progress tracking
       await gameEngineRef.current.loadAssets((progress) => {
         setLoadingProgress(progress);
       });
 
       setIsLoading(false);
 
-      // Check for daily reward AFTER assets are loaded
-      gameEngineRef.current.checkDailyReward();
+      // Daily reward is now handled on HomePage - no need to check here
 
       if (!mounted) return;
 
