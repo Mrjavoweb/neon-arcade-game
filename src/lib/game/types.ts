@@ -26,8 +26,15 @@ export interface BossState {
   bossIntroTimer: number;
   bossVictoryTimer: number;
   lastAttackTime: number;
-  attackPattern: 'spread' | 'laser' | 'teleport' | 'summon';
+  attackPattern: 'spread' | 'laser' | 'teleport' | 'summon' | 'minions' | 'charge' | 'bombs';
   teleportCooldown: number;
+  // Charge attack state
+  chargeActive: boolean;
+  chargeTelegraphTimer: number;
+  chargeDirection: number; // 1 = right, -1 = left
+  chargeStartX: number;
+  // Bomb attack state
+  bombsActive: { x: number; y: number; timer: number }[];
 }
 
 export interface GameStats {

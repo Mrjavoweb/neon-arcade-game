@@ -5,7 +5,7 @@ import { DailyRewardManager } from './progression/DailyRewardManager';
 import { AchievementManager } from './progression/AchievementManager';
 import { CosmeticManager } from './progression/CosmeticManager';
 import { getSettingsManager } from './settings/SettingsManager';
-import { GameSettings } from './settings/SettingsTypes';
+import { GameSettings, DIFFICULTY_CONFIGS } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
 import { getHapticManager, HapticManager } from './haptic/HapticManager';
 import { getHintManager, HintManager } from './hints/HintManager';
@@ -113,6 +113,10 @@ export class GameEngine {
   // Performance optimization: pre-rendered scanline pattern
   private scanlinePattern: CanvasPattern | null = null;
 
+  // Adaptive difficulty system - tracks consecutive boss deaths
+  private consecutiveBossDeaths: number = 0;
+  private readonly ADAPTIVE_DIFFICULTY_KEY = 'alien_invasion_boss_deaths';
+
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -211,7 +215,12 @@ export class GameEngine {
       bossVictoryTimer: 0,
       lastAttackTime: 0,
       attackPattern: 'spread',
-      teleportCooldown: 0
+      teleportCooldown: 0,
+      chargeActive: false,
+      chargeTelegraphTimer: 0,
+      chargeDirection: 1,
+      chargeStartX: 0,
+      bombsActive: []
     };
 
     // Initialize progression systems FIRST (before player creation)
@@ -219,6 +228,9 @@ export class GameEngine {
     this.achievementManager = new AchievementManager(this.currencyManager);
     this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
     this.cosmeticManager = new CosmeticManager(this.currencyManager);
+
+    // Load adaptive difficulty (consecutive boss deaths)
+    this.loadAdaptiveDifficulty();
 
     // NOW create player with movement speed boost from superpower
     const superpower = this.cosmeticManager.getActiveSuperpower();
@@ -534,12 +546,38 @@ export class GameEngine {
     this.bossState.bossActive = false;
     this.boss = null;
 
+    // Check for special wave types (wave before boss: 4, 9, 14, 19, etc.)
+    const isPreBossWave = wave % 5 === 4;
+    let specialWaveType: 'normal' | 'swarm' | 'elite' | 'blitz' = 'normal';
+
+    if (isPreBossWave) {
+      // Determine special wave type based on which boss cycle
+      // Wave 4 = cycle 0, Wave 9 = cycle 1, Wave 14 = cycle 2, etc.
+      const bossCycle = Math.floor(wave / 5);
+      const waveTypeIndex = bossCycle % 3;
+      specialWaveType = ['swarm', 'elite', 'blitz'][waveTypeIndex] as 'swarm' | 'elite' | 'blitz';
+
+      // Log special wave for debugging
+      console.log(`🌊 SPECIAL WAVE: ${specialWaveType.toUpperCase()} (wave ${wave})`);
+    }
+
     // Adjust grid based on orientation for mobile
     const isLandscape = this.canvas.width > this.canvas.height;
-    const rows = this.isMobile && isLandscape ?
+    let rows = this.isMobile && isLandscape ?
     Math.min(4 + Math.floor(wave / 3), 4) // 4 rows max in landscape
     : Math.min(5 + Math.floor(wave / 3), 7); // Normal rows in portrait
-    const cols = this.isMobile && isLandscape ? 10 : 8; // 10 cols in landscape, 8 in portrait
+    let cols = this.isMobile && isLandscape ? 10 : 8; // 10 cols in landscape, 8 in portrait
+
+    // Apply special wave modifiers
+    if (specialWaveType === 'swarm') {
+      // Swarm: 1.5x enemies
+      rows = Math.min(rows + 2, this.isMobile && isLandscape ? 5 : 8);
+      cols = Math.min(cols + 1, 12);
+    } else if (specialWaveType === 'elite') {
+      // Elite: 0.5x enemies (fewer but tougher)
+      rows = Math.max(2, Math.floor(rows * 0.6));
+      cols = Math.max(4, Math.floor(cols * 0.7));
+    }
 
     // Optimized sizing and spacing for mobile
     const enemyWidth = this.isMobile ? isLandscape ? 24 : 20 : 40;
@@ -559,11 +597,33 @@ export class GameEngine {
         const y = offsetY + row * (enemyHeight + padding);
 
         let type: 'basic' | 'heavy' | 'fast' = 'basic';
-        const rand = Math.random();
-        if (wave > 2 && rand < 0.15) type = 'heavy';else
-        if (wave > 1 && rand < 0.3) type = 'fast';
+
+        // Determine enemy type based on special wave or normal wave
+        if (specialWaveType === 'swarm') {
+          // Swarm: all basic enemies
+          type = 'basic';
+        } else if (specialWaveType === 'elite') {
+          // Elite: all heavy enemies (2 HP each)
+          type = 'heavy';
+        } else if (specialWaveType === 'blitz') {
+          // Blitz: all fast enemies
+          type = 'fast';
+        } else {
+          // Normal wave: random distribution
+          const rand = Math.random();
+          if (wave > 2 && rand < 0.15) type = 'heavy';else
+          if (wave > 1 && rand < 0.3) type = 'fast';
+        }
 
         const enemy = new Enemy(x, y, type, this.getEnemyDifficultyMultiplier());
+
+        // Apply special wave speed modifiers
+        if (specialWaveType === 'swarm') {
+          enemy.speedMultiplier = 1.25; // +25% speed for swarm
+        } else if (specialWaveType === 'blitz') {
+          enemy.speedMultiplier = 1.5; // +50% speed for blitz
+        }
+
         if (this.assets) {
           if (type === 'heavy') enemy.setImage(this.assets.alienHeavy);else
           if (type === 'fast') enemy.setImage(this.assets.alienFast);else
@@ -572,6 +632,33 @@ export class GameEngine {
         this.enemies.push(enemy);
       }
     }
+
+    // Store special wave type for UI announcements
+    if (specialWaveType !== 'normal') {
+      this.announceSpecialWave(specialWaveType);
+    }
+  }
+
+  // Announce special wave with visual effect
+  private announceSpecialWave(waveType: 'swarm' | 'elite' | 'blitz') {
+    const announcements = {
+      swarm: { text: 'SWARM INCOMING!', color: '#22d3ee' },
+      elite: { text: 'ELITE SQUAD!', color: '#a855f7' },
+      blitz: { text: 'BLITZ ATTACK!', color: '#f97316' }
+    };
+
+    const announcement = announcements[waveType];
+
+    // Add screen shake for impact
+    this.addScreenShake(8);
+
+    // Play a sound
+    this.audioManager.playSound('boss_phase_change', 0.6);
+
+    // Dispatch event for UI to show announcement
+    window.dispatchEvent(new CustomEvent('special-wave', {
+      detail: { type: waveType, text: announcement.text, color: announcement.color }
+    }));
   }
 
   setupControls() {
@@ -1131,8 +1218,13 @@ export class GameEngine {
 
   spawnPowerUp() {
     const now = Date.now();
-    if (now - this.lastPowerUpSpawn < this.powerUpSpawnRate) return;
-    if (Math.random() < 0.45) return; // 55% spawn chance (improved from 30%)
+    // Faster spawn rate during boss fights (7s vs 12s)
+    const isBossFight = this.boss && this.boss.isAlive;
+    const spawnRate = isBossFight ? 7000 : this.powerUpSpawnRate;
+    if (now - this.lastPowerUpSpawn < spawnRate) return;
+    // Higher spawn chance during boss fights (65% vs 55%)
+    const spawnChance = isBossFight ? 0.35 : 0.45; // 0.35 = 65% chance, 0.45 = 55% chance
+    if (Math.random() < spawnChance) return;
 
     this.lastPowerUpSpawn = now;
 
@@ -1192,6 +1284,67 @@ export class GameEngine {
     this.powerUps.push(powerUp);
   }
 
+  // Spawn power-up at specific position (used for boss phase drops)
+  spawnPowerUpAtPosition(x: number, y: number, defensiveWeighted: boolean = false) {
+    const rand = Math.random();
+    let type: PowerUpType;
+
+    if (defensiveWeighted) {
+      // Weighted toward defensive power-ups for boss phase drops
+      if (rand < 0.40) {
+        type = 'shield';     // 40% - Most helpful during boss
+      } else if (rand < 0.65) {
+        type = 'rapid';      // 25%
+      } else if (rand < 0.85) {
+        type = 'plasma';     // 20%
+      } else if (rand < 0.92) {
+        type = 'slowmo';     // 7%
+      } else if (rand < 0.97) {
+        type = 'invincibility'; // 5%
+      } else {
+        type = 'extralife';  // 3%
+      }
+    } else {
+      // Standard distribution
+      type = 'shield';
+    }
+
+    const powerUp = new PowerUpEntity(x, y, type);
+    if (this.assets) {
+      const imageMap: Partial<Record<PowerUpType, HTMLImageElement>> = {
+        plasma: this.assets.powerUpPlasma,
+        rapid: this.assets.powerUpRapid,
+        shield: this.assets.powerUpShield,
+        slowmo: this.assets.powerUpSlowmo
+      };
+      if (imageMap[type]) {
+        powerUp.setImage(imageMap[type]!);
+      }
+    }
+    this.powerUps.push(powerUp);
+
+    // Visual effect for loot drop
+    this.createPowerUpDropParticles(x, y);
+  }
+
+  // Create particle effect for power-up drops
+  createPowerUpDropParticles(x: number, y: number) {
+    const colors = ['#22d3ee', '#a855f7', '#fbbf24', '#34d399'];
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const speed = 2 + Math.random() * 2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 30 + Math.random() * 20,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 3 + Math.random() * 3
+      });
+    }
+  }
+
   updateBoss(deltaTime: number = 1) {
     if (!this.boss || !this.boss.isAlive) return;
 
@@ -1223,6 +1376,23 @@ export class GameEngine {
         phase4: this.assets.bossPhase4
       };
       this.boss.setImage(bossImageMap[this.boss.phase]);
+
+      // Drop guaranteed power-ups on phase change (1-2 based on phase)
+      // Adaptive difficulty: extra power-ups after 3+ consecutive boss deaths
+      const bossX = this.boss.position.x + this.boss.size.width / 2;
+      const bossY = this.boss.position.y + this.boss.size.height;
+      const adaptive = this.getAdaptiveDifficultyModifiers();
+      const baseDropCount = this.boss.phase === 'phase4' ? 2 : 1;
+      const dropCount = baseDropCount + adaptive.extraPowerUps;
+
+      for (let i = 0; i < dropCount; i++) {
+        // Offset multiple drops so they don't overlap
+        const offsetX = (i - (dropCount - 1) / 2) * 40;
+        this.spawnPowerUpAtPosition(bossX + offsetX, bossY, true);
+      }
+
+      // Visual feedback for phase transition loot
+      console.log(`🎁 Boss phase change: Dropped ${dropCount} power-up(s)!${adaptive.extraPowerUps > 0 ? ' (adaptive bonus!)' : ''}`);
     }
 
     // Boss attacks (scales with both phase AND wave) - but not when frozen
@@ -1238,7 +1408,11 @@ export class GameEngine {
       // Boss 1: 100% | Boss 2: 85% | Boss 3: 72% | Boss 4: 61% | Boss 5: 52%
       const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
       const waveMultiplier = Math.max(0.5, 1 - (bossNumber - 1) * 0.15); // -15% per boss
-      const attackDelay = baseDelay * waveMultiplier;
+      // Mobile-friendly: 20% longer attack delay on mobile (more time to react)
+      const mobileDelayMultiplier = this.isMobile ? 1.2 : 1.0;
+      // Adaptive difficulty: increase delay after consecutive boss deaths
+      const adaptive = this.getAdaptiveDifficultyModifiers();
+      const attackDelay = baseDelay * waveMultiplier * mobileDelayMultiplier * adaptive.delayMultiplier;
 
       if (now - this.bossState.lastAttackTime > attackDelay) {
         this.bossState.lastAttackTime = now;
@@ -1246,33 +1420,164 @@ export class GameEngine {
       }
     }
 
-    // Update minions with delta time
+    // Update minions with kamikaze dive behavior - stay above player to be shootable
     this.bossMinions = this.bossMinions.filter((m) => m.isAlive);
     this.bossMinions.forEach((minion) => {
-      minion.update(this.enemySpeed * this.enemyDirection * 0.5 * deltaTime, 0);
+      const playerCenterX = this.player.position.x + this.player.size.width / 2;
+      const playerTopY = this.player.position.y; // Target above player, not center
+      const minionCenterX = minion.position.x + minion.size.width / 2;
+      const minionCenterY = minion.position.y + minion.size.height / 2;
+
+      // Horizontal distance to player
+      const dx = playerCenterX - minionCenterX;
+      const horizontalDist = Math.abs(dx);
+
+      // Distance above player (positive = minion is above player)
+      const distAbovePlayer = playerTopY - minionCenterY;
+
+      // Dive threshold - stay this far above player until aligned
+      const hoverHeight = 100; // Stay 100px above player while tracking
+      const alignThreshold = 40; // Horizontal alignment needed to dive
+
+      const diveSpeed = 3.5 * deltaTime;
+
+      // Check minion behavior type (stored in custom property or default to 'dive')
+      const behaviorType = (minion as Enemy & { behaviorType?: string }).behaviorType || 'dive';
+
+      if (behaviorType === 'dive') {
+        // Standard dive behavior: track horizontally while staying above, then dive when aligned
+        if (distAbovePlayer > hoverHeight) {
+          // Still above hover zone - move toward player position (both X and Y)
+          const targetY = playerTopY - hoverHeight;
+          const dy = targetY - minionCenterY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance > 0) {
+            minion.position.x += (dx / distance) * diveSpeed;
+            minion.position.y += (dy / distance) * diveSpeed;
+          }
+        } else if (horizontalDist > alignThreshold) {
+          // In hover zone but not aligned - track horizontally only, maintain height
+          const moveX = dx > 0 ? Math.min(diveSpeed, dx) : Math.max(-diveSpeed, dx);
+          minion.position.x += moveX;
+          // Slight downward drift to create pressure
+          minion.position.y += diveSpeed * 0.3;
+        } else {
+          // Aligned and in position - DIVE STRAIGHT DOWN!
+          minion.position.y += diveSpeed * 1.5; // Faster dive for intensity
+          // Slight tracking to stay on target
+          minion.position.x += dx * 0.05;
+        }
+      } else if (behaviorType === 'sweep') {
+        // Sweep behavior: move in a horizontal pattern while descending
+        const sweepDir = (minion as Enemy & { sweepDir?: number }).sweepDir || 1;
+        minion.position.x += diveSpeed * 1.2 * sweepDir;
+        minion.position.y += diveSpeed * 0.6;
+        // Reverse at screen edges
+        if (minion.position.x < 20 || minion.position.x > this.canvas.width - 20 - minion.size.width) {
+          (minion as Enemy & { sweepDir?: number }).sweepDir = -sweepDir;
+        }
+      } else if (behaviorType === 'zigzag') {
+        // Zigzag behavior: erratic movement pattern
+        const zigTimer = ((minion as Enemy & { zigTimer?: number }).zigTimer || 0) + deltaTime;
+        (minion as Enemy & { zigTimer?: number }).zigTimer = zigTimer;
+        const zigPhase = Math.sin(zigTimer * 0.15) * diveSpeed * 1.5;
+        minion.position.x += zigPhase;
+        minion.position.y += diveSpeed * 0.8;
+      }
+
+      // Remove minion if it goes off screen (missed the player)
+      if (minion.position.y > this.canvas.height + 50) {
+        minion.isAlive = false;
+      }
     });
 
     // Teleport cooldown
     if (this.bossState.teleportCooldown > 0) {
       this.bossState.teleportCooldown -= deltaTime;
     }
+
+    // Update charge attack state
+    if (this.bossState.chargeActive || this.bossState.chargeTelegraphTimer > 0) {
+      this.updateBossCharge(deltaTime);
+    }
+
+    // Update bomb danger zones
+    if (this.bossState.bombsActive.length > 0) {
+      this.updateBossBombs(deltaTime);
+    }
   }
 
   executeBossAttack() {
     if (!this.boss) return;
 
-    // Choose attack pattern based on phase (no minion summoning for beginners)
-    const patterns: Array<'spread' | 'laser' | 'teleport'> = ['spread'];
+    // Don't start new attacks while charge is active
+    if (this.bossState.chargeActive || this.bossState.chargeTelegraphTimer > 0) return;
 
-    if (this.boss.phase === 'phase2' || this.boss.phase === 'phase3' || this.boss.phase === 'phase4') {
-      patterns.push('laser');
-    }
-    if (this.boss.phase === 'phase3' || this.boss.phase === 'phase4') {
-      if (this.bossState.teleportCooldown === 0) patterns.push('teleport');
-    }
-    // Removed minion summoning for beginner-friendly gameplay
+    // Weighted attack selection based on phase
+    // Phase 1: Spread (70%), Laser (30%)
+    // Phase 2: Spread (40%), Laser (25%), Charge (20%), Minions (15%)
+    // Phase 3: Spread (30%), Laser (20%), Charge (15%), Minions (15%), Bombs (20%)
+    // Phase 4: Spread (25%), Laser (15%), Charge (15%), Minions (20%), Bombs (25%)
 
-    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+    type AttackType = 'spread' | 'laser' | 'teleport' | 'minions' | 'charge' | 'bombs';
+    let weights: { attack: AttackType; weight: number }[] = [];
+
+    switch (this.boss.phase) {
+      case 'phase1':
+        weights = [
+          { attack: 'spread', weight: 70 },
+          { attack: 'laser', weight: 30 }
+        ];
+        break;
+      case 'phase2':
+        weights = [
+          { attack: 'spread', weight: 40 },
+          { attack: 'laser', weight: 25 },
+          { attack: 'charge', weight: 20 },
+          { attack: 'minions', weight: this.bossMinions.length < 4 ? 15 : 0 }
+        ];
+        break;
+      case 'phase3':
+        weights = [
+          { attack: 'spread', weight: 30 },
+          { attack: 'laser', weight: 20 },
+          { attack: 'charge', weight: 15 },
+          { attack: 'minions', weight: this.bossMinions.length < 4 ? 15 : 0 },
+          { attack: 'bombs', weight: 20 }
+        ];
+        // Add teleport if off cooldown
+        if (this.bossState.teleportCooldown === 0) {
+          weights.push({ attack: 'teleport', weight: 10 });
+        }
+        break;
+      case 'phase4':
+        weights = [
+          { attack: 'spread', weight: 25 },
+          { attack: 'laser', weight: 15 },
+          { attack: 'charge', weight: 15 },
+          { attack: 'minions', weight: this.bossMinions.length < 4 ? 20 : 0 },
+          { attack: 'bombs', weight: 25 }
+        ];
+        // Add teleport if off cooldown
+        if (this.bossState.teleportCooldown === 0) {
+          weights.push({ attack: 'teleport', weight: 15 });
+        }
+        break;
+    }
+
+    // Calculate total weight and select attack
+    const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+    let random = Math.random() * totalWeight;
+    let pattern: AttackType = 'spread';
+
+    for (const w of weights) {
+      random -= w.weight;
+      if (random <= 0) {
+        pattern = w.attack;
+        break;
+      }
+    }
+
     this.bossState.attackPattern = pattern;
 
     switch (pattern) {
@@ -1285,6 +1590,15 @@ export class GameEngine {
       case 'teleport':
         this.bossTeleport();
         break;
+      case 'minions':
+        this.bossSummonMinions();
+        break;
+      case 'charge':
+        this.bossChargeAttack();
+        break;
+      case 'bombs':
+        this.bossBombDrop();
+        break;
     }
   }
 
@@ -1294,8 +1608,10 @@ export class GameEngine {
     // Play boss missile attack sound
     this.audioManager.playSound('boss_attack_missile', 0.5);
 
-    const angles = this.boss.phase === 'phase4' ? 7 :
-    this.boss.phase === 'phase3' ? 5 : 3;
+    // Mobile-friendly: fewer projectiles on mobile (2/4/6 vs 3/5/7)
+    const mobileReduction = this.isMobile ? 1 : 0;
+    const angles = (this.boss.phase === 'phase4' ? 7 :
+                   this.boss.phase === 'phase3' ? 5 : 3) - mobileReduction;
     const spread = Math.PI / 3;
     const startAngle = Math.PI / 2 - spread / 2;
 
@@ -1303,20 +1619,24 @@ export class GameEngine {
     const baseSpeed = 6;
     const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
     const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
-    const speed = baseSpeed + waveBonus;
+    // Mobile-friendly: 20% slower projectiles on mobile
+    const mobileSpeedMultiplier = this.isMobile ? 0.8 : 1.0;
+    // Adaptive difficulty: reduce speed after consecutive boss deaths
+    const adaptive = this.getAdaptiveDifficultyModifiers();
+    const speed = (baseSpeed + waveBonus) * mobileSpeedMultiplier * adaptive.speedMultiplier;
 
     for (let i = 0; i < angles; i++) {
-      const angle = startAngle + spread * i / (angles - 1);
+      const angle = startAngle + spread * i / (Math.max(1, angles - 1));
       const projectile = new Projectile(
         this.boss.position.x + this.boss.size.width / 2,
         this.boss.position.y + this.boss.size.height,
         false,
         speed,
-        2 // 2 damage (heavy hit - costs 2 lives)
+        1 // 1 damage (reduced from 2 for better balance)
       );
       projectile.velocity.x = Math.cos(angle) * speed;
       projectile.velocity.y = Math.sin(angle) * speed;
-      projectile.color = '#ff6600'; // Orange color for 2 damage
+      projectile.color = '#ff6600'; // Orange color for spread shot
       this.projectiles.push(projectile);
     }
   }
@@ -1335,9 +1655,13 @@ export class GameEngine {
     // Wave-based speed scaling: +0.8 speed per boss wave for consistent progression
     const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
     const waveBonus = (bossNumber - 1) * 0.8; // Boss 1: +0 | Boss 2: +0.8 | Boss 3: +1.6
-    const laserSpeed = baseSpeed + waveBonus;
+    // Mobile-friendly: 20% slower projectiles on mobile
+    const mobileSpeedMultiplier = this.isMobile ? 0.8 : 1.0;
+    // Adaptive difficulty: reduce speed after consecutive boss deaths
+    const adaptive = this.getAdaptiveDifficultyModifiers();
+    const laserSpeed = (baseSpeed + waveBonus) * mobileSpeedMultiplier * adaptive.speedMultiplier;
 
-    // Create vertical laser beam (3 damage - devastating hit)
+    // Create vertical laser beam (2 damage - reduced from 3 for better balance)
     // Fewer, more spaced out projectiles to avoid multi-hits
     for (let i = 0; i < 8; i++) {
       const projectile = new Projectile(
@@ -1345,11 +1669,11 @@ export class GameEngine {
         this.boss.position.y + this.boss.size.height + i * 15,
         false,
         laserSpeed,
-        3 // 3 damage (devastating hit - costs 3 lives)
+        2 // 2 damage (reduced from 3 for better balance)
       );
       projectile.size.width = 6;
       projectile.size.height = 18;
-      projectile.color = '#ff0000'; // Red color for devastating damage
+      projectile.color = '#ff0000'; // Red color for laser damage
       this.projectiles.push(projectile);
     }
 
@@ -1387,22 +1711,347 @@ export class GameEngine {
 
   bossSummonMinions() {
     if (!this.boss) return;
-    if (this.bossMinions.length >= 6) return; // Max 6 minions
+    if (this.bossMinions.length >= 6) return; // Max 6 minions at once
 
-    const count = this.boss.phase === 'phase4' ? 3 : 2;
+    // Spawn count based on phase: Phase 2: 2, Phase 3: 3, Phase 4: 4
+    const count = this.boss.phase === 'phase4' ? 4 :
+                  this.boss.phase === 'phase3' ? 3 : 2;
 
-    for (let i = 0; i < count; i++) {
-      const side = Math.random() > 0.5 ? 1 : -1;
-      const x = this.boss.position.x + side * (this.boss.size.width + 50);
-      const y = this.boss.position.y + 40;
+    // Choose formation type based on phase and randomness
+    type FormationType = 'arc' | 'vformation' | 'line' | 'flanking';
+    const formations: FormationType[] = ['arc', 'vformation', 'line', 'flanking'];
+    const formationIndex = this.boss.phase === 'phase2' ? 0 : Math.floor(Math.random() * formations.length);
+    const formation = formations[formationIndex];
 
-      const minion = new Enemy(x, y, 'fast', this.getEnemyDifficultyMultiplier());
+    // Choose behavior mix - later phases get more variety
+    type BehaviorType = 'dive' | 'sweep' | 'zigzag';
+    const behaviors: BehaviorType[] = this.boss.phase === 'phase2' ? ['dive'] :
+                     this.boss.phase === 'phase3' ? ['dive', 'dive', 'sweep'] :
+                     ['dive', 'sweep', 'zigzag', 'dive'];
+
+    // Play summon sound
+    this.audioManager.playSound('powerup_invincibility', 0.4);
+
+    // Calculate spawn positions based on formation
+    const bossX = this.boss.position.x + this.boss.size.width / 2;
+    const bossY = this.boss.position.y + this.boss.size.height;
+    const spawnPositions: { x: number; y: number; sweepDir?: number }[] = [];
+
+    if (formation === 'arc') {
+      // Original arc formation from boss
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 0.8 + Math.PI * 0.1;
+        const spawnRadius = 80;
+        spawnPositions.push({
+          x: bossX + Math.cos(angle) * spawnRadius,
+          y: bossY + Math.sin(angle) * spawnRadius * 0.5
+        });
+      }
+    } else if (formation === 'vformation') {
+      // V-formation descending from top
+      const vSpread = 60;
+      const startX = this.canvas.width / 2;
+      const startY = 50;
+      for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / 2);
+        const side = i % 2 === 0 ? -1 : 1;
+        spawnPositions.push({
+          x: startX + side * (row + 1) * vSpread,
+          y: startY + row * 40
+        });
+      }
+    } else if (formation === 'line') {
+      // Horizontal line from one side, sweeping across
+      const startY = 80;
+      const startX = Math.random() > 0.5 ? -30 : this.canvas.width + 30;
+      const sweepDir = startX < 0 ? 1 : -1;
+      for (let i = 0; i < count; i++) {
+        spawnPositions.push({
+          x: startX,
+          y: startY + i * 35,
+          sweepDir
+        });
+      }
+    } else if (formation === 'flanking') {
+      // Two groups from left and right sides
+      for (let i = 0; i < count; i++) {
+        const side = i % 2 === 0 ? 0 : 1;
+        const yOffset = Math.floor(i / 2) * 40;
+        spawnPositions.push({
+          x: side === 0 ? 30 : this.canvas.width - 60,
+          y: 100 + yOffset,
+          sweepDir: side === 0 ? 1 : -1
+        });
+      }
+    }
+
+    // Spawn minions at calculated positions
+    for (let i = 0; i < spawnPositions.length; i++) {
+      const pos = spawnPositions[i];
+      const behavior = behaviors[i % behaviors.length];
+
+      // Create kamikaze minion (1 HP, deals 1 damage on contact)
+      const minion = new Enemy(pos.x, pos.y, 'fast', this.getEnemyDifficultyMultiplier()) as Enemy & {
+        behaviorType?: string;
+        sweepDir?: number;
+        zigTimer?: number;
+      };
+      minion.health = 1; // 1 HP - can be shot easily
+      minion.behaviorType = behavior;
+      if (pos.sweepDir) minion.sweepDir = pos.sweepDir;
+      if (behavior === 'zigzag') minion.zigTimer = Math.random() * 60; // Random phase offset
+
       if (this.assets) minion.setImage(this.assets.alienFast);
       this.bossMinions.push(minion);
 
-      // Spawn particles
-      this.createCollectParticles(x, y);
+      // Spawn warning particles - color coded by behavior
+      const particleColor = behavior === 'dive' ? '#ffaa00' :
+                           behavior === 'sweep' ? '#00ffaa' : '#ff66ff';
+      for (let p = 0; p < 8; p++) {
+        const particleAngle = (p / 8) * Math.PI * 2;
+        this.particles.push({
+          x: pos.x,
+          y: pos.y,
+          vx: Math.cos(particleAngle) * 3,
+          vy: Math.sin(particleAngle) * 3,
+          life: 25,
+          color: particleColor,
+          size: 4
+        });
+      }
     }
+
+    // Add formation announcement for added drama
+    const formationNames: Record<FormationType, string> = {
+      arc: 'MINIONS INCOMING!',
+      vformation: 'V-FORMATION!',
+      line: 'SWEEP ATTACK!',
+      flanking: 'FLANKING MANEUVER!'
+    };
+    if (formation !== 'arc') {
+      window.dispatchEvent(new CustomEvent('minion-formation', {
+        detail: { formation, text: formationNames[formation] }
+      }));
+    }
+  }
+
+  // Charge attack - boss rushes horizontally across screen
+  bossChargeAttack() {
+    if (!this.boss) return;
+
+    // Start telegraph phase (60 frames = 1 second)
+    this.bossState.chargeTelegraphTimer = 60;
+    this.bossState.chargeActive = false;
+    this.bossState.chargeStartX = this.boss.position.x;
+
+    // Determine charge direction based on player position
+    const playerCenterX = this.player.position.x + this.player.size.width / 2;
+    const bossCenterX = this.boss.position.x + this.boss.size.width / 2;
+    this.bossState.chargeDirection = playerCenterX > bossCenterX ? 1 : -1;
+
+    // Play warning sound
+    this.audioManager.playSound('boss_phase_change', 0.7);
+
+    // Screen shake to telegraph danger
+    this.addScreenShake(5);
+  }
+
+  // Update charge attack state (called from updateBoss)
+  updateBossCharge(deltaTime: number) {
+    if (!this.boss) return;
+
+    // Telegraph phase - boss glows red and prepares
+    if (this.bossState.chargeTelegraphTimer > 0) {
+      this.bossState.chargeTelegraphTimer -= deltaTime;
+
+      // Create warning particles during telegraph
+      if (Math.random() < 0.3) {
+        this.particles.push({
+          x: this.boss.position.x + Math.random() * this.boss.size.width,
+          y: this.boss.position.y + Math.random() * this.boss.size.height,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -1 - Math.random(),
+          life: 20,
+          color: '#ff3333',
+          size: 4 + Math.random() * 3
+        });
+      }
+
+      // Start charge when telegraph ends
+      if (this.bossState.chargeTelegraphTimer <= 0) {
+        this.bossState.chargeActive = true;
+        this.audioManager.playSound('boss_attack_laser', 0.8);
+      }
+      return;
+    }
+
+    // Active charge phase
+    if (this.bossState.chargeActive) {
+      const chargeSpeed = 15 * deltaTime;
+      this.boss.position.x += chargeSpeed * this.bossState.chargeDirection;
+
+      // Create trail particles
+      this.particles.push({
+        x: this.boss.position.x + (this.bossState.chargeDirection > 0 ? 0 : this.boss.size.width),
+        y: this.boss.position.y + this.boss.size.height / 2,
+        vx: -this.bossState.chargeDirection * 3,
+        vy: (Math.random() - 0.5) * 2,
+        life: 15,
+        color: '#ff6600',
+        size: 5
+      });
+
+      // Check collision with player during charge (2 damage)
+      if (!this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
+        if (this.checkCollision(this.boss.getBounds(), this.player.getBounds())) {
+          this.audioManager.playSound('player_hit', 0.7);
+          this.hapticManager.onPlayerHit();
+          this.stats.lives -= 2;
+          this.tookDamageThisWave = true;
+          this.player.invulnerable = true;
+          this.player.invulnerabilityTimer = 120;
+          this.addScreenShake(15);
+          this.hitFlashAlpha = 0.4;
+
+          if (this.stats.lives <= 0) {
+            this.gameOver();
+          }
+        }
+      }
+
+      // End charge when boss reaches edge of screen
+      if (this.boss.position.x <= -this.boss.size.width / 2 ||
+          this.boss.position.x >= this.canvas.width - this.boss.size.width / 2) {
+        this.bossState.chargeActive = false;
+
+        // Return boss to center area
+        this.boss.position.x = this.canvas.width / 2 - this.boss.size.width / 2;
+        this.boss.position.y = 80;
+
+        // Arrival effect
+        this.spawnDebrisParticles(
+          this.boss.position.x + this.boss.size.width / 2,
+          this.boss.position.y + this.boss.size.height / 2,
+          '#ff6600'
+        );
+      }
+    }
+  }
+
+  // Bomb drop attack - boss drops bombs that create danger zones
+  bossBombDrop() {
+    if (!this.boss) return;
+
+    // Drop 2-4 bombs based on phase
+    const bombCount = this.boss.phase === 'phase4' ? 4 :
+                      this.boss.phase === 'phase3' ? 3 : 2;
+
+    // Play bomb drop sound
+    this.audioManager.playSound('boss_attack_missile', 0.6);
+
+    for (let i = 0; i < bombCount; i++) {
+      // Spread bombs across boss width
+      const spreadX = (i / (bombCount - 1 || 1) - 0.5) * this.boss.size.width * 0.8;
+      const bombX = this.boss.position.x + this.boss.size.width / 2 + spreadX;
+      const bombY = this.boss.position.y + this.boss.size.height;
+
+      this.bossState.bombsActive.push({
+        x: bombX,
+        y: bombY,
+        timer: 0 // Will count up, explode when reaching bottom 1/4
+      });
+    }
+  }
+
+  // Update bomb positions and explosions (called from updateBoss)
+  updateBossBombs(deltaTime: number) {
+    const bombSpeed = 3 * deltaTime;
+    const explosionY = this.canvas.height * 0.75; // Bottom 1/4 of screen
+    const dangerRadius = 80;
+    const dangerDuration = 90; // 1.5 seconds
+
+    this.bossState.bombsActive = this.bossState.bombsActive.filter(bomb => {
+      // Move bomb down
+      if (bomb.timer === 0) {
+        bomb.y += bombSpeed;
+
+        // Create falling trail
+        if (Math.random() < 0.3) {
+          this.particles.push({
+            x: bomb.x,
+            y: bomb.y,
+            vx: (Math.random() - 0.5) * 1,
+            vy: -1,
+            life: 15,
+            color: '#ff4444',
+            size: 3
+          });
+        }
+
+        // Check if bomb reached explosion height
+        if (bomb.y >= explosionY) {
+          bomb.timer = 1; // Start danger zone timer
+          // Explosion effect
+          this.audioManager.playSound('explosion_normal', 0.5);
+          this.addScreenShake(6);
+          for (let i = 0; i < 15; i++) {
+            const angle = (i / 15) * Math.PI * 2;
+            this.particles.push({
+              x: bomb.x,
+              y: bomb.y,
+              vx: Math.cos(angle) * 4,
+              vy: Math.sin(angle) * 4,
+              life: 30,
+              color: '#ff6600',
+              size: 5
+            });
+          }
+        }
+      } else {
+        // Danger zone active
+        bomb.timer += deltaTime;
+
+        // Create danger zone particles
+        if (Math.random() < 0.2) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * dangerRadius;
+          this.particles.push({
+            x: bomb.x + Math.cos(angle) * dist,
+            y: bomb.y + Math.sin(angle) * dist * 0.3,
+            vx: 0,
+            vy: -0.5 - Math.random(),
+            life: 20,
+            color: '#ff3300',
+            size: 3
+          });
+        }
+
+        // Check player in danger zone (1 damage per 30 frames)
+        if (!this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
+          const playerCenterX = this.player.position.x + this.player.size.width / 2;
+          const playerCenterY = this.player.position.y + this.player.size.height / 2;
+          const dx = playerCenterX - bomb.x;
+          const dy = playerCenterY - bomb.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < dangerRadius && Math.floor(bomb.timer) % 30 === 0) {
+            this.audioManager.playSound('player_hit', 0.4);
+            this.stats.lives -= 1;
+            this.tookDamageThisWave = true;
+            this.hitFlashAlpha = 0.2;
+            if (this.stats.lives <= 0) {
+              this.gameOver();
+            }
+          }
+        }
+
+        // Remove danger zone after duration
+        if (bomb.timer >= dangerDuration) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
 
   updateEnemies(deltaTime: number = 1) {
@@ -1663,6 +2312,46 @@ export class GameEngine {
           this.addScreenShake(12);
 
           // CRITICAL: Break after first hit to prevent multiple projectiles hitting in same frame
+          break;
+        }
+      }
+    }
+
+    // Kamikaze minions vs player
+    if (!this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
+      for (const minion of this.bossMinions) {
+        if (!minion.isAlive) continue;
+
+        if (this.checkCollision(minion.getBounds(), this.player.getBounds())) {
+          // Minion dies on contact
+          minion.isAlive = false;
+
+          // Play hit sound and haptic
+          this.audioManager.playSound('player_hit', 0.6);
+          this.hapticManager.onPlayerHit();
+
+          // Minion deals 1 damage
+          this.stats.lives -= 1;
+          if (this.stats.lives <= 0) {
+            this.gameOver();
+          }
+
+          // Track damage taken
+          this.tookDamageThisWave = true;
+
+          // Activate invulnerability (2 seconds)
+          this.player.invulnerable = true;
+          this.player.invulnerabilityTimer = 120;
+
+          // Explosion at collision point
+          this.createExplosion(
+            minion.position.x + minion.size.width / 2,
+            minion.position.y + minion.size.height / 2
+          );
+          this.addScreenShake(10);
+          this.hitFlashAlpha = 0.3;
+
+          // Only one minion can hit per frame
           break;
         }
       }
@@ -1984,6 +2673,9 @@ export class GameEngine {
 
   private bossDefeated(): void {
     if (!this.boss) return;
+
+    // Reset adaptive difficulty on boss victory
+    this.onBossVictory();
 
     // Play victory sounds and haptic
     this.audioManager.playSound('boss_death', 0.9);
@@ -2350,6 +3042,11 @@ export class GameEngine {
 
   gameOver() {
     this.state = 'gameOver';
+
+    // Track boss death for adaptive difficulty
+    if (this.bossState.isBossWave && this.boss && this.boss.isAlive) {
+      this.onBossDeath();
+    }
 
     // Play game over sound, theme, and haptic
     this.audioManager.playSound('game_over', 0.7);
@@ -2845,6 +3542,45 @@ export class GameEngine {
     for (const enemy of this.enemies) {
       if (enemy.isAlive) enemy.render(this.ctx);
     }
+    // Render minion warning trails BEFORE minions for visual layering
+    for (const minion of this.bossMinions) {
+      if (!minion.isAlive) continue;
+      const minionWithBehavior = minion as Enemy & { behaviorType?: string };
+      const behavior = minionWithBehavior.behaviorType || 'dive';
+
+      // Only show warning trail for dive behavior when aligned and about to dive
+      if (behavior === 'dive') {
+        const playerCenterX = this.player.position.x + this.player.size.width / 2;
+        const minionCenterX = minion.position.x + minion.size.width / 2;
+        const horizontalDist = Math.abs(playerCenterX - minionCenterX);
+        const playerTopY = this.player.position.y;
+        const minionBottomY = minion.position.y + minion.size.height;
+        const distAbovePlayer = playerTopY - minionBottomY;
+
+        // Show warning trail when minion is aligned and about to dive
+        if (horizontalDist < 50 && distAbovePlayer > 20 && distAbovePlayer < 120) {
+          this.ctx.save();
+          // Pulsing warning line
+          const pulse = Math.sin(Date.now() * 0.02) * 0.3 + 0.5;
+          this.ctx.strokeStyle = `rgba(255, 170, 0, ${pulse})`;
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([8, 8]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(minionCenterX, minionBottomY);
+          this.ctx.lineTo(minionCenterX, this.player.position.y + this.player.size.height / 2);
+          this.ctx.stroke();
+
+          // Warning target indicator at player position
+          this.ctx.fillStyle = `rgba(255, 100, 0, ${pulse * 0.6})`;
+          this.ctx.beginPath();
+          this.ctx.arc(minionCenterX, this.player.position.y, 15, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+        }
+      }
+    }
+
+    // Render minions
     for (const minion of this.bossMinions) {
       if (minion.isAlive) minion.render(this.ctx);
     }
@@ -3139,7 +3875,12 @@ export class GameEngine {
       bossVictoryTimer: 0,
       lastAttackTime: 0,
       attackPattern: 'spread',
-      teleportCooldown: 0
+      teleportCooldown: 0,
+      chargeActive: false,
+      chargeTelegraphTimer: 0,
+      chargeDirection: 1,
+      chargeStartX: 0,
+      bombsActive: []
     };
     // Apply movement speed boost from superpower
     const superpower = this.cosmeticManager.getActiveSuperpower();
@@ -3347,6 +4088,69 @@ export class GameEngine {
   getEnemyDifficultyMultiplier(): number {
     // 2% stronger per player level
     return 1 + (this.stats.level - 1) * 0.02;
+  }
+
+  // Adaptive difficulty system methods
+  private loadAdaptiveDifficulty() {
+    try {
+      const stored = localStorage.getItem(this.ADAPTIVE_DIFFICULTY_KEY);
+      this.consecutiveBossDeaths = stored ? parseInt(stored, 10) : 0;
+      if (this.consecutiveBossDeaths > 0) {
+        console.log(`🎮 Adaptive difficulty: ${this.consecutiveBossDeaths} consecutive boss deaths loaded`);
+      }
+    } catch (e) {
+      this.consecutiveBossDeaths = 0;
+    }
+  }
+
+  private saveAdaptiveDifficulty() {
+    try {
+      localStorage.setItem(this.ADAPTIVE_DIFFICULTY_KEY, this.consecutiveBossDeaths.toString());
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  // Called when player dies during boss fight
+  onBossDeath() {
+    this.consecutiveBossDeaths++;
+    this.saveAdaptiveDifficulty();
+    console.log(`🎮 Boss death recorded. Consecutive deaths: ${this.consecutiveBossDeaths}`);
+  }
+
+  // Called when player defeats boss
+  onBossVictory() {
+    if (this.consecutiveBossDeaths > 0) {
+      console.log(`🎮 Boss defeated! Resetting adaptive difficulty (was: ${this.consecutiveBossDeaths} deaths)`);
+      this.consecutiveBossDeaths = 0;
+      this.saveAdaptiveDifficulty();
+    }
+  }
+
+  // Get adaptive difficulty multipliers
+  // Returns { speedMultiplier, delayMultiplier, extraPowerUps }
+  getAdaptiveDifficultyModifiers() {
+    // Get base difficulty from settings
+    const difficultyConfig = DIFFICULTY_CONFIGS[this.settings.difficulty];
+    let speedMultiplier = difficultyConfig.speedMultiplier;
+    let delayMultiplier = difficultyConfig.delayMultiplier;
+    let extraPowerUps = 0;
+
+    // Apply adaptive difficulty on top of settings
+    if (this.consecutiveBossDeaths >= 2) {
+      if (this.consecutiveBossDeaths === 2) {
+        // After 2 deaths: additional -10% speed, +20% delay
+        speedMultiplier *= 0.9;
+        delayMultiplier *= 1.2;
+      } else {
+        // After 3+ deaths: additional -20% speed, +40% delay, +1 power-up per phase
+        speedMultiplier *= 0.8;
+        delayMultiplier *= 1.4;
+        extraPowerUps = 1;
+      }
+    }
+
+    return { speedMultiplier, delayMultiplier, extraPowerUps };
   }
 
   getActivePowerUps() {

@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { X, Volume2, VolumeX, Music, Zap, Smartphone, Eye, Lightbulb, RotateCcw } from 'lucide-react';
+import { X, Volume2, VolumeX, Music, Zap, Smartphone, Eye, Lightbulb, RotateCcw, Target } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getSettingsManager } from '@/lib/game/settings/SettingsManager';
-import { GameSettings, ParticleQuality, ControlSensitivity } from '@/lib/game/settings/SettingsTypes';
+import { GameSettings, ParticleQuality, ControlSensitivity, DifficultyLevel, DIFFICULTY_CONFIGS } from '@/lib/game/settings/SettingsTypes';
 
 interface SettingsOverlayProps {
   isOpen: boolean;
@@ -129,6 +129,50 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             value={settings.music}
             onChange={(value) => updateSetting('music', value)}
           />
+        </div>
+
+        {/* Difficulty Settings */}
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-pink-400 mb-3 font-['Space_Grotesk'] flex items-center gap-2">
+            <Target size={20} />
+            Difficulty
+          </h3>
+
+          {/* Difficulty Selector */}
+          <div className="p-4 bg-black/30 rounded-lg border border-cyan-400/20 hover:border-cyan-400/40 transition-all">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="text-cyan-400 mt-1"><Target size={18} /></div>
+              <div className="flex-1">
+                <div className="text-white font-bold font-['Space_Grotesk']">Game Difficulty</div>
+                <div className="text-sm text-cyan-200/70 font-['Space_Grotesk']">
+                  {DIFFICULTY_CONFIGS[settings.difficulty].description}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['easy', 'normal', 'hard'] as DifficultyLevel[]).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => updateSetting('difficulty', level)}
+                  className={`px-4 py-2 rounded-lg font-bold font-['Space_Grotesk'] text-sm transition-all ${
+                    settings.difficulty === level
+                      ? level === 'easy' ? 'bg-green-500 text-black border-2 border-green-400'
+                        : level === 'hard' ? 'bg-red-500 text-white border-2 border-red-400'
+                        : 'bg-cyan-500 text-black border-2 border-cyan-400'
+                      : 'bg-gray-700/50 text-white border-2 border-gray-600 hover:border-cyan-400/50'
+                  }`}
+                  style={{
+                    boxShadow: settings.difficulty === level
+                      ? level === 'easy' ? '0 0 10px rgba(34, 197, 94, 0.5)'
+                        : level === 'hard' ? '0 0 10px rgba(239, 68, 68, 0.5)'
+                        : '0 0 10px rgba(34, 211, 238, 0.5)'
+                      : 'none'
+                  }}>
+                  {DIFFICULTY_CONFIGS[level].label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Mobile-Only Settings */}
