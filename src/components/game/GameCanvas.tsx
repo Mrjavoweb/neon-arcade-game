@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
@@ -236,7 +236,7 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     }
   };
 
-  const handleClaimDailyReward = () => {
+  const handleClaimDailyReward = useCallback(() => {
     if (gameEngineRef.current) {
       const result = gameEngineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
@@ -253,7 +253,12 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
         }
       }
     }
-  };
+  }, []);
+
+  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
+  const handleCloseDailyReward = useCallback(() => {
+    setDailyReward(null);
+  }, []);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0a0014]">
@@ -346,7 +351,7 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
                 reward={dailyReward.reward}
                 streak={dailyReward.streak}
                 onClaim={handleClaimDailyReward}
-                onClose={() => setDailyReward(null)}
+                onClose={handleCloseDailyReward}
                 comebackBonus={dailyReward.comebackBonus}
                 milestonesUnlocked={dailyReward.milestonesUnlocked}
                 nextMilestone={dailyReward.nextMilestone}

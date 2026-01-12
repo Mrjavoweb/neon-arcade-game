@@ -11,7 +11,7 @@ import DailyRewardPopup from '@/components/game/DailyRewardPopup';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
 import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
@@ -308,7 +308,7 @@ export default function GamePage() {
     }
   };
 
-  const handleClaimDailyReward = () => {
+  const handleClaimDailyReward = useCallback(() => {
     if (engineRef.current) {
       const result = engineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
@@ -329,9 +329,10 @@ export default function GamePage() {
         }
       }
     }
-  };
+  }, []);
 
-  const handleCloseDailyReward = () => {
+  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
+  const handleCloseDailyReward = useCallback(() => {
     console.log('🎁 Daily reward popup closing, claimed flag:', dailyRewardClaimedRef.current);
     setDailyReward(null);
 
@@ -365,7 +366,7 @@ export default function GamePage() {
         console.log('🎁 Game resumed after daily reward popup closed');
       }
     }
-  };
+  }, []);
 
   const handleShop = () => {
     // Pause the game before navigating

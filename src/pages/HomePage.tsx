@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import StarfieldBackground from '@/components/StarfieldBackground';
 import NeonButton from '@/components/NeonButton';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -130,7 +130,7 @@ export default function HomePage() {
   }, [engine, setEngine]);
 
   // Handle daily reward claim
-  const handleClaimDailyReward = () => {
+  const handleClaimDailyReward = useCallback(() => {
     const currentEngine = engine;
     if (currentEngine) {
       const result = currentEngine.dailyRewardManager.claimReward();
@@ -140,7 +140,12 @@ export default function HomePage() {
         // Updating state here causes re-render which can reset the popup's internal "claimed" state
       }
     }
-  };
+  }, [engine]);
+
+  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
+  const handleCloseDailyReward = useCallback(() => {
+    setDailyReward(null);
+  }, []);
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -335,7 +340,7 @@ export default function HomePage() {
             reward={dailyReward.reward}
             streak={dailyReward.streak}
             onClaim={handleClaimDailyReward}
-            onClose={() => setDailyReward(null)}
+            onClose={handleCloseDailyReward}
             comebackBonus={dailyReward.comebackBonus}
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}

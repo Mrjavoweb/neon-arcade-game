@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
 
 interface DailyRewardPopupProps {
@@ -25,26 +25,26 @@ export default function DailyRewardPopup({
 }: DailyRewardPopupProps) {
   const [claimed, setClaimed] = useState(false);
 
+  // Use ref to store onClose to always have latest callback
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   const handleClaim = () => {
     if (claimed) return; // Prevent double-click
     setClaimed(true);
     onClaim();
-  };
 
-  // Auto-close after claiming - using useEffect to ensure proper cleanup
-  useEffect(() => {
-    if (!claimed) return;
-
+    // Auto-close after delay - directly in handler to avoid useEffect issues
     const closeDelay = milestonesUnlocked && milestonesUnlocked.length > 0 ? 3000 : 1500;
     console.log('🎁 Daily reward claimed, closing in', closeDelay, 'ms');
 
-    const closeTimer = setTimeout(() => {
-      console.log('🎁 Closing daily reward popup');
-      onClose();
+    setTimeout(() => {
+      console.log('🎁 Closing daily reward popup NOW');
+      onCloseRef.current();
     }, closeDelay);
-
-    return () => clearTimeout(closeTimer);
-  }, [claimed, milestonesUnlocked, onClose]);
+  };
 
   const handleBackdropClick = () => {
     // Only allow closing via backdrop after claiming

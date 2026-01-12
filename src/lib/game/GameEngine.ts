@@ -107,6 +107,12 @@ export class GameEngine {
   private fpsLastTime = 0;
   private currentFPS = 0;
 
+  // Performance optimization: frame counter for periodic cleanup
+  private frameCount = 0;
+
+  // Performance optimization: pre-rendered scanline pattern
+  private scanlinePattern: CanvasPattern | null = null;
+
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -262,6 +268,9 @@ export class GameEngine {
 
     this.initEnemies();
     this.setupControls();
+
+    // Performance optimization: Pre-render scanline pattern
+    this.scanlinePattern = this.createScanlinePattern();
 
     // Expose cheat functions globally for testing (only in dev)
     if (typeof window !== 'undefined') {
@@ -2456,6 +2465,8 @@ export class GameEngine {
     this.player.invulnerable = true;
     this.player.invulnerabilityTimer = this.isMobile ? 45 : 60; // 0.75s mobile, 1.0s desktop
 
+    // Performance optimization: Clear dead enemies to prevent array bloat
+    this.enemies = [];
     this.initEnemies();
     this.projectiles = [];
   }
@@ -2511,6 +2522,17 @@ export class GameEngine {
       this.currentFPS = this.fpsFrameCount;
       this.fpsFrameCount = 0;
       this.fpsLastTime = currentTime;
+    }
+
+    // Performance optimization: Periodic cleanup of dead enemies to prevent array bloat
+    this.frameCount++;
+    if (this.frameCount % 120 === 0) { // Every 2 seconds at 60fps
+      const beforeCount = this.enemies.length;
+      this.enemies = this.enemies.filter(e => e.isAlive);
+      const removed = beforeCount - this.enemies.length;
+      if (removed > 0) {
+        console.log(`🧹 Cleaned up ${removed} dead enemies (${this.enemies.length} remaining)`);
+      }
     }
 
     // Clamp delta time to prevent huge jumps (e.g., when tab is inactive)
@@ -2774,43 +2796,43 @@ export class GameEngine {
       this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
     }
 
-    // Slow-mo overlay with enhanced effect
+    // Slow-mo overlay with enhanced effect - OPTIMIZED: use pre-rendered pattern
     if (this.slowMotionActive) {
       this.ctx.fillStyle = 'rgba(100, 50, 200, 0.15)';
       this.ctx.fillRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
 
-      // Add scanlines effect for slow-mo
-      this.ctx.strokeStyle = 'rgba(100, 50, 200, 0.1)';
-      this.ctx.lineWidth = 2;
-      for (let y = 0; y < this.canvas.height; y += 4) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, y);
-        this.ctx.lineTo(this.canvas.width, y);
-        this.ctx.stroke();
+      // Use pre-rendered scanline pattern instead of drawing 270+ lines per frame
+      if (this.scanlinePattern) {
+        this.ctx.fillStyle = this.scanlinePattern;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       }
     }
 
-    // Render particles (background layer) with enhanced glow
-    this.particles.forEach((p) => {
+    // Render particles (background layer) - OPTIMIZED: single save/restore, reduced shadow
+    if (this.particles.length > 0) {
       this.ctx.save();
-      this.ctx.globalAlpha = p.alpha;
-      this.ctx.fillStyle = p.color;
-      this.ctx.shadowBlur = 15 + p.size * 2;
-      this.ctx.shadowColor = p.color;
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      this.ctx.fill();
+      // Reduced shadow blur for better performance (was 15 + size*2)
+      this.ctx.shadowBlur = 8;
 
-      // Add bright core to particles
-      if (p.alpha > 0.5) {
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.globalAlpha = (p.alpha - 0.5) * 0.6;
+      for (const p of this.particles) {
+        this.ctx.globalAlpha = p.alpha;
+        this.ctx.fillStyle = p.color;
+        this.ctx.shadowColor = p.color;
         this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Only draw bright core for very visible particles (reduced threshold)
+        if (p.alpha > 0.7) {
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.globalAlpha = (p.alpha - 0.5) * 0.4;
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size * 0.3, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
       }
       this.ctx.restore();
-    });
+    }
 
     // Render entities with layering
     this.powerUps.forEach((p) => p.render(this.ctx));
@@ -2819,8 +2841,13 @@ export class GameEngine {
     const skinFilter = this.cosmeticManager.getProcessedFilter();
     this.player.render(this.ctx, this.assets?.shieldEffect, skinFilter);
 
-    this.enemies.forEach((enemy) => enemy.render(this.ctx));
-    this.bossMinions.forEach((minion) => minion.render(this.ctx));
+    // OPTIMIZED: Only render alive enemies (skip dead ones)
+    for (const enemy of this.enemies) {
+      if (enemy.isAlive) enemy.render(this.ctx);
+    }
+    for (const minion of this.bossMinions) {
+      if (minion.isAlive) minion.render(this.ctx);
+    }
     if (this.boss && this.boss.isAlive) {
       this.boss.render(this.ctx);
     }
@@ -3170,6 +3197,26 @@ export class GameEngine {
     } catch (error) {
       console.error('Failed to load checkpoint:', error);
       return 0;
+    }
+  }
+
+  // Performance optimization: Create scanline pattern once instead of drawing 270+ lines per frame
+  private createScanlinePattern(): CanvasPattern | null {
+    try {
+      const patternCanvas = document.createElement('canvas');
+      patternCanvas.width = 4;
+      patternCanvas.height = 4;
+      const patternCtx = patternCanvas.getContext('2d');
+      if (!patternCtx) return null;
+
+      // Create scanline effect: transparent top, semi-transparent line at bottom
+      patternCtx.fillStyle = 'rgba(100, 50, 200, 0.1)';
+      patternCtx.fillRect(0, 3, 4, 1);
+
+      return this.ctx.createPattern(patternCanvas, 'repeat');
+    } catch (error) {
+      console.warn('Failed to create scanline pattern:', error);
+      return null;
     }
   }
 
