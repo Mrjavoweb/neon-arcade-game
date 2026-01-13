@@ -221,6 +221,84 @@ export interface PlayerCosmetics {
 }
 
 // ============================================================================
+// MODULE TYPES
+// ============================================================================
+
+export type ModuleId =
+  // Offensive
+  | 'quick_trigger_1' | 'quick_trigger_2' | 'quick_trigger_3'
+  | 'impact_rounds_1' | 'impact_rounds_2' | 'impact_rounds_3'
+  | 'boss_buster' | 'chain_lightning'
+  // Defensive
+  | 'reinforced_hull_1' | 'reinforced_hull_2' | 'reinforced_hull_3'
+  | 'shield_boost_1' | 'shield_boost_2'
+  | 'emergency_shield' | 'phase_shift'
+  // Utility
+  | 'magnet_1' | 'magnet_2'
+  | 'lucky_star_1' | 'lucky_star_2'
+  | 'stardust_hunter_1' | 'stardust_hunter_2'
+  | 'combo_keeper';
+
+export type ModuleTier = 'basic' | 'advanced' | 'elite' | 'legendary';
+export type ModuleCategory = 'offensive' | 'defensive' | 'utility';
+
+export type ModuleEffectType =
+  | 'fire_rate_boost'
+  | 'damage_boost'
+  | 'boss_damage_boost'
+  | 'chain_lightning'
+  | 'max_hp_boost'
+  | 'shield_duration_boost'
+  | 'emergency_shield'
+  | 'phase_shift'
+  | 'powerup_attract_boost'
+  | 'powerup_drop_boost'
+  | 'stardust_boost'
+  | 'combo_keeper';
+
+export interface ModuleEffect {
+  type: ModuleEffectType;
+  value: number; // Percentage or flat value depending on type
+  description: string;
+}
+
+export interface Module {
+  id: ModuleId;
+  name: string;
+  description: string;
+  icon: string; // Emoji
+  tier: ModuleTier;
+  category: ModuleCategory;
+  price: number; // Stardust cost
+
+  effect: ModuleEffect;
+
+  // Unlock requirements
+  achievementCountRequired: number; // Number of achievements needed
+  specificAchievement?: string; // Specific achievement ID required (for legendary)
+
+  // State
+  owned: boolean;
+}
+
+export interface PlayerModules {
+  ownedModules: ModuleId[];
+  equippedModules: ModuleId[]; // Max 3 slots
+  slotsUnlocked: number; // 1-3, based on player level or boss kills
+}
+
+// Module balance caps
+export const MODULE_CAPS = {
+  MAX_DAMAGE_BONUS: 50, // +50% max
+  MAX_HP_BONUS: 3, // +3 HP max (7 total)
+  MAX_FIRE_RATE_BONUS: 40, // +40% max
+  MAX_SHIELD_DURATION_BONUS: 45, // +45% max
+  MAX_STARDUST_BONUS: 30, // +30% max
+  MAX_POWERUP_DROP_BONUS: 25, // +25% max
+  MAX_POWERUP_ATTRACT_BONUS: 40, // +40% max
+} as const;
+
+// ============================================================================
 // STORAGE KEYS
 // ============================================================================
 
@@ -230,6 +308,7 @@ export const STORAGE_KEYS = {
   ACHIEVEMENT_PROGRESS: 'alienInvasion_achievementProgress',
   DAILY_REWARDS: 'alienInvasion_dailyRewards',
   COSMETICS: 'alienInvasion_cosmetics',
+  MODULES: 'alienInvasion_modules',
   SETTINGS: 'alienInvasion_settings'
 } as const;
 

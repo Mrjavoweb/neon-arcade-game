@@ -80,8 +80,8 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
           </div>
         </div>
 
-        {/* Center-Left - Active Power-Ups (Left of Wave) */}
-        <div className="flex items-center mr-2">
+        {/* Center-Left - Active Power-Ups (positioned away from boss health bar) */}
+        <div className="flex items-center mr-8 sm:mr-12">
           <AnimatePresence>
             {activePowerUps && (
               <div className={`flex flex-col gap-1.5 ${

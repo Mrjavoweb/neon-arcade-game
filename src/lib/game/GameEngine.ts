@@ -1,9 +1,10 @@
-import { Player, Enemy, Boss, Projectile, ExplosionAnimation, PowerUpEntity } from './entities';
+import { Player, Enemy, Boss, Projectile, ExplosionAnimation, PowerUpEntity, Asteroid, FormationType, selectFormation } from './entities';
 import { GameState, GameStats, GameConfig, Particle, SpriteAssets, BossState, ComboNotification, WaveTransition, PowerUpType } from './types';
 import { CurrencyManager } from './progression/CurrencyManager';
 import { DailyRewardManager } from './progression/DailyRewardManager';
 import { AchievementManager } from './progression/AchievementManager';
 import { CosmeticManager } from './progression/CosmeticManager';
+import { ModuleManager } from './progression/ModuleManager';
 import { getSettingsManager } from './settings/SettingsManager';
 import { GameSettings, DIFFICULTY_CONFIGS } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
@@ -22,6 +23,11 @@ export class GameEngine {
   enemies: Enemy[];
   boss: Boss | null;
   bossMinions: Enemy[];
+  asteroids: Asteroid[]; // Asteroid wave entities
+  asteroidWaveActive: boolean; // Is this an asteroid wave (pre-boss)?
+  asteroidWaveTimer: number; // Timer for asteroid wave (30 seconds max)
+  asteroidIntroTimer: number; // Intro pause before asteroid wave starts
+  currentFormation: FormationType; // Current wave's formation type
   projectiles: Projectile[];
   explosions: ExplosionAnimation[];
   powerUps: PowerUpEntity[];
@@ -44,6 +50,16 @@ export class GameEngine {
   hitFlashAlpha: number; // Red flash when player is hit
   slowMotionActive: boolean;
   slowMotionDuration: number;
+
+  // === JUICE EFFECTS ===
+  hitStopFrames: number; // Frame freeze on significant events
+  hitStopCooldown: number; // Cooldown to prevent rapid hit stop spam
+  chromaticAberration: number; // RGB offset intensity (0-1)
+  timeDilation: number; // Dynamic speed multiplier (0.3 = slow, 1.0 = normal, 1.2 = fast)
+  timeDilationTarget: number; // Target to lerp towards
+  cameraZoom: number; // Current zoom level (1.0 = normal)
+  cameraZoomTarget: number; // Target zoom to lerp to
+  nearMissTimer: number; // Cooldown for near-miss detection
   lastPowerUpSpawn: number;
   powerUpSpawnRate: number;
   // New powerup system properties
@@ -80,6 +96,7 @@ export class GameEngine {
   dailyRewardManager: DailyRewardManager;
   achievementManager: AchievementManager;
   cosmeticManager: CosmeticManager;
+  moduleManager: ModuleManager;
 
   // Settings system
   private settings: GameSettings;
@@ -142,6 +159,17 @@ export class GameEngine {
     this.hitFlashAlpha = 0;
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
+
+    // Initialize juice effects
+    this.hitStopFrames = 0;
+    this.hitStopCooldown = 0;
+    this.chromaticAberration = 0;
+    this.timeDilation = 1.0;
+    this.timeDilationTarget = 1.0;
+    this.cameraZoom = 1.0;
+    this.cameraZoomTarget = 1.0;
+    this.nearMissTimer = 0;
+
     this.lastPowerUpSpawn = 0;
     this.powerUpSpawnRate = 12000; // 12 seconds between spawn attempts
     // New powerup properties
@@ -185,6 +213,8 @@ export class GameEngine {
       maxCombo: 0
     };
 
+    // Note: Module HP boost applied after moduleManager is initialized (see below)
+
     this.config = {
       playerSpeed: 7,
       projectileSpeed: 10,
@@ -200,6 +230,11 @@ export class GameEngine {
     this.enemies = [];
     this.boss = null;
     this.bossMinions = [];
+    this.asteroids = [];
+    this.asteroidWaveActive = false;
+    this.asteroidWaveTimer = 0;
+    this.asteroidIntroTimer = 0;
+    this.currentFormation = 'grid';
     this.projectiles = [];
     this.explosions = [];
     this.powerUps = [];
@@ -228,6 +263,14 @@ export class GameEngine {
     this.achievementManager = new AchievementManager(this.currencyManager);
     this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
     this.cosmeticManager = new CosmeticManager(this.currencyManager);
+    this.moduleManager = new ModuleManager(this.currencyManager, this.achievementManager);
+
+    // Apply module HP boost
+    const moduleHPBoost = this.moduleManager.getEffectValue('max_hp_boost');
+    if (moduleHPBoost > 0) {
+      this.stats.maxHealth += moduleHPBoost;
+      this.stats.lives += moduleHPBoost;
+    }
 
     // Load adaptive difficulty (consecutive boss deaths)
     this.loadAdaptiveDifficulty();
@@ -511,11 +554,16 @@ export class GameEngine {
   initEnemies() {
     this.enemies = [];
     this.bossMinions = [];
+    this.asteroids = [];
+    this.asteroidWaveActive = false;
+    this.asteroidWaveTimer = 0;
+    this.asteroidIntroTimer = 0;
     const wave = this.stats.wave;
 
     // Boss wave every 5 waves
     if (wave % 5 === 0) {
       this.bossState.isBossWave = true;
+      this.waveTransition = null; // Clear any lingering wave transition
       this.hintManager.onBossWave(); // Show boss hint
       // Shorter intro on mobile for immediate engagement, disable on desktop
       this.bossState.bossIntroTimer = this.isMobile ? 0 : 60; // Instant on mobile, 1 sec on desktop
@@ -539,6 +587,7 @@ export class GameEngine {
       this.bossState.bossPhase = 'phase1';
       this.bossState.lastAttackTime = 0;
       this.bossState.attackPattern = 'spread';
+      this.currentFormation = 'grid'; // Boss waves don't use formations
       return;
     }
 
@@ -546,97 +595,352 @@ export class GameEngine {
     this.bossState.bossActive = false;
     this.boss = null;
 
-    // Check for special wave types (wave before boss: 4, 9, 14, 19, etc.)
-    const isPreBossWave = wave % 5 === 4;
-    let specialWaveType: 'normal' | 'swarm' | 'elite' | 'blitz' = 'normal';
+    // Check for mid-cycle waves (3, 8, 13, 18, etc.) - ASTEROID WAVE!
+    // Moved from pre-boss to mid-cycle for better balance (gives player breather, not life-depleter before boss)
+    const isAsteroidWave = wave % 5 === 3;
 
-    if (isPreBossWave) {
-      // Determine special wave type based on which boss cycle
-      // Wave 4 = cycle 0, Wave 9 = cycle 1, Wave 14 = cycle 2, etc.
-      const bossCycle = Math.floor(wave / 5);
-      const waveTypeIndex = bossCycle % 3;
-      specialWaveType = ['swarm', 'elite', 'blitz'][waveTypeIndex] as 'swarm' | 'elite' | 'blitz';
-
-      // Log special wave for debugging
-      console.log(`🌊 SPECIAL WAVE: ${specialWaveType.toUpperCase()} (wave ${wave})`);
+    if (isAsteroidWave) {
+      // Initialize asteroid wave
+      this.waveTransition = null; // Clear any lingering wave transition
+      this.initAsteroidWave(wave);
+      return;
     }
 
-    // Adjust grid based on orientation for mobile
+    // Select formation for this wave
+    this.currentFormation = selectFormation(wave);
+    console.log(`🌀 FORMATION: ${this.currentFormation.toUpperCase()} (wave ${wave})`);
+
+    // Spawn enemies based on formation
+    this.spawnFormation(wave, this.currentFormation);
+
+    // Announce non-grid formations
+    if (this.currentFormation !== 'grid') {
+      this.announceFormation(this.currentFormation);
+    }
+  }
+
+  // Initialize asteroid wave (pre-boss)
+  private initAsteroidWave(wave: number) {
+    // Set intro timer for brief pause before asteroids start (1.5 seconds)
+    this.asteroidIntroTimer = this.isMobile ? 60 : 90; // Shorter on mobile (1s vs 1.5s)
+    this.asteroidWaveActive = true;
+    this.asteroidWaveTimer = 60 * 60; // 60 seconds (1 minute) at 60fps
+
+    // Scale asteroids GENTLY by wave cycle
+    // Wave 3 = cycle 1, Wave 8 = cycle 2, Wave 13 = cycle 3, etc.
+    const asteroidCycle = Math.floor(wave / 5) + 1;
+
+    // MUCH easier scaling: 3-5 large asteroids max, medium only in later cycles
+    const largeCount = Math.min(2 + asteroidCycle, 5); // 3, 4, 5, 5 (capped at 5)
+    const mediumCount = asteroidCycle >= 3 ? Math.min(asteroidCycle - 2, 2) : 0; // 0, 0, 1, 2 (capped at 2)
+
+    // Gentle speed scaling: slow and manageable
+    const baseSpeed = 0.6 + (asteroidCycle - 1) * 0.15; // 0.6, 0.75, 0.9, 1.05 (very gentle)
+
+    console.log(`☄️ ASTEROID WAVE! Cycle ${asteroidCycle} - ${largeCount} large, ${mediumCount} medium asteroids (speed: ${baseSpeed.toFixed(2)})`);
+
+    // Spawn large asteroids from edges (they won't move until intro ends)
+    for (let i = 0; i < largeCount; i++) {
+      const spawnEdge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+      let x: number, y: number;
+
+      switch (spawnEdge) {
+        case 0: // Top
+          x = Math.random() * this.canvas.width;
+          y = -50;
+          break;
+        case 1: // Right
+          x = this.canvas.width + 50;
+          y = Math.random() * this.canvas.height * 0.6;
+          break;
+        case 2: // Bottom
+          x = Math.random() * this.canvas.width;
+          y = this.canvas.height * 0.4;
+          break;
+        default: // Left
+          x = -50;
+          y = Math.random() * this.canvas.height * 0.6;
+      }
+
+      // Velocity toward center of screen
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 3;
+      const angle = Math.atan2(centerY - y, centerX - x) + (Math.random() - 0.5) * 0.5;
+      const speed = baseSpeed + Math.random() * 0.5;
+
+      const asteroid = new Asteroid(
+        x, y, 'large',
+        this.canvas.width, this.canvas.height,
+        { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
+      );
+      this.asteroids.push(asteroid);
+    }
+
+    // Spawn medium asteroids (for higher boss levels)
+    for (let i = 0; i < mediumCount; i++) {
+      const x = Math.random() * this.canvas.width;
+      const y = Math.random() * this.canvas.height * 0.3;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = baseSpeed * 1.2 + Math.random() * 0.5;
+
+      const asteroid = new Asteroid(
+        x, y, 'medium',
+        this.canvas.width, this.canvas.height,
+        { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed }
+      );
+      this.asteroids.push(asteroid);
+    }
+
+    // Announce asteroid wave with notification
+    this.addScreenShake(10);
+    this.audioManager.playSound('boss_phase_change', 0.7);
+
+    // Show intro notification
+    this.comboNotifications.push({
+      text: '☄️ ASTEROID FIELD INCOMING! ☄️',
+      lifetime: 0,
+      alpha: 1,
+      scale: 1.3,
+      x: this.canvas.width / 2,
+      y: this.canvas.height / 2.5
+    });
+
+    window.dispatchEvent(new CustomEvent('special-wave', {
+      detail: {
+        type: 'asteroid',
+        text: 'ASTEROID FIELD!',
+        color: '#22d3ee'
+      }
+    }));
+  }
+
+  // Spawn enemies in formation
+  private spawnFormation(wave: number, formation: FormationType) {
     const isLandscape = this.canvas.width > this.canvas.height;
-    let rows = this.isMobile && isLandscape ?
-    Math.min(4 + Math.floor(wave / 3), 4) // 4 rows max in landscape
-    : Math.min(5 + Math.floor(wave / 3), 7); // Normal rows in portrait
-    let cols = this.isMobile && isLandscape ? 10 : 8; // 10 cols in landscape, 8 in portrait
 
-    // Apply special wave modifiers
-    if (specialWaveType === 'swarm') {
-      // Swarm: 1.5x enemies
-      rows = Math.min(rows + 2, this.isMobile && isLandscape ? 5 : 8);
-      cols = Math.min(cols + 1, 12);
-    } else if (specialWaveType === 'elite') {
-      // Elite: 0.5x enemies (fewer but tougher)
-      rows = Math.max(2, Math.floor(rows * 0.6));
-      cols = Math.max(4, Math.floor(cols * 0.7));
+    // Base enemy count scales with wave
+    let baseCount = Math.min(15 + Math.floor(wave * 1.5), 50);
+
+    // Harder formations spawn fewer enemies to compensate
+    const formationCountModifier: Record<FormationType, number> = {
+      grid: 1.0,
+      v_formation: 0.9,
+      spiral: 0.85,
+      swarm: 0.95,
+      pincer: 0.8,
+      diamond: 0.75
+    };
+    baseCount = Math.floor(baseCount * formationCountModifier[formation]);
+
+    // Mobile adjustments
+    if (this.isMobile) {
+      baseCount = Math.floor(baseCount * 0.7);
     }
 
-    // Optimized sizing and spacing for mobile
     const enemyWidth = this.isMobile ? isLandscape ? 24 : 20 : 40;
     const enemyHeight = this.isMobile ? isLandscape ? 24 : 20 : 40;
-    const padding = this.isMobile ? isLandscape ? 22 : 29 : 15; // Increased to 22 for optimal spacing in landscape
 
-    const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
+    const positions = this.getFormationPositions(formation, baseCount, enemyWidth, enemyHeight);
 
-    // Adjusted positioning - ensure spaceship is visible in landscape
-    const offsetY = this.isMobile ?
-    isLandscape ? 30 : 65 // Moved down in landscape so HUD and top row are visible
-    : Math.max(50, this.canvas.height * 0.06); // Reduced for desktop to prevent overlap at high levels
+    // Create enemies at formation positions
+    for (const pos of positions) {
+      const rand = Math.random();
+      let type: 'basic' | 'heavy' | 'fast' = 'basic';
+      if (wave > 2 && rand < 0.15) type = 'heavy';
+      else if (wave > 1 && rand < 0.3) type = 'fast';
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const x = offsetX + col * (enemyWidth + padding);
-        const y = offsetY + row * (enemyHeight + padding);
+      const enemy = new Enemy(pos.x, pos.y, type, this.getEnemyDifficultyMultiplier());
 
-        let type: 'basic' | 'heavy' | 'fast' = 'basic';
+      // Formation speed modifiers
+      if (formation === 'swarm') {
+        enemy.speedMultiplier = 1.25;
+      } else if (formation === 'pincer' || formation === 'v_formation') {
+        enemy.speedMultiplier = 1.1;
+      }
 
-        // Determine enemy type based on special wave or normal wave
-        if (specialWaveType === 'swarm') {
-          // Swarm: all basic enemies
-          type = 'basic';
-        } else if (specialWaveType === 'elite') {
-          // Elite: all heavy enemies (2 HP each)
-          type = 'heavy';
-        } else if (specialWaveType === 'blitz') {
-          // Blitz: all fast enemies
-          type = 'fast';
-        } else {
-          // Normal wave: random distribution
-          const rand = Math.random();
-          if (wave > 2 && rand < 0.15) type = 'heavy';else
-          if (wave > 1 && rand < 0.3) type = 'fast';
+      if (this.assets) {
+        if (type === 'heavy') enemy.setImage(this.assets.alienHeavy);
+        else if (type === 'fast') enemy.setImage(this.assets.alienFast);
+        else enemy.setImage(this.assets.alienBasic);
+      }
+      this.enemies.push(enemy);
+    }
+  }
+
+  // Generate positions for each formation type
+  private getFormationPositions(
+    formation: FormationType,
+    count: number,
+    enemyWidth: number,
+    enemyHeight: number
+  ): { x: number; y: number }[] {
+    const positions: { x: number; y: number }[] = [];
+    const isLandscape = this.canvas.width > this.canvas.height;
+    const padding = this.isMobile ? isLandscape ? 22 : 29 : 15;
+
+    const centerX = this.canvas.width / 2;
+    const startY = this.isMobile ? isLandscape ? 30 : 65 : 50;
+
+    switch (formation) {
+      case 'grid': {
+        // Classic grid formation
+        const cols = this.isMobile && isLandscape ? 10 : 8;
+        const rows = Math.ceil(count / cols);
+        const offsetX = (this.canvas.width - cols * (enemyWidth + padding)) / 2;
+
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            if (positions.length >= count) break;
+            positions.push({
+              x: offsetX + col * (enemyWidth + padding),
+              y: startY + row * (enemyHeight + padding)
+            });
+          }
+        }
+        break;
+      }
+
+      case 'v_formation': {
+        // HORIZONTAL ARROW formation - spreads LEFT/RIGHT, not up/down
+        // All enemies stay at roughly the same Y level (safe!)
+        const colSpacing = enemyWidth + padding * 0.7;
+        const rowSpacing = (enemyHeight + padding) * 0.5; // Compact rows
+
+        // Create a horizontal arrow pointing right: >
+        // Row 0:     X
+        // Row 1:   X X X
+        // Row 2: X X X X X  (center row - widest)
+        // Row 3:   X X X
+        // Row 4:     X
+
+        const maxRowWidth = Math.min(Math.ceil(count / 3), 7); // Max enemies in center row
+        const numRows = Math.min(5, Math.ceil(count / maxRowWidth)); // 3-5 rows
+
+        let placed = 0;
+        for (let row = 0; row < numRows && placed < count; row++) {
+          // Arrow shape: narrow at edges, wide in middle
+          const distFromCenter = Math.abs(row - Math.floor(numRows / 2));
+          const rowWidth = Math.max(1, maxRowWidth - distFromCenter * 2);
+          const rowStartX = centerX - (rowWidth * colSpacing) / 2;
+
+          for (let col = 0; col < rowWidth && placed < count; col++) {
+            positions.push({
+              x: rowStartX + col * colSpacing,
+              y: startY + row * rowSpacing
+            });
+            placed++;
+          }
+        }
+        break;
+      }
+
+      case 'spiral': {
+        // Spiral formation from center outward
+        const spiralSpacing = Math.max(enemyWidth, enemyHeight) + padding;
+        let angle = 0;
+        let radius = 30;
+
+        for (let i = 0; i < count; i++) {
+          positions.push({
+            x: centerX + Math.cos(angle) * radius,
+            y: startY + 80 + Math.sin(angle) * radius * 0.6
+          });
+          angle += 0.5;
+          radius += spiralSpacing / 6;
+        }
+        break;
+      }
+
+      case 'swarm': {
+        // Dense cluster with slight randomness
+        const clusterRadius = Math.min(this.canvas.width, this.canvas.height) * 0.25;
+        const clusterCenterY = startY + 80;
+
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+          const r = Math.random() * clusterRadius;
+          positions.push({
+            x: centerX + Math.cos(angle) * r,
+            y: clusterCenterY + Math.sin(angle) * r * 0.6
+          });
+        }
+        break;
+      }
+
+      case 'pincer': {
+        // Two groups on left and right - more columns to stay compact vertically
+        const groupSize = Math.floor(count / 2);
+        const cols = 4; // More columns = fewer rows = stays higher
+        const groupSpacing = (enemyHeight + padding) * 0.5; // More compact
+        const sideOffset = this.canvas.width * 0.22;
+
+        // Left group
+        for (let i = 0; i < groupSize; i++) {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          positions.push({
+            x: sideOffset + col * (enemyWidth + padding * 0.6),
+            y: startY + row * groupSpacing
+          });
         }
 
-        const enemy = new Enemy(x, y, type, this.getEnemyDifficultyMultiplier());
-
-        // Apply special wave speed modifiers
-        if (specialWaveType === 'swarm') {
-          enemy.speedMultiplier = 1.25; // +25% speed for swarm
-        } else if (specialWaveType === 'blitz') {
-          enemy.speedMultiplier = 1.5; // +50% speed for blitz
+        // Right group
+        for (let i = 0; i < count - groupSize; i++) {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          positions.push({
+            x: this.canvas.width - sideOffset - cols * (enemyWidth + padding * 0.6) + col * (enemyWidth + padding * 0.6),
+            y: startY + row * groupSpacing
+          });
         }
+        break;
+      }
 
-        if (this.assets) {
-          if (type === 'heavy') enemy.setImage(this.assets.alienHeavy);else
-          if (type === 'fast') enemy.setImage(this.assets.alienFast);else
-          enemy.setImage(this.assets.alienBasic);
+      case 'diamond': {
+        // Diamond shape - more compact to stay higher on screen
+        const diamondSize = Math.ceil(Math.sqrt(count * 2));
+        const rowSpacing = (enemyHeight + padding) * 0.45; // More compact
+        const colSpacing = enemyWidth + padding * 0.8;
+
+        let index = 0;
+        for (let row = 0; row < diamondSize && index < count; row++) {
+          const width = row < diamondSize / 2 ? row + 1 : diamondSize - row;
+          const rowOffset = (diamondSize / 2 - width / 2) * colSpacing;
+
+          for (let col = 0; col < width && index < count; col++) {
+            positions.push({
+              x: centerX - (width * colSpacing) / 2 + col * colSpacing + rowOffset,
+              y: startY + row * rowSpacing
+            });
+            index++;
+          }
         }
-        this.enemies.push(enemy);
+        break;
       }
     }
 
-    // Store special wave type for UI announcements
-    if (specialWaveType !== 'normal') {
-      this.announceSpecialWave(specialWaveType);
-    }
+    return positions;
+  }
+
+  // Announce formation with visual effect
+  private announceFormation(formation: FormationType) {
+    const announcements: Record<FormationType, { text: string; color: string }> = {
+      grid: { text: 'GRID FORMATION', color: '#22d3ee' },
+      v_formation: { text: 'ARROW FORMATION!', color: '#f97316' },
+      spiral: { text: 'SPIRAL ASSAULT!', color: '#a855f7' },
+      swarm: { text: 'SWARM INCOMING!', color: '#22d3ee' },
+      pincer: { text: 'PINCER MANEUVER!', color: '#ef4444' },
+      diamond: { text: 'DIAMOND DEFENSE!', color: '#fbbf24' }
+    };
+
+    const announcement = announcements[formation];
+
+    this.addScreenShake(6);
+    this.audioManager.playSound('boss_phase_change', 0.5);
+
+    window.dispatchEvent(new CustomEvent('special-wave', {
+      detail: { type: formation, text: announcement.text, color: announcement.color }
+    }));
   }
 
   // Announce special wave with visual effect
@@ -903,6 +1207,15 @@ export class GameEngine {
       }
     }
 
+    // ASTEROID MODE: Zone-based controls
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      // Left 1/3 = rotate left, Right 1/3 = rotate right, Middle 1/3 = thrust
+      this.touchX = touchX;
+      // Store touch zone for continuous input handling
+      return;
+    }
+
+    // Normal mode: Set player position directly
     this.touchX = touchX;
     this.player.setPosition(this.touchX);
   }
@@ -911,7 +1224,16 @@ export class GameEngine {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = this.canvas.getBoundingClientRect();
-    this.touchX = touch.clientX - rect.left;
+    const touchX = touch.clientX - rect.left;
+
+    // ASTEROID MODE: Zone-based controls
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      this.touchX = touchX;
+      return;
+    }
+
+    // Normal mode: Set player position directly
+    this.touchX = touchX;
     this.player.setPosition(this.touchX);
   }
 
@@ -931,12 +1253,50 @@ export class GameEngine {
   handleInput() {
     if (this.state !== 'playing') return;
 
-    if (this.keys.has('ArrowLeft')) {
-      this.player.moveLeft();
-    } else if (this.keys.has('ArrowRight')) {
-      this.player.moveRight();
+    // Asteroid mode: Classic Asteroids-style rotation controls
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      // Keyboard controls
+      if (this.keys.has('ArrowLeft')) {
+        this.player.rotateLeft();
+      }
+      if (this.keys.has('ArrowRight')) {
+        this.player.rotateRight();
+      }
+      if (this.keys.has('ArrowUp')) {
+        this.player.thrust();
+      }
+      if (this.keys.has('ArrowDown')) {
+        this.player.brake();
+      }
+
+      // Mobile touch controls: Zone-based
+      if (this.isMobile && this.touchX !== null) {
+        const leftZone = this.canvas.width / 3;
+        const rightZone = this.canvas.width * 2 / 3;
+
+        if (this.touchX < leftZone) {
+          // Left 1/3: Rotate left
+          this.player.rotateLeft();
+        } else if (this.touchX > rightZone) {
+          // Right 1/3: Rotate right
+          this.player.rotateRight();
+        } else {
+          // Middle 1/3: Thrust forward
+          this.player.thrust();
+        }
+
+        // Auto-fire while touching during asteroid mode
+        this.fire();
+      }
     } else {
-      this.player.stop();
+      // Normal mode: Left/right horizontal movement
+      if (this.keys.has('ArrowLeft')) {
+        this.player.moveLeft();
+      } else if (this.keys.has('ArrowRight')) {
+        this.player.moveRight();
+      } else {
+        this.player.stop();
+      }
     }
 
     if (this.keys.has(' ') && !this.isMobile) {
@@ -954,6 +1314,11 @@ export class GameEngine {
     let fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
     if (superpower.type === 'fire_rate_boost' && superpower.value) {
       fireRate = fireRate * (1 - superpower.value / 100);
+    }
+    // Apply module fire rate boost
+    const moduleFireRateBoost = this.moduleManager.getEffectValue('fire_rate_boost');
+    if (moduleFireRateBoost > 0) {
+      fireRate = fireRate * (1 - moduleFireRateBoost / 100);
     }
 
     if (now - this.lastFireTime < fireRate) return;
@@ -1084,6 +1449,46 @@ export class GameEngine {
       newProjectiles.forEach(projectile => {
         projectile.homing = true;
         projectile.target = nearestEnemy;
+      });
+    }
+
+    // ASTEROID MODE: Adjust projectile velocities to fire in ship's facing direction
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      // Determine how many bullets were just fired
+      let bulletCount = 1;
+      if (isTripleShot) bulletCount = 3;
+      else if (isDualGuns) {
+        if (plasmaActive) bulletCount = 3;
+        else if (this.player.rapidActive) bulletCount = 3;
+        else bulletCount = 2;
+      } else if (plasmaActive) bulletCount = 3;
+
+      const newProjectiles = this.projectiles.slice(-bulletCount);
+      const direction = this.player.getFiringDirection();
+      const speed = this.config.projectileSpeed;
+
+      newProjectiles.forEach((projectile, index) => {
+        // Set velocity based on ship's rotation
+        projectile.velocity.x = direction.x * speed;
+        projectile.velocity.y = direction.y * speed;
+
+        // Adjust spawn position to be at the nose of the rotated ship
+        const noseOffset = 25; // Distance from center to nose
+        projectile.position.x = this.player.position.x + this.player.size.width / 2 +
+          direction.x * noseOffset;
+        projectile.position.y = this.player.position.y + this.player.size.height / 2 +
+          direction.y * noseOffset;
+
+        // For spread shots, add slight angle variation
+        if (bulletCount > 1) {
+          const spreadAngle = (index - (bulletCount - 1) / 2) * 0.1; // ~6 degrees spread per bullet
+          const cos = Math.cos(spreadAngle);
+          const sin = Math.sin(spreadAngle);
+          const newVx = projectile.velocity.x * cos - projectile.velocity.y * sin;
+          const newVy = projectile.velocity.x * sin + projectile.velocity.y * cos;
+          projectile.velocity.x = newVx;
+          projectile.velocity.y = newVy;
+        }
       });
     }
   }
@@ -1367,6 +1772,14 @@ export class GameEngine {
     if (previousPhase !== this.boss.phase && this.assets) {
       // Play boss phase change sound
       this.audioManager.playSound('boss_phase_change', 0.8);
+
+      // 1E: Boss phase transition radial explosion particles
+      this.spawnBossPhaseParticles(
+        this.boss.position.x + this.boss.size.width / 2,
+        this.boss.position.y + this.boss.size.height / 2
+      );
+      this.addScreenShake(12);
+      this.triggerChromaticAberration(0.5);
 
       // Switch boss appearance based on current phase
       const bossImageMap = {
@@ -2105,6 +2518,155 @@ export class GameEngine {
     }
   }
 
+  // Update asteroid wave
+  updateAsteroids(deltaTime: number = 1) {
+    // Handle intro timer (brief pause before asteroids start)
+    if (this.asteroidIntroTimer > 0) {
+      this.asteroidIntroTimer -= deltaTime;
+
+      // Intro just ended - enter asteroid mode and show "GET READY!" message
+      if (this.asteroidIntroTimer <= 0) {
+        this.asteroidIntroTimer = 0;
+        this.player.enterAsteroidMode();
+        this.audioManager.playSound('wave_complete', 0.5);
+
+        // Show "GO!" notification
+        this.comboNotifications.push({
+          text: '🚀 GO! 🚀',
+          lifetime: 0,
+          alpha: 1,
+          scale: 1.5,
+          x: this.canvas.width / 2,
+          y: this.canvas.height / 2
+        });
+      }
+      return; // Don't update asteroids during intro
+    }
+
+    const isFrozen = this.player.freezeActive;
+
+    // Update asteroid timer
+    if (!isFrozen) {
+      this.asteroidWaveTimer -= deltaTime;
+    }
+
+    // Update each asteroid
+    for (const asteroid of this.asteroids) {
+      if (asteroid.isAlive) {
+        asteroid.update(deltaTime, isFrozen);
+      }
+    }
+
+    // Remove dead asteroids
+    this.asteroids = this.asteroids.filter(a => a.isAlive);
+
+    // Check wave completion
+    const allDestroyed = this.asteroids.length === 0;
+    const timerExpired = this.asteroidWaveTimer <= 0;
+
+    if (allDestroyed || timerExpired) {
+      // Wave complete!
+      if (allDestroyed) {
+        console.log('✅ ASTEROID WAVE CLEARED! Bonus awarded!');
+        // Bonus for clearing all asteroids
+        this.stats.score += 500;
+        this.awardStardust(100, 'asteroid_clear_bonus');
+
+        // Show bonus notification
+        this.comboNotifications.push({
+          text: 'ASTEROID BONUS +500',
+          lifetime: 0,
+          alpha: 1,
+          scale: 1,
+          x: this.canvas.width / 2,
+          y: this.canvas.height / 3
+        });
+      } else {
+        console.log('⏰ ASTEROID WAVE: Timer expired');
+      }
+
+      // Exit asteroid mode and restore ship to bottom
+      this.player.exitAsteroidMode();
+
+      // End asteroid wave
+      this.asteroidWaveActive = false;
+      this.asteroids = [];
+
+      // Play completion sound and effects
+      this.audioManager.playSound('wave_clear', 0.6);
+      this.addScreenShake(8);
+
+      // Check if next wave is a milestone (boss wave)
+      const upcomingWave = this.stats.wave + 1;
+      const isMilestone = upcomingWave % 5 === 0;
+
+      // Start wave transition with proper properties (this will call nextWave() when complete)
+      this.waveTransition = {
+        active: true,
+        progress: 0,
+        waveNumber: upcomingWave,
+        isMilestone: isMilestone
+      };
+
+      // Show asteroid wave complete notification
+      this.comboNotifications.push({
+        text: allDestroyed ? '🪨 ASTEROID FIELD CLEARED! 🪨' : '🪨 ASTEROID WAVE SURVIVED! 🪨',
+        lifetime: 0,
+        alpha: 1,
+        scale: 1.2,
+        x: this.canvas.width / 2,
+        y: this.canvas.height / 2.5
+      });
+    }
+
+    // Collision: Asteroid hits player
+    if (!this.player.shieldActive && !this.player.invincibilityActive && !this.player.invulnerable) {
+      const playerCenterX = this.player.position.x + this.player.size.width / 2;
+      const playerCenterY = this.player.position.y + this.player.size.height / 2;
+      const playerRadius = Math.min(this.player.size.width, this.player.size.height) / 2 - 5; // Forgiving hitbox
+
+      for (const asteroid of this.asteroids) {
+        if (!asteroid.isAlive) continue;
+
+        if (asteroid.checkCircleCollision(playerCenterX, playerCenterY, playerRadius)) {
+          // === JUICE: Dramatic hit stop on asteroid collision ===
+          this.triggerHitStop(4, true); // Bypass cooldown for player damage
+          this.triggerChromaticAberration(0.6);
+          this.triggerTimeDilation(0.5, 20);
+          this.triggerCameraZoom(1.05);
+
+          // Play hit sound and haptic
+          this.audioManager.playSound('player_hit', 0.6);
+          this.hapticManager.onPlayerHit();
+
+          // Asteroid collision deals 1 damage
+          this.stats.lives -= 1;
+          if (this.stats.lives <= 0) {
+            this.gameOver();
+            return; // Exit immediately on game over
+          }
+
+          // Track damage taken for perfect wave achievement
+          this.tookDamageThisWave = true;
+
+          // Activate invulnerability (2 seconds)
+          this.player.invulnerable = true;
+          this.player.invulnerabilityTimer = 120;
+
+          // Explosion at player position
+          this.createExplosion(
+            this.player.position.x + this.player.size.width / 2,
+            this.player.position.y + this.player.size.height / 2
+          );
+          this.addScreenShake(12);
+          this.hitFlashAlpha = 0.3;
+
+          break; // Only one collision per frame
+        }
+      }
+    }
+  }
+
   checkCollisions() {
     // Player projectiles vs enemies
     for (const projectile of this.projectiles) {
@@ -2122,12 +2684,21 @@ export class GameEngine {
             projectile.piercedEnemies++;
           }
 
-          enemy.hit();
+          // Calculate damage with module boost
+          const moduleDamageBoost = this.moduleManager.getEffectValue('damage_boost');
+          const damage = Math.ceil(1 * (1 + moduleDamageBoost / 100));
+          enemy.hit(damage);
 
           if (!enemy.isAlive) {
             // Play enemy death sound and haptic
             this.audioManager.playSound('enemy_death', 0.4);
             this.hapticManager.onEnemyKill();
+
+            // === JUICE: Hit stop on enemy kill ===
+            // Heavy enemies get 3 frames, others get 2 (respects cooldown to prevent rapid-fire stutter)
+            const hitStopFrames = enemy.type === 'heavy' ? 3 : 2;
+            this.triggerHitStop(hitStopFrames);
+            // NOTE: Camera zoom removed from regular kills to reduce visual noise during rapid fire
 
             this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
             this.stats.enemiesDestroyed++;
@@ -2142,7 +2713,15 @@ export class GameEngine {
               enemy.position.y + enemy.size.height / 2
             );
             this.addScreenShake(8);
-            this.spawnDebrisParticles(enemy.position.x + enemy.size.width / 2, enemy.position.y + enemy.size.height / 2, enemy.color);
+            // 1E/1F: Enhanced directional debris with enemy-type specific effects
+            this.spawnDirectionalDebris(
+              enemy.position.x + enemy.size.width / 2,
+              enemy.position.y + enemy.size.height / 2,
+              enemy.color,
+              projectile.velocity.x,
+              projectile.velocity.y,
+              enemy.type
+            );
 
             // Explosive rounds - create additional explosion damage
             if (projectile.explosive) {
@@ -2174,9 +2753,16 @@ export class GameEngine {
             projectile.piercedEnemies++;
           }
 
-          minion.hit();
+          // Calculate damage with module boost
+          const moduleDamageBoost = this.moduleManager.getEffectValue('damage_boost');
+          const damage = Math.ceil(1 * (1 + moduleDamageBoost / 100));
+          minion.hit(damage);
 
           if (!minion.isAlive) {
+            // === JUICE: Hit stop on minion kill ===
+            this.triggerHitStop(2);
+            // NOTE: Camera zoom removed from minion kills to reduce visual noise
+
             this.stats.score += Math.floor(minion.points * this.scoreMultiplier);
             this.stats.enemiesDestroyed++;
             this.registerKill(minion.points); // Track combo
@@ -2185,7 +2771,15 @@ export class GameEngine {
               minion.position.x + minion.size.width / 2,
               minion.position.y + minion.size.height / 2
             );
-            this.spawnDebrisParticles(minion.position.x + minion.size.width / 2, minion.position.y + minion.size.height / 2, minion.color);
+            // 1E/1F: Directional debris for minions (fast enemy type)
+            this.spawnDirectionalDebris(
+              minion.position.x + minion.size.width / 2,
+              minion.position.y + minion.size.height / 2,
+              minion.color,
+              projectile.velocity.x,
+              projectile.velocity.y,
+              'fast'
+            );
           } else {
             this.createImpactParticles(minion.position.x + minion.size.width / 2, minion.position.y + minion.size.height / 2, '#ffff00');
           }
@@ -2198,7 +2792,13 @@ export class GameEngine {
         if (this.checkCollision(projectile.getBounds(), this.boss.getBounds())) {
           // Piercing shots - unlimited piercing AND deal 2 damage to boss
           const isPiercing = projectile.piercing;
-          const bossDamage = isPiercing ? 2 : 1;
+          let bossDamage = isPiercing ? 2 : 1;
+
+          // Apply module damage boosts
+          const moduleDamageBoost = this.moduleManager.getEffectValue('damage_boost');
+          const moduleBossDamageBoost = this.moduleManager.getEffectValue('boss_damage_boost');
+          const totalBoost = 1 + (moduleDamageBoost + moduleBossDamageBoost) / 100;
+          bossDamage = Math.ceil(bossDamage * totalBoost);
 
           if (!isPiercing) {
             projectile.deactivate();
@@ -2210,6 +2810,11 @@ export class GameEngine {
 
           if (!this.boss.isAlive) {
             // Boss defeated!
+            // === JUICE: Maximum hit stop for boss death ===
+            this.triggerHitStop(6, true); // Longest hit stop for dramatic effect (bypass cooldown)
+            this.triggerCameraZoom(1.08); // Strong zoom for epic moment
+            this.triggerChromaticAberration(0.8); // Strong RGB split
+
             // Play boss death sound, victory theme, and haptic
             this.audioManager.playSound('boss_death', 0.9);
             this.audioManager.playMusic('victory_theme', false);
@@ -2250,23 +2855,111 @@ export class GameEngine {
             }
             this.powerUps.push(powerUp);
 
+            // Kill all remaining minions when boss dies (prevents wave stall)
+            for (const minion of this.bossMinions) {
+              if (minion.isAlive) {
+                minion.isAlive = false;
+                this.createExplosion(
+                  minion.position.x + minion.size.width / 2,
+                  minion.position.y + minion.size.height / 2
+                );
+              }
+            }
+            this.bossMinions = [];
+
             this.bossState.bossActive = false;
             this.bossState.bossHealth = 0;
             this.bossState.bossVictoryTimer = 120; // 2 second victory pause
             this.state = 'bossVictory';
 
             // Progression tracking for boss defeat
-            this.currencyManager.earnStardust(100, 'boss_defeat');
+            this.awardStardust(100, 'boss_defeat');
             this.achievementManager.trackBossDefeat();
+            // Update module slots after boss defeat
+            this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated + 1);
           } else {
             // Play boss hit sound and haptic (not dead yet)
             this.audioManager.playSound('boss_hit', 0.5);
             this.hapticManager.onBossHit();
+
+            // === JUICE: Hit stop on boss damage ===
+            this.triggerHitStop(2, true); // Brief freeze on boss hit (bypass cooldown)
+            this.triggerChromaticAberration(0.3); // Subtle RGB split
+            this.triggerCameraZoom(1.03); // Medium zoom
+
             this.createImpactParticles(this.boss.position.x + this.boss.size.width / 2, this.boss.position.y + this.boss.size.height / 2, '#ffff00');
             this.addScreenShake(5);
           }
           // Piercing bullets continue through boss, non-piercing stop
           if (!isPiercing) break;
+        }
+      }
+
+      // Player projectiles vs asteroids
+      if (this.asteroidWaveActive) {
+        for (const asteroid of this.asteroids) {
+          if (!asteroid.isAlive) continue;
+
+          if (this.checkCollision(projectile.getBounds(), asteroid.getBounds())) {
+            // Piercing shots
+            const isPiercing = projectile.piercing;
+            if (!isPiercing) {
+              projectile.deactivate();
+            } else {
+              projectile.piercedEnemies++;
+            }
+
+            // Calculate damage with module boost
+            const moduleDamageBoost = this.moduleManager.getEffectValue('damage_boost');
+            const damage = Math.ceil(1 * (1 + moduleDamageBoost / 100));
+
+            const result = asteroid.hit(damage);
+
+            if (result.destroyed) {
+              // Asteroid destroyed!
+              this.audioManager.playSound('enemy_death', 0.5);
+              this.hapticManager.onEnemyKill();
+
+              // Hit stop for asteroid destruction
+              const hitStopFrames = asteroid.size === 'large' ? 4 : asteroid.size === 'medium' ? 3 : 2;
+              this.triggerHitStop(hitStopFrames);
+
+              this.stats.score += Math.floor(asteroid.points * this.scoreMultiplier);
+              this.registerKill(asteroid.points);
+
+              // Award XP based on size
+              const xpReward = asteroid.size === 'large' ? 30 : asteroid.size === 'medium' ? 20 : 10;
+              this.awardXP(xpReward);
+
+              // Create explosion
+              this.createExplosion(asteroid.position.x, asteroid.position.y);
+              this.addScreenShake(asteroid.size === 'large' ? 10 : asteroid.size === 'medium' ? 6 : 3);
+
+              // Spawn debris particles
+              this.spawnDebrisParticles(asteroid.position.x, asteroid.position.y, asteroid.glowColor);
+
+              // Add split asteroids
+              if (result.splitInto) {
+                this.asteroids.push(...result.splitInto);
+              }
+
+              // Chance to drop stardust from small asteroids
+              if (asteroid.size === 'small' && Math.random() < 0.25) {
+                this.awardStardust(5, 'asteroid_destroy');
+              } else if (asteroid.size === 'medium' && Math.random() < 0.15) {
+                this.awardStardust(10, 'asteroid_destroy');
+              } else if (asteroid.size === 'large' && Math.random() < 0.1) {
+                this.awardStardust(20, 'asteroid_destroy');
+              }
+            } else {
+              // Asteroid hit but not destroyed
+              this.audioManager.playSound('enemy_hit', 0.3);
+              this.createImpactParticles(asteroid.position.x, asteroid.position.y, asteroid.glowColor);
+              this.addScreenShake(2);
+            }
+
+            if (!isPiercing) break;
+          }
         }
       }
     }
@@ -2278,6 +2971,12 @@ export class GameEngine {
 
         if (this.checkCollision(projectile.getBounds(), this.player.getBounds())) {
           projectile.deactivate();
+
+          // === JUICE: Dramatic hit stop on player damage ===
+          this.triggerHitStop(4, true); // Longer freeze for player hit (bypass cooldown)
+          this.triggerChromaticAberration(0.6); // Strong RGB split
+          this.triggerTimeDilation(0.5, 20); // Brief slow-mo (0.5x for 20 frames)
+          this.triggerCameraZoom(1.05); // Strong zoom
 
           // Use projectile damage:
           // 1 = lose 1 life (regular enemy bullets)
@@ -2317,6 +3016,35 @@ export class GameEngine {
       }
     }
 
+    // 1G: Near-Miss Detection - check for projectiles that came close but didn't hit
+    if (this.nearMissTimer <= 0 && !this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
+      const playerBounds = this.player.getBounds();
+      const playerCenterX = playerBounds.x + playerBounds.width / 2;
+      const playerCenterY = playerBounds.y + playerBounds.height / 2;
+      const nearMissRadius = 25; // 25px detection radius around player
+
+      for (const projectile of this.projectiles) {
+        if (!projectile.isActive || projectile.isPlayerProjectile) continue;
+
+        // Calculate distance from projectile to player center
+        const projCenterX = projectile.position.x + projectile.size / 2;
+        const projCenterY = projectile.position.y + projectile.size / 2;
+        const dx = projCenterX - playerCenterX;
+        const dy = projCenterY - playerCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Near miss: within detection radius but not colliding (actual collision is ~15-20px)
+        // Also check that projectile is moving AWAY or passing by (not approaching)
+        const isMovingAway = (projectile.velocity.y < 0 && projCenterY < playerCenterY) ||
+                            (projectile.velocity.y > 0 && projCenterY > playerCenterY);
+
+        if (distance < nearMissRadius && distance > 15 && !isMovingAway) {
+          this.triggerNearMiss(projCenterX, projCenterY);
+          break; // Only one near-miss per cooldown period
+        }
+      }
+    }
+
     // Kamikaze minions vs player
     if (!this.player.shieldActive && !this.player.invulnerable && !this.player.invincibilityActive) {
       for (const minion of this.bossMinions) {
@@ -2325,6 +3053,12 @@ export class GameEngine {
         if (this.checkCollision(minion.getBounds(), this.player.getBounds())) {
           // Minion dies on contact
           minion.isAlive = false;
+
+          // === JUICE: Dramatic hit stop on kamikaze hit ===
+          this.triggerHitStop(4, true); // Bypass cooldown for player damage
+          this.triggerChromaticAberration(0.6);
+          this.triggerTimeDilation(0.5, 20);
+          this.triggerCameraZoom(1.05);
 
           // Play hit sound and haptic
           this.audioManager.playSound('player_hit', 0.6);
@@ -2394,8 +3128,10 @@ export class GameEngine {
         this.audioManager.playSound('powerup_rapid_fire', 0.5);
         break;
       case 'shield':
-        const shieldBoost = superpower.type === 'shield_duration_boost' && superpower.value ? superpower.value : 0;
-        this.player.activateShield(bonusDuration, shieldBoost);
+        const superpowerShieldBoost = superpower.type === 'shield_duration_boost' && superpower.value ? superpower.value : 0;
+        const moduleShieldBoost = this.moduleManager.getEffectValue('shield_duration_boost');
+        const totalShieldBoost = superpowerShieldBoost + moduleShieldBoost;
+        this.player.activateShield(bonusDuration, totalShieldBoost);
         this.audioManager.playSound('powerup_shield_activate', 0.6);
         this.hintManager.onShieldCollected();
         break;
@@ -2724,6 +3460,19 @@ export class GameEngine {
     }
     this.powerUps.push(powerUp);
 
+    // Kill all remaining minions when boss dies (prevents wave stall)
+    for (const minion of this.bossMinions) {
+      if (minion.isAlive) {
+        minion.isAlive = false;
+        // Create small explosion for each minion
+        this.createExplosion(
+          minion.position.x + minion.size.width / 2,
+          minion.position.y + minion.size.height / 2
+        );
+      }
+    }
+    this.bossMinions = [];
+
     // Set victory state
     this.bossState.bossActive = false;
     this.bossState.bossHealth = 0;
@@ -2731,8 +3480,10 @@ export class GameEngine {
     this.state = 'bossVictory';
 
     // Progression tracking for boss defeat
-    this.currencyManager.earnStardust(100, 'boss_defeat');
+    this.awardStardust(100, 'boss_defeat');
     this.achievementManager.trackBossDefeat();
+    // Update module slots after boss defeat
+    this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated + 1);
   }
 
   createImpactParticles(x: number, y: number, color: string) {
@@ -2776,6 +3527,196 @@ export class GameEngine {
         decay: this.isMobile ? 0.05 : 0.025, // Faster decay on mobile
         lifetime: 0,
         maxLifetime: this.isMobile ? 30 : 50 // Shorter lifetime on mobile
+      });
+    }
+  }
+
+  /**
+   * Enhanced directional debris - particles burst opposite to bullet direction
+   * 1E: Kill Burst with directional particles
+   */
+  spawnDirectionalDebris(x: number, y: number, color: string, bulletVx: number, bulletVy: number, enemyType: 'basic' | 'fast' | 'heavy' = 'basic') {
+    // Calculate opposite direction from bullet
+    const bulletAngle = Math.atan2(bulletVy, bulletVx);
+    const oppositeAngle = bulletAngle + Math.PI; // Opposite direction
+
+    // Enemy-type specific settings (1F: Death Enhancements)
+    let particleCount: number;
+    let speedMultiplier: number;
+    let sizeMultiplier: number;
+    let spreadAngle: number; // How wide the burst spreads
+
+    switch (enemyType) {
+      case 'heavy':
+        // Heavy enemies: larger, slower particles, wider spread
+        particleCount = this.isMobile ? 10 : 24;
+        speedMultiplier = 0.7;
+        sizeMultiplier = 1.8;
+        spreadAngle = Math.PI * 0.8; // Wide spread
+        break;
+      case 'fast':
+        // Fast enemies: quick, scattered particles, narrow burst
+        particleCount = this.isMobile ? 8 : 20;
+        speedMultiplier = 1.5;
+        sizeMultiplier = 0.7;
+        spreadAngle = Math.PI * 0.4; // Narrow, focused burst
+        break;
+      default:
+        // Basic enemies: balanced
+        particleCount = this.isMobile ? 6 : 16;
+        speedMultiplier = 1.0;
+        sizeMultiplier = 1.0;
+        spreadAngle = Math.PI * 0.6;
+    }
+
+    // Color palette includes enemy color prominently
+    const colors = [color, color, '#ffffff', '#ff6600', '#ffaa00'];
+
+    for (let i = 0; i < particleCount; i++) {
+      // Particles spread from opposite direction with some variance
+      const angleVariance = (Math.random() - 0.5) * spreadAngle;
+      const angle = oppositeAngle + angleVariance;
+      const speed = (2 + Math.random() * 5) * speedMultiplier;
+
+      const particleColor = colors[Math.floor(Math.random() * colors.length)];
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5, // Slight upward bias
+        size: (2 + Math.random() * 4) * sizeMultiplier,
+        color: particleColor,
+        alpha: 1,
+        decay: this.isMobile ? 0.04 : 0.02,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 35 : 55
+      });
+    }
+
+    // Add a few bright "spark" particles at impact point
+    const sparkCount = this.isMobile ? 2 : 4;
+    for (let i = 0; i < sparkCount; i++) {
+      const sparkAngle = oppositeAngle + (Math.random() - 0.5) * 0.5;
+      const sparkSpeed = 4 + Math.random() * 3;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(sparkAngle) * sparkSpeed,
+        vy: Math.sin(sparkAngle) * sparkSpeed,
+        size: 1 + Math.random() * 2,
+        color: '#ffffff',
+        alpha: 1,
+        decay: this.isMobile ? 0.1 : 0.06,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 15 : 25
+      });
+    }
+  }
+
+  /**
+   * Boss phase transition radial explosion (1E)
+   */
+  spawnBossPhaseParticles(x: number, y: number) {
+    const particleCount = this.isMobile ? 20 : 40;
+    const colors = ['#dc2626', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
+
+    for (let i = 0; i < particleCount; i++) {
+      // Radial explosion - particles go in all directions evenly
+      const angle = (i / particleCount) * Math.PI * 2;
+      const speed = 3 + Math.random() * 4;
+      const particleColor = colors[Math.floor(Math.random() * colors.length)];
+
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: particleColor,
+        alpha: 1,
+        decay: this.isMobile ? 0.025 : 0.015,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 50 : 70
+      });
+    }
+
+    // Inner ring of bright particles
+    const innerCount = this.isMobile ? 8 : 16;
+    for (let i = 0; i < innerCount; i++) {
+      const angle = (i / innerCount) * Math.PI * 2 + Math.PI / innerCount;
+      const speed = 1.5 + Math.random() * 2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 4 + Math.random() * 3,
+        color: '#ffffff',
+        alpha: 1,
+        decay: this.isMobile ? 0.03 : 0.02,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 40 : 60
+      });
+    }
+  }
+
+  /**
+   * 1G: Near-Miss Feedback - sparks and notification when projectile nearly hits player
+   */
+  triggerNearMiss(projectileX: number, projectileY: number) {
+    // Set cooldown to prevent spam (60 frames = 1 second at 60fps)
+    this.nearMissTimer = 60;
+
+    // Award score bonus
+    this.stats.score += 25;
+
+    // Show "CLOSE CALL!" floating text
+    this.addComboNotification('CLOSE CALL!', '#22d3ee', 1.0);
+
+    // Light haptic pulse
+    this.hapticManager.onNearMiss();
+
+    // Subtle cyan flash around player
+    const playerCenterX = this.player.position.x + this.player.size.width / 2;
+    const playerCenterY = this.player.position.y + this.player.size.height / 2;
+
+    // Spawn near-miss sparks in direction of projectile
+    const sparkCount = this.isMobile ? 4 : 8;
+    const angle = Math.atan2(projectileY - playerCenterY, projectileX - playerCenterX);
+
+    for (let i = 0; i < sparkCount; i++) {
+      const sparkAngle = angle + (Math.random() - 0.5) * 1.2;
+      const sparkSpeed = 3 + Math.random() * 4;
+      this.particles.push({
+        x: playerCenterX,
+        y: playerCenterY,
+        vx: Math.cos(sparkAngle) * sparkSpeed,
+        vy: Math.sin(sparkAngle) * sparkSpeed,
+        size: 2 + Math.random() * 3,
+        color: '#22d3ee', // Cyan sparks
+        alpha: 1,
+        decay: this.isMobile ? 0.08 : 0.05,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 20 : 30
+      });
+    }
+
+    // Brief cyan ring around player
+    const ringParticles = this.isMobile ? 6 : 12;
+    for (let i = 0; i < ringParticles; i++) {
+      const ringAngle = (i / ringParticles) * Math.PI * 2;
+      const ringSpeed = 2;
+      this.particles.push({
+        x: playerCenterX,
+        y: playerCenterY,
+        vx: Math.cos(ringAngle) * ringSpeed,
+        vy: Math.sin(ringAngle) * ringSpeed,
+        size: 2,
+        color: '#22d3ee',
+        alpha: 0.8,
+        decay: this.isMobile ? 0.1 : 0.06,
+        lifetime: 0,
+        maxLifetime: this.isMobile ? 15 : 25
       });
     }
   }
@@ -2829,6 +3770,9 @@ export class GameEngine {
       this.addComboNotification('GREAT! x10', '#fbbf24', 1.4);
       this.stats.score += Math.floor(100 * this.scoreMultiplier);
       this.addScreenShake(10);
+      // === JUICE: Hit stop at combo milestone ===
+      this.triggerHitStop(3, true); // Bypass cooldown for milestone
+      this.triggerCameraZoom(1.04);
     } else if (this.stats.combo === 15 && !this.has15ComboReward) {
       // 15 Combo Life Reward (one-time per game)
       this.has15ComboReward = true;
@@ -2844,10 +3788,17 @@ export class GameEngine {
       this.addComboNotification('EPIC 15 COMBO!\n+1 LIFE REWARD!', '#ff6600', 2.0);
       this.stats.score += Math.floor(500 * this.scoreMultiplier);
       this.addScreenShake(25);
+      // === JUICE: Hit stop at 15x combo ===
+      this.triggerHitStop(4, true); // Bypass cooldown for milestone
+      this.triggerCameraZoom(1.05);
+      this.triggerChromaticAberration(0.4);
     } else if (this.stats.combo === 20) {
       this.addComboNotification('AMAZING! x20', '#ec4899', 1.6);
       this.stats.score += Math.floor(250 * this.scoreMultiplier);
       this.addScreenShake(15);
+      // === JUICE: Hit stop at 20x combo ===
+      this.triggerHitStop(3, true); // Bypass cooldown for milestone
+      this.triggerCameraZoom(1.04);
     } else if (this.stats.combo === 30 && !this.has30ComboReward) {
       // 30 Combo Life Reward (one-time per game)
       this.has30ComboReward = true;
@@ -2863,6 +3814,10 @@ export class GameEngine {
       this.addComboNotification('INSANE 30 COMBO!\n+1 LIFE REWARD!', '#a855f7', 2.3);
       this.stats.score += Math.floor(1000 * this.scoreMultiplier);
       this.addScreenShake(28);
+      // === JUICE: Hit stop at 30x combo ===
+      this.triggerHitStop(5, true); // Bypass cooldown for milestone
+      this.triggerCameraZoom(1.06);
+      this.triggerChromaticAberration(0.5);
     } else if (this.stats.combo === 50 && !this.has50ComboReward) {
       // 50 Combo Life Reward (one-time per game)
       this.has50ComboReward = true;
@@ -2878,6 +3833,11 @@ export class GameEngine {
       this.addComboNotification('LEGENDARY 50 COMBO!\n+1 LIFE REWARD!', '#ff00ff', 2.5);
       this.stats.score += Math.floor(2000 * this.scoreMultiplier);
       this.addScreenShake(30);
+      // === JUICE: Maximum hit stop at 50x combo ===
+      this.triggerHitStop(6, true); // Bypass cooldown for legendary milestone
+      this.triggerCameraZoom(1.08);
+      this.triggerChromaticAberration(0.7);
+      this.triggerTimeDilation(0.4, 30); // Slow-mo celebration
     } else if (this.stats.combo % 25 === 0 && this.stats.combo > 50) {
       this.addComboNotification(`UNSTOPPABLE! x${this.stats.combo}`, '#ff6600', 2.2);
       this.stats.score += Math.floor(1000 * this.scoreMultiplier);
@@ -2890,11 +3850,11 @@ export class GameEngine {
 
     // Earn Stardust for combo milestones (one-time per session)
     if (this.stats.combo === 15 && this.has15ComboReward) {
-      this.currencyManager.earnStardust(25, 'combo_15x');
+      this.awardStardust(25, 'combo_15x');
     } else if (this.stats.combo === 30 && this.has30ComboReward) {
-      this.currencyManager.earnStardust(50, 'combo_30x');
+      this.awardStardust(50, 'combo_30x');
     } else if (this.stats.combo === 50 && this.has50ComboReward) {
-      this.currencyManager.earnStardust(100, 'combo_50x');
+      this.awardStardust(100, 'combo_50x');
     }
   }
 
@@ -3083,6 +4043,11 @@ export class GameEngine {
       return;
     }
 
+    // Asteroid wave completion is handled in updateAsteroids() - don't interfere
+    if (this.asteroidWaveActive) {
+      return;
+    }
+
     // Normal wave completion - add transition delay with celebration effects
     const aliveEnemies = this.enemies.filter((e) => e.isAlive);
     if (aliveEnemies.length === 0) {
@@ -3107,12 +4072,6 @@ export class GameEngine {
     this.audioManager.playSound('wave_complete', 0.6);
     this.hapticManager.onWaveComplete();
 
-    // Save checkpoint after completing every wave
-    this.lastCheckpoint = this.stats.wave;
-    this.saveCheckpoint();
-    this.audioManager.playSound('checkpoint_reached', 0.5);
-    console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
-
     // Reset boss victory timer when advancing waves
     this.bossState.bossVictoryTimer = 0;
 
@@ -3122,6 +4081,13 @@ export class GameEngine {
     }
 
     this.stats.wave++;
+
+    // Save checkpoint as the NEW wave (the one player is about to play)
+    // This way, dying on wave 21 restarts at 21, not back to boss wave 20
+    this.lastCheckpoint = this.stats.wave;
+    this.saveCheckpoint();
+    this.audioManager.playSound('checkpoint_reached', 0.5);
+    console.log(`✅ Checkpoint saved at Wave ${this.lastCheckpoint}`);
 
     // BEGINNER-FRIENDLY DIFFICULTY CURVE - Gentler early game scaling
     // Enemy speed: Progressive scaling with different rates for early/mid/late game
@@ -3137,7 +4103,7 @@ export class GameEngine {
     this.enemyFireRate = Math.max(1800, this.enemyFireRate - 40);
 
     // Progression tracking
-    this.currencyManager.earnStardust(10, 'wave_complete');
+    this.awardStardust(10, 'wave_complete');
     this.achievementManager.trackWave(this.stats.wave);
     this.checkWaveMilestone(this.stats.wave);
 
@@ -3178,7 +4144,7 @@ export class GameEngine {
     };
 
     if (milestones[wave]) {
-      this.currencyManager.earnStardust(milestones[wave], `wave_${wave}_milestone`);
+      this.awardStardust(milestones[wave], `wave_${wave}_milestone`);
       // Could add visual celebration here
       console.log(`🎉 Wave ${wave} Milestone! +${milestones[wave]} 💎`);
     }
@@ -3212,6 +4178,17 @@ export class GameEngine {
     const currentTime = performance.now();
     const deltaTime = (currentTime - this.lastFrameTime) / (1000 / this.targetFPS);
     this.lastFrameTime = currentTime;
+
+    // === HIT STOP: Freeze game logic but keep rendering ===
+    if (this.hitStopFrames > 0) {
+      this.hitStopFrames--;
+      // Still update visual effects during hit stop
+      this.updateJuiceEffects(deltaTime);
+      return; // Skip all game logic this frame
+    }
+
+    // === UPDATE JUICE EFFECTS ===
+    this.updateJuiceEffects(deltaTime);
 
     // Update FPS counter
     this.fpsFrameCount++;
@@ -3247,7 +4224,8 @@ export class GameEngine {
         p.y += p.vy * clampedDelta;
         p.alpha -= p.decay * clampedDelta;
         p.lifetime += clampedDelta;
-        p.size *= Math.pow(0.97, clampedDelta);
+        // PERF: Simple multiplication instead of Math.pow() - much faster
+        p.size *= 0.97;
         p.vy += 0.1 * clampedDelta;
       });
       this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
@@ -3266,7 +4244,7 @@ export class GameEngine {
     // Update animated cosmetics (rainbow, galaxy skins)
     this.cosmeticManager.update();
 
-    const timeScale = this.slowMotionActive ? 0.3 : 1; // 30% speed for more noticeable slow-mo
+    const timeScale = this.slowMotionActive ? 0.5 : 1; // 50% speed for balanced slow-mo effect
 
     if (this.slowMotionDuration > 0) {
       this.slowMotionDuration -= clampedDelta;
@@ -3284,10 +4262,18 @@ export class GameEngine {
     }
 
     this.handleInput();
-    this.player.update();
+
+    // Update player - use asteroid mode physics when in asteroid wave
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      this.player.updateAsteroidMode(clampedDelta * timeScale);
+    } else {
+      this.player.update();
+    }
 
     if (this.bossState.isBossWave) {
       this.updateBoss(clampedDelta * timeScale);
+    } else if (this.asteroidWaveActive) {
+      this.updateAsteroids(clampedDelta * timeScale);
     } else {
       this.updateEnemies(clampedDelta * timeScale);
     }
@@ -3354,7 +4340,8 @@ export class GameEngine {
       p.y += p.vy * deltaWithScale;
       p.alpha -= p.decay * clampedDelta; // Alpha fades at normal rate
       p.lifetime += clampedDelta; // Lifetime counts at normal rate
-      p.size *= Math.pow(0.97, deltaWithScale);
+      // PERF: Simple multiplication instead of Math.pow() - much faster
+      p.size *= 0.97;
       p.vy += 0.1 * deltaWithScale; // Gravity
     });
     this.particles = this.particles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
@@ -3479,6 +4466,15 @@ export class GameEngine {
     this.ctx.save();
     this.ctx.translate(this.screenShake.x, this.screenShake.y);
 
+    // === JUICE: Camera zoom effect ===
+    if (this.cameraZoom !== 1.0) {
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+      this.ctx.translate(centerX, centerY);
+      this.ctx.scale(this.cameraZoom, this.cameraZoom);
+      this.ctx.translate(-centerX, -centerY);
+    }
+
     // Clear canvas with gradient background
     const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
     gradient.addColorStop(0, '#0a0014');
@@ -3519,8 +4515,8 @@ export class GameEngine {
         this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Only draw bright core for very visible particles (reduced threshold)
-        if (p.alpha > 0.7) {
+        // Only draw bright core for freshest particles (PERF: reduced from 0.7 to 0.9 to minimize extra draws)
+        if (p.alpha > 0.9) {
           this.ctx.fillStyle = '#ffffff';
           this.ctx.globalAlpha = (p.alpha - 0.5) * 0.4;
           this.ctx.beginPath();
@@ -3536,12 +4532,91 @@ export class GameEngine {
 
     // FIXED: Pass filter directly to player render method to ensure it's applied inside save/restore block
     const skinFilter = this.cosmeticManager.getProcessedFilter();
-    this.player.render(this.ctx, this.assets?.shieldEffect, skinFilter);
+    // Use asteroid mode rendering when in asteroid wave (rotated ship)
+    if (this.asteroidWaveActive && this.player.asteroidModeActive) {
+      this.player.renderAsteroidMode(this.ctx, this.assets?.shieldEffect, skinFilter);
+    } else {
+      this.player.render(this.ctx, this.assets?.shieldEffect, skinFilter);
+    }
 
     // OPTIMIZED: Only render alive enemies (skip dead ones)
     for (const enemy of this.enemies) {
       if (enemy.isAlive) enemy.render(this.ctx);
     }
+
+    // Render asteroids (if asteroid wave active)
+    for (const asteroid of this.asteroids) {
+      if (asteroid.isAlive) asteroid.render(this.ctx);
+    }
+
+    // Render asteroid wave timer (if active)
+    if (this.asteroidWaveActive && this.asteroidWaveTimer > 0) {
+      const timerSeconds = Math.ceil(this.asteroidWaveTimer / 60);
+      this.ctx.save();
+      this.ctx.fillStyle = '#22d3ee';
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#22d3ee';
+      this.ctx.font = 'bold 18px "Space Grotesk"';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(`ASTEROID FIELD: ${timerSeconds}s`, this.canvas.width / 2, 30);
+
+      // Asteroid count
+      const asteroidCount = this.asteroids.length;
+      this.ctx.font = '14px "Space Grotesk"';
+      this.ctx.fillStyle = '#a855f7';
+      this.ctx.fillText(`${asteroidCount} asteroids remaining`, this.canvas.width / 2, 50);
+
+      // Control hints (show for first few seconds or continuously on mobile)
+      const showHints = timerSeconds > 50 || this.isMobile;
+      if (showHints) {
+        if (this.isMobile) {
+          // MOBILE: Draw visual touch zone indicators at bottom of screen
+          const zoneY = this.canvas.height - 80;
+          const zoneWidth = this.canvas.width / 3;
+          const zoneHeight = 60;
+
+          // Left zone - Rotate Left
+          this.ctx.fillStyle = 'rgba(236, 72, 153, 0.3)'; // Pink
+          this.ctx.fillRect(0, zoneY, zoneWidth, zoneHeight);
+          this.ctx.strokeStyle = '#ec4899';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(0, zoneY, zoneWidth, zoneHeight);
+
+          // Middle zone - Thrust
+          this.ctx.fillStyle = 'rgba(34, 211, 238, 0.3)'; // Cyan
+          this.ctx.fillRect(zoneWidth, zoneY, zoneWidth, zoneHeight);
+          this.ctx.strokeStyle = '#22d3ee';
+          this.ctx.strokeRect(zoneWidth, zoneY, zoneWidth, zoneHeight);
+
+          // Right zone - Rotate Right
+          this.ctx.fillStyle = 'rgba(168, 85, 247, 0.3)'; // Purple
+          this.ctx.fillRect(zoneWidth * 2, zoneY, zoneWidth, zoneHeight);
+          this.ctx.strokeStyle = '#a855f7';
+          this.ctx.strokeRect(zoneWidth * 2, zoneY, zoneWidth, zoneHeight);
+
+          // Zone labels
+          this.ctx.font = 'bold 16px "Space Grotesk"';
+          this.ctx.fillStyle = '#ec4899';
+          this.ctx.fillText('↺ LEFT', zoneWidth / 2, zoneY + 35);
+          this.ctx.fillStyle = '#22d3ee';
+          this.ctx.fillText('⬆ THRUST', zoneWidth * 1.5, zoneY + 35);
+          this.ctx.fillStyle = '#a855f7';
+          this.ctx.fillText('↻ RIGHT', zoneWidth * 2.5, zoneY + 35);
+
+          // Instruction text
+          this.ctx.font = '14px "Space Grotesk"';
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          this.ctx.fillText('TAP zones to control • Auto-fires while touching', this.canvas.width / 2, zoneY - 10);
+        } else {
+          // Desktop controls hint
+          this.ctx.font = '14px "Space Grotesk"';
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          this.ctx.fillText('← → Rotate | ↑ Thrust | ↓ Brake | SPACE Fire', this.canvas.width / 2, 70);
+        }
+      }
+      this.ctx.restore();
+    }
+
     // Render minion warning trails BEFORE minions for visual layering
     for (const minion of this.bossMinions) {
       if (!minion.isAlive) continue;
@@ -3810,6 +4885,37 @@ export class GameEngine {
     // Render tutorial hints
     this.hintManager.render(this.ctx, this.canvas.width, this.canvas.height);
 
+    // === JUICE: Chromatic aberration overlay effect ===
+    // Creates RGB split effect on impacts by drawing colored overlays at the edges
+    if (this.chromaticAberration > 0.01) {
+      const intensity = this.chromaticAberration;
+      const offset = intensity * 8; // Max 8px offset at full intensity
+
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = 'screen';
+
+      // Red channel shift (left)
+      this.ctx.fillStyle = `rgba(255, 0, 0, ${intensity * 0.15})`;
+      this.ctx.fillRect(-offset, 0, this.canvas.width, this.canvas.height);
+
+      // Blue channel shift (right)
+      this.ctx.fillStyle = `rgba(0, 0, 255, ${intensity * 0.15})`;
+      this.ctx.fillRect(offset, 0, this.canvas.width, this.canvas.height);
+
+      // Vignette-style edge darkening for extra impact
+      const vignette = this.ctx.createRadialGradient(
+        this.canvas.width / 2, this.canvas.height / 2, 0,
+        this.canvas.width / 2, this.canvas.height / 2, this.canvas.width * 0.7
+      );
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vignette.addColorStop(1, `rgba(0, 0, 0, ${intensity * 0.3})`);
+      this.ctx.globalCompositeOperation = 'multiply';
+      this.ctx.fillStyle = vignette;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.ctx.restore();
+    }
+
     this.ctx.restore();
   }
 
@@ -3834,6 +4940,14 @@ export class GameEngine {
       combo: 0,
       maxCombo: 0
     };
+
+    // Apply module HP boost
+    const moduleHPBoost = this.moduleManager.getEffectValue('max_hp_boost');
+    if (moduleHPBoost > 0) {
+      this.stats.maxHealth += moduleHPBoost;
+      this.stats.lives += moduleHPBoost;
+    }
+
     this.fireDelay = 250; // Changed from 300ms to 250ms for faster firing
     this.config.playerSpeed = 7;
 
@@ -3854,6 +4968,7 @@ export class GameEngine {
     this.screenShake = { x: 0, y: 0, intensity: 0 };
     this.slowMotionActive = false;
     this.slowMotionDuration = 0;
+    this.resetJuiceEffects(); // Reset all juice effects on game reset
     this.lastPowerUpSpawn = 0;
     // Reset new powerup properties
     this.scoreMultiplier = 1;
@@ -3865,6 +4980,11 @@ export class GameEngine {
     this.tookDamageThisWave = false;
     this.boss = null;
     this.bossMinions = [];
+    this.asteroids = [];
+    this.asteroidWaveActive = false;
+    this.asteroidWaveTimer = 0;
+    this.asteroidIntroTimer = 0;
+    this.currentFormation = 'grid';
     this.bossState = {
       isBossWave: false,
       bossActive: false,
@@ -3921,6 +5041,53 @@ export class GameEngine {
     this.saveCheckpoint();
     console.log(`🔄 Starting fresh from Wave 1`);
     this.reset();
+  }
+
+  /**
+   * DEBUG: Skip to a specific wave for testing formations
+   * Usage in browser console: window.debugSkipToWave(18)
+   *
+   * Formation availability by wave:
+   * - Waves 1-5: Grid only
+   * - Waves 6-10: Grid (70%) + Chevron/V (30%)
+   * - Waves 11-15: Grid (50%) + Chevron (30%) + Spiral (20%)
+   * - Waves 16-25: Grid (30%) + Chevron (25%) + Spiral (25%) + Swarm (20%)
+   * - Waves 26+: All formations including Pincer (15%) + Diamond (10%)
+   *
+   * Special waves:
+   * - 3, 8, 13, 18, 23...: Asteroid waves (wave % 5 === 3)
+   * - 5, 10, 15, 20, 25...: Boss waves (wave % 5 === 0)
+   */
+  debugSkipToWave(targetWave: number) {
+    if (targetWave < 1) {
+      console.warn('❌ Wave must be at least 1');
+      return;
+    }
+
+    console.log(`🎮 DEBUG: Skipping to Wave ${targetWave}`);
+    this.stats.wave = targetWave;
+    this.enemies = [];
+    this.boss = null;
+    this.bossMinions = [];
+    this.asteroids = [];
+    this.asteroidWaveActive = false;
+    this.projectiles = [];
+    this.powerUps = [];
+
+    // Grant some lives for testing
+    this.stats.lives = Math.max(this.stats.lives, 10);
+
+    // Notify what type of wave this is
+    if (targetWave % 5 === 0) {
+      console.log(`👹 This is a BOSS wave!`);
+    } else if (targetWave % 5 === 3) {
+      console.log(`☄️ This is an ASTEROID wave!`);
+    } else {
+      console.log(`👾 Regular enemy wave - formation will be randomly selected`);
+    }
+
+    this.initEnemies();
+    this.gameState = 'playing';
   }
 
   saveCheckpoint() {
@@ -4044,7 +5211,10 @@ export class GameEngine {
 
     // Track level progression
     this.achievementManager.trackLevel(this.stats.level);
-    this.currencyManager.earnStardust(5, `level_${this.stats.level}`);
+    this.awardStardust(5, `level_${this.stats.level}`);
+
+    // Update module slots based on new level
+    this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated);
 
     // Trigger celebration
     if (this.levelUpCallback) {
@@ -4054,11 +5224,25 @@ export class GameEngine {
     // Add screen shake
     this.addScreenShake(15);
 
+    // === JUICE: Hit stop on level up ===
+    this.triggerHitStop(4, true); // Bypass cooldown for level up
+    this.triggerCameraZoom(1.05);
+    this.triggerChromaticAberration(0.4);
+
     // Spawn burst particles at player
     this.spawnLevelUpParticles(
       this.player.position.x + this.player.size.width / 2,
       this.player.position.y + this.player.size.height / 2
     );
+  }
+
+  /**
+   * Award stardust with module boost applied
+   */
+  awardStardust(amount: number, source: string) {
+    const moduleStardustBoost = this.moduleManager.getEffectValue('stardust_boost');
+    const boostedAmount = Math.ceil(amount * (1 + moduleStardustBoost / 100));
+    this.currencyManager.earnStardust(boostedAmount, source);
   }
 
   spawnLevelUpParticles(x: number, y: number) {
@@ -4166,6 +5350,122 @@ export class GameEngine {
       magnet: { active: this.player.magnetActive, duration: this.player.magnetDuration },
       multiplier: { active: this.scoreMultiplier > 1, duration: this.scoreMultiplierDuration }
     };
+  }
+
+  // ============================================================================
+  // JUICE EFFECTS SYSTEM
+  // ============================================================================
+
+  /**
+   * Update all juice effects (called every frame, even during hit stop)
+   */
+  updateJuiceEffects(deltaTime: number): void {
+    // Decay chromatic aberration
+    if (this.chromaticAberration > 0) {
+      this.chromaticAberration *= 0.9; // Decay by 10% per frame
+      if (this.chromaticAberration < 0.01) {
+        this.chromaticAberration = 0;
+      }
+    }
+
+    // Lerp time dilation towards target
+    if (this.timeDilation !== this.timeDilationTarget) {
+      const lerpSpeed = 0.15;
+      this.timeDilation += (this.timeDilationTarget - this.timeDilation) * lerpSpeed;
+      if (Math.abs(this.timeDilation - this.timeDilationTarget) < 0.01) {
+        this.timeDilation = this.timeDilationTarget;
+      }
+    }
+
+    // Lerp camera zoom towards target
+    if (this.cameraZoom !== this.cameraZoomTarget) {
+      const lerpSpeed = 0.12;
+      this.cameraZoom += (this.cameraZoomTarget - this.cameraZoom) * lerpSpeed;
+      if (Math.abs(this.cameraZoom - this.cameraZoomTarget) < 0.005) {
+        this.cameraZoom = this.cameraZoomTarget;
+      }
+    }
+
+    // Countdown near-miss timer
+    if (this.nearMissTimer > 0) {
+      this.nearMissTimer -= deltaTime;
+    }
+
+    // Countdown hit stop cooldown (prevents rapid-fire stutter)
+    if (this.hitStopCooldown > 0) {
+      this.hitStopCooldown--;
+    }
+  }
+
+  /**
+   * Trigger hit stop (frame freeze) for dramatic moments
+   * @param frames Number of frames to freeze (2-4 recommended)
+   * @param bypassCooldown Set to true for important events (player hit, boss, combos)
+   */
+  triggerHitStop(frames: number, bypassCooldown: boolean = false): void {
+    // Regular kills respect cooldown to prevent rapid-fire stutter (laser, etc.)
+    if (!bypassCooldown && this.hitStopCooldown > 0) {
+      return; // Skip hit stop during cooldown
+    }
+    // Only apply hit stop if not already active or if this is stronger
+    if (frames > this.hitStopFrames) {
+      this.hitStopFrames = frames;
+      // Set cooldown for regular kills (18 frames = ~300ms at 60fps)
+      if (!bypassCooldown) {
+        this.hitStopCooldown = 18;
+      }
+    }
+  }
+
+  /**
+   * Trigger chromatic aberration (RGB split effect)
+   * @param intensity Intensity of the effect (0-1, where 1 is strong)
+   */
+  triggerChromaticAberration(intensity: number): void {
+    // Take the maximum of current and new intensity
+    this.chromaticAberration = Math.max(this.chromaticAberration, Math.min(intensity, 1));
+  }
+
+  /**
+   * Trigger camera zoom pulse for impact moments
+   * @param targetZoom Target zoom level (1.0 = normal, 1.02-1.05 recommended)
+   */
+  triggerCameraZoom(targetZoom: number): void {
+    // Only zoom in further, not out
+    if (targetZoom > this.cameraZoomTarget) {
+      this.cameraZoomTarget = targetZoom;
+      // Immediately start returning to normal after a brief hold
+      setTimeout(() => {
+        this.cameraZoomTarget = 1.0;
+      }, 50); // 50ms hold at peak zoom
+    }
+  }
+
+  /**
+   * Trigger time dilation for dramatic slow/speed effects
+   * @param targetSpeed Target time scale (0.3 = slow, 1.0 = normal, 1.2 = fast)
+   * @param duration Duration in frames before returning to normal
+   */
+  triggerTimeDilation(targetSpeed: number, duration: number): void {
+    this.timeDilationTarget = targetSpeed;
+    // Return to normal speed after duration
+    setTimeout(() => {
+      this.timeDilationTarget = 1.0;
+    }, duration * (1000 / 60)); // Convert frames to ms
+  }
+
+  /**
+   * Reset all juice effects (called on game reset)
+   */
+  resetJuiceEffects(): void {
+    this.hitStopFrames = 0;
+    this.hitStopCooldown = 0;
+    this.chromaticAberration = 0;
+    this.timeDilation = 1.0;
+    this.timeDilationTarget = 1.0;
+    this.cameraZoom = 1.0;
+    this.cameraZoomTarget = 1.0;
+    this.nearMissTimer = 0;
   }
 
   cleanup() {

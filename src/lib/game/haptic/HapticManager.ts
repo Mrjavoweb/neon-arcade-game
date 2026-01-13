@@ -130,6 +130,13 @@ export class HapticManager {
   }
 
   /**
+   * 1G: Near-miss feedback - lighter haptic than enemy kill
+   */
+  onNearMiss(): void {
+    this.vibrate('light');
+  }
+
+  /**
    * Boss was hit
    */
   onBossHit(): void {

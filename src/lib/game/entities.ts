@@ -1,5 +1,73 @@
 import { Position, Size, Velocity, Particle, PowerUp, PowerUpType } from './types';
 
+// ============================================================================
+// FORMATION TYPES
+// ============================================================================
+
+export type FormationType = 'grid' | 'v_formation' | 'spiral' | 'swarm' | 'pincer' | 'diamond';
+
+export interface FormationConfig {
+  type: FormationType;
+  enemyCount: number;
+  speedModifier: number;
+  difficultyOffset: number; // Percentage difficulty adjustment
+}
+
+// Formation spawn weights by wave range
+export function getAvailableFormations(wave: number): { type: FormationType; weight: number }[] {
+  if (wave <= 5) {
+    // Learning phase: Grid only
+    return [{ type: 'grid', weight: 100 }];
+  } else if (wave <= 10) {
+    // Introduce V-Formation
+    return [
+      { type: 'grid', weight: 70 },
+      { type: 'v_formation', weight: 30 }
+    ];
+  } else if (wave <= 15) {
+    // Add Spiral
+    return [
+      { type: 'grid', weight: 50 },
+      { type: 'v_formation', weight: 30 },
+      { type: 'spiral', weight: 20 }
+    ];
+  } else if (wave <= 25) {
+    // Add Swarm
+    return [
+      { type: 'grid', weight: 30 },
+      { type: 'v_formation', weight: 25 },
+      { type: 'spiral', weight: 25 },
+      { type: 'swarm', weight: 20 }
+    ];
+  } else {
+    // All formations available
+    return [
+      { type: 'grid', weight: 20 },
+      { type: 'v_formation', weight: 20 },
+      { type: 'spiral', weight: 20 },
+      { type: 'swarm', weight: 15 },
+      { type: 'pincer', weight: 15 },
+      { type: 'diamond', weight: 10 }
+    ];
+  }
+}
+
+// Select a random formation based on weights
+export function selectFormation(wave: number): FormationType {
+  const formations = getAvailableFormations(wave);
+  const totalWeight = formations.reduce((sum, f) => sum + f.weight, 0);
+  let random = Math.random() * totalWeight;
+
+  for (const formation of formations) {
+    random -= formation.weight;
+    if (random <= 0) {
+      return formation.type;
+    }
+  }
+
+  return 'grid'; // Fallback
+}
+
 export class Player {
   position: Position;
   size: Size;
@@ -34,6 +102,17 @@ export class Player {
   private filteredImageCache: Map<string, HTMLCanvasElement> = new Map();
   private _fallbackWarningShown: boolean = false;
 
+  // Asteroid mode properties (classic Asteroids-style controls)
+  asteroidModeActive: boolean;
+  rotation: number; // Ship rotation in radians (0 = facing up)
+  thrustVelocity: Velocity; // Momentum-based velocity
+  canvasHeight: number;
+  rotationSpeed: number; // How fast ship rotates
+  thrustPower: number; // Acceleration when thrusting
+  friction: number; // Deceleration when not thrusting
+  maxSpeed: number; // Maximum velocity magnitude
+  private savedPosition: Position | null; // To restore position after asteroid wave
+
   constructor(canvasWidth: number, canvasHeight: number, speed: number) {
     this.size = { width: 50, height: 50 };
     this.level = 1;
@@ -67,6 +146,17 @@ export class Player {
     this.engineParticles = [];
     this.invulnerable = false;
     this.invulnerabilityTimer = 0;
+
+    // Asteroid mode properties
+    this.asteroidModeActive = false;
+    this.rotation = -Math.PI / 2; // Start facing up (ship nose points up)
+    this.thrustVelocity = { x: 0, y: 0 };
+    this.canvasHeight = canvasHeight;
+    this.rotationSpeed = 0.08; // Radians per frame
+    this.thrustPower = 0.15; // Acceleration per frame
+    this.friction = 0.985; // Velocity multiplier per frame (slight drag)
+    this.maxSpeed = 6; // Max pixels per frame
+    this.savedPosition = null;
   }
 
   setImage(img: HTMLImageElement) {
@@ -374,9 +464,344 @@ export class Player {
     this.position.x = Math.max(0, Math.min(this.canvasWidth - this.size.width, x - this.size.width / 2));
   }
 
+  // ============================================================================
+  // ASTEROID MODE METHODS (Classic Asteroids-style controls)
+  // ============================================================================
+
+  enterAsteroidMode() {
+    // Save current position to restore later
+    this.savedPosition = { ...this.position };
+
+    // Center ship on screen
+    this.position = {
+      x: this.canvasWidth / 2 - this.size.width / 2,
+      y: this.canvasHeight / 2 - this.size.height / 2
+    };
+
+    // Reset momentum and rotation
+    this.thrustVelocity = { x: 0, y: 0 };
+    this.rotation = -Math.PI / 2; // Face up
+    this.asteroidModeActive = true;
+
+    console.log('🚀 Entered Asteroid Mode - Ship centered at:', this.position);
+  }
+
+  exitAsteroidMode() {
+    // Restore position to bottom of screen
+    if (this.savedPosition) {
+      this.position = {
+        x: this.canvasWidth / 2 - this.size.width / 2, // Center horizontally
+        y: this.canvasHeight - this.size.height - 30 // Bottom of screen
+      };
+    }
+
+    // Reset velocities
+    this.thrustVelocity = { x: 0, y: 0 };
+    this.velocity = { x: 0, y: 0 };
+    this.rotation = -Math.PI / 2; // Reset to facing up
+    this.asteroidModeActive = false;
+    this.savedPosition = null;
+
+    console.log('🚀 Exited Asteroid Mode - Ship restored to bottom');
+  }
+
+  rotateLeft(deltaTime: number = 1) {
+    this.rotation -= this.rotationSpeed * deltaTime;
+  }
+
+  rotateRight(deltaTime: number = 1) {
+    this.rotation += this.rotationSpeed * deltaTime;
+  }
+
+  thrust(deltaTime: number = 1) {
+    // Add velocity in the direction the ship is facing
+    this.thrustVelocity.x += Math.cos(this.rotation) * this.thrustPower * deltaTime;
+    this.thrustVelocity.y += Math.sin(this.rotation) * this.thrustPower * deltaTime;
+
+    // Clamp to max speed
+    const speed = Math.sqrt(this.thrustVelocity.x ** 2 + this.thrustVelocity.y ** 2);
+    if (speed > this.maxSpeed) {
+      const scale = this.maxSpeed / speed;
+      this.thrustVelocity.x *= scale;
+      this.thrustVelocity.y *= scale;
+    }
+  }
+
+  brake(deltaTime: number = 1) {
+    // Apply stronger friction when braking
+    const brakeFriction = 0.92;
+    this.thrustVelocity.x *= Math.pow(brakeFriction, deltaTime);
+    this.thrustVelocity.y *= Math.pow(brakeFriction, deltaTime);
+
+    // Stop completely if very slow
+    const speed = Math.sqrt(this.thrustVelocity.x ** 2 + this.thrustVelocity.y ** 2);
+    if (speed < 0.1) {
+      this.thrustVelocity.x = 0;
+      this.thrustVelocity.y = 0;
+    }
+  }
+
+  updateAsteroidMode(deltaTime: number = 1) {
+    if (!this.asteroidModeActive) return;
+
+    // Apply friction (gradual slowdown)
+    this.thrustVelocity.x *= Math.pow(this.friction, deltaTime);
+    this.thrustVelocity.y *= Math.pow(this.friction, deltaTime);
+
+    // Update position based on thrust velocity
+    this.position.x += this.thrustVelocity.x * deltaTime;
+    this.position.y += this.thrustVelocity.y * deltaTime;
+
+    // Screen wrapping (like classic Asteroids)
+    if (this.position.x < -this.size.width) {
+      this.position.x = this.canvasWidth;
+    } else if (this.position.x > this.canvasWidth) {
+      this.position.x = -this.size.width;
+    }
+
+    if (this.position.y < -this.size.height) {
+      this.position.y = this.canvasHeight;
+    } else if (this.position.y > this.canvasHeight) {
+      this.position.y = -this.size.height;
+    }
+
+    // Generate thrust particles when moving
+    const speed = Math.sqrt(this.thrustVelocity.x ** 2 + this.thrustVelocity.y ** 2);
+    if (speed > 0.5 && Math.random() < 0.5) {
+      const thrustAngle = this.rotation + Math.PI; // Opposite to facing direction
+      const colors = this.shieldActive ? ['#a855f7', '#c084fc', '#ffffff'] : ['#22d3ee', '#06b6d4', '#f97316'];
+      this.engineParticles.push({
+        x: this.position.x + this.size.width / 2 + Math.cos(thrustAngle) * 25,
+        y: this.position.y + this.size.height / 2 + Math.sin(thrustAngle) * 25,
+        vx: Math.cos(thrustAngle) * (2 + Math.random() * 2) + (Math.random() - 0.5) * 0.5,
+        vy: Math.sin(thrustAngle) * (2 + Math.random() * 2) + (Math.random() - 0.5) * 0.5,
+        size: 2 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 0.9,
+        decay: 0.03,
+        lifetime: 0,
+        maxLifetime: 30
+      });
+    }
+
+    // Update power-ups and invulnerability (same as normal update)
+    if (this.shieldDuration > 0) {
+      this.shieldDuration--;
+      if (this.shieldDuration <= 0) this.shieldActive = false;
+    }
+    if (this.plasmaDuration > 0) {
+      this.plasmaDuration--;
+      if (this.plasmaDuration <= 0) this.plasmaActive = false;
+    }
+    if (this.rapidDuration > 0) {
+      this.rapidDuration--;
+      if (this.rapidDuration <= 0) this.rapidActive = false;
+    }
+    if (this.homingDuration > 0) {
+      this.homingDuration--;
+      if (this.homingDuration <= 0) this.homingActive = false;
+    }
+    if (this.laserDuration > 0) {
+      this.laserDuration--;
+      if (this.laserDuration <= 0) this.laserActive = false;
+    }
+    if (this.invincibilityDuration > 0) {
+      this.invincibilityDuration--;
+      if (this.invincibilityDuration <= 0) this.invincibilityActive = false;
+    }
+    if (this.freezeDuration > 0) {
+      this.freezeDuration--;
+      if (this.freezeDuration <= 0) this.freezeActive = false;
+    }
+    if (this.piercingDuration > 0) {
+      this.piercingDuration--;
+      if (this.piercingDuration <= 0) this.piercingActive = false;
+    }
+    if (this.invulnerabilityTimer > 0) {
+      this.invulnerabilityTimer--;
+      if (this.invulnerabilityTimer <= 0) this.invulnerable = false;
+    }
+
+    // Update engine particles
+    this.engineParticles.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= p.decay;
+      p.lifetime++;
+      p.size *= 0.97;
+    });
+    this.engineParticles = this.engineParticles.filter((p) => p.alpha > 0 && p.lifetime < p.maxLifetime);
+  }
+
+  renderAsteroidMode(ctx: CanvasRenderingContext2D, shieldImage?: HTMLImageElement, skinFilter?: string) {
+    // Render engine particles first (in world space, not rotated)
+    this.engineParticles.forEach((p) => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.shadowBlur = 20 + p.size * 2;
+      ctx.shadowColor = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      if (p.alpha > 0.5) {
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = (p.alpha - 0.5) * 0.8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    ctx.save();
+
+    // Translate to center of ship for rotation
+    const centerX = this.position.x + this.size.width / 2;
+    const centerY = this.position.y + this.size.height / 2;
+    ctx.translate(centerX, centerY);
+
+    // Rotate ship (add 90 degrees because sprite faces up by default)
+    ctx.rotate(this.rotation + Math.PI / 2);
+
+    // Apply skin filter
+    if (skinFilter && skinFilter !== 'none' && skinFilter !== 'undefined') {
+      ctx.filter = skinFilter;
+    } else {
+      ctx.filter = 'none';
+    }
+
+    // Invulnerability flashing
+    if (this.invulnerable) {
+      const flashAlpha = Math.sin(Date.now() / 50) * 0.5 + 0.5;
+      ctx.globalAlpha = flashAlpha;
+    }
+
+    // Level glow
+    const glowIntensity = 15 + this.level * 2;
+    const glowColor = this.level >= 10 ? '#a855f7' :
+      this.level >= 7 ? '#f59e0b' :
+        this.level >= 4 ? '#22d3ee' : '#10b981';
+
+    if (this.image && this.image.complete && this.image.naturalWidth > 0) {
+      ctx.shadowBlur = glowIntensity;
+      ctx.shadowColor = this.shieldActive ? '#a855f7' : glowColor;
+
+      // Use filtered image cache
+      if (skinFilter && skinFilter !== 'none') {
+        try {
+          let filteredCanvas = this.filteredImageCache.get(skinFilter);
+          if (!filteredCanvas) {
+            filteredCanvas = document.createElement('canvas');
+            filteredCanvas.width = this.image.width;
+            filteredCanvas.height = this.image.height;
+            const offscreenCtx = filteredCanvas.getContext('2d');
+            if (!offscreenCtx) throw new Error('Failed to get offscreen context');
+            offscreenCtx.filter = skinFilter;
+            offscreenCtx.drawImage(this.image, 0, 0);
+            this.filteredImageCache.set(skinFilter, filteredCanvas);
+          }
+          ctx.drawImage(
+            filteredCanvas,
+            -this.size.width / 2,
+            -this.size.height / 2,
+            this.size.width,
+            this.size.height
+          );
+        } catch {
+          ctx.drawImage(
+            this.image,
+            -this.size.width / 2,
+            -this.size.height / 2,
+            this.size.width,
+            this.size.height
+          );
+        }
+      } else {
+        ctx.drawImage(
+          this.image,
+          -this.size.width / 2,
+          -this.size.height / 2,
+          this.size.width,
+          this.size.height
+        );
+      }
+    } else {
+      // Fallback triangle
+      ctx.fillStyle = this.color;
+      ctx.shadowBlur = glowIntensity;
+      ctx.shadowColor = glowColor;
+      ctx.beginPath();
+      ctx.moveTo(0, -this.size.height / 2); // Nose
+      ctx.lineTo(-this.size.width / 2, this.size.height / 2); // Left wing
+      ctx.lineTo(this.size.width / 2, this.size.height / 2); // Right wing
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Level badge (rotated with ship)
+    if (this.level > 1) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.beginPath();
+      ctx.arc(this.size.width / 2 - 10, -this.size.height / 2 + 10, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = glowColor;
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = glowColor;
+      ctx.font = 'bold 12px "Space Grotesk"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.level.toString(), this.size.width / 2 - 10, -this.size.height / 2 + 10);
+    }
+
+    ctx.restore();
+
+    // Shield overlay (in world space, not rotated)
+    if (this.shieldActive && shieldImage) {
+      ctx.save();
+      ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.2;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = '#a855f7';
+      ctx.drawImage(
+        shieldImage,
+        this.position.x - 15,
+        this.position.y - 15,
+        this.size.width + 30,
+        this.size.height + 30
+      );
+      ctx.restore();
+    }
+
+    // Invulnerability shield visual
+    if (this.invulnerable) {
+      ctx.save();
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 100) * 0.3;
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#22d3ee';
+      const radius = Math.max(this.size.width, this.size.height) / 2 + 15 + Math.sin(Date.now() / 150) * 5;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#22d3ee';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Get the direction the ship is facing (for firing bullets)
+  getFiringDirection(): Velocity {
+    return {
+      x: Math.cos(this.rotation),
+      y: Math.sin(this.rotation)
+    };
+  }
+
   activateShield(bonusDuration: number = 0, percentBoost: number = 0) {
     this.shieldActive = true;
-    let baseDuration = 480; // 8 seconds at 60fps (balanced from 10s)
+    let baseDuration = 360; // 6 seconds at 60fps (balanced from 8s for better challenge)
     if (percentBoost > 0) {
       baseDuration = baseDuration * (1 + percentBoost / 100);
     }
@@ -385,17 +810,17 @@ export class Player {
 
   activatePlasma(bonusDuration: number = 0, isDualGuns: boolean = false, isBossMode: boolean = false) {
     this.plasmaActive = true;
-    // Boss mode: 5 seconds (300 frames), Dual guns: 4s, Normal: 7s
-    let baseDuration = isDualGuns ? 240 : 420; // 4 or 7 seconds
-    if (isBossMode) baseDuration = 300; // 5 seconds for boss mode
+    // Boss mode: 4 seconds (240 frames), Dual guns: 3s, Normal: 5s (balanced for challenge)
+    let baseDuration = isDualGuns ? 180 : 300; // 3 or 5 seconds
+    if (isBossMode) baseDuration = 240; // 4 seconds for boss mode
     this.plasmaDuration = baseDuration + bonusDuration;
   }
 
   activateRapid(bonusDuration: number = 0, isDualGuns: boolean = false, isBossMode: boolean = false) {
     this.rapidActive = true;
-    // Boss mode: 5 seconds (300 frames), Dual guns: 3.5s, Normal: 7s
-    let baseDuration = isDualGuns ? 210 : 420; // 3.5 or 7 seconds
-    if (isBossMode) baseDuration = 300; // 5 seconds for boss mode
+    // Boss mode: 4 seconds (240 frames), Dual guns: 3s, Normal: 5s (balanced for challenge)
+    let baseDuration = isDualGuns ? 180 : 300; // 3 or 5 seconds
+    if (isBossMode) baseDuration = 240; // 4 seconds for boss mode
     this.rapidDuration = baseDuration + bonusDuration;
   }
 
@@ -718,8 +1143,8 @@ export class Enemy {
     };
   }
 
-  hit() {
-    this.health--;
+  hit(damage: number = 1) {
+    this.health -= damage;
     if (this.health <= 0) {
       this.isAlive = false;
     }
@@ -1098,5 +1523,281 @@ export class PowerUpEntity implements PowerUp {
 
   deactivate() {
     this.isActive = false;
+  }
+}
+
+// ============================================================================
+// ASTEROID CLASS (Pre-Boss Special Wave)
+// ============================================================================
+
+export type AsteroidSize = 'large' | 'medium' | 'small';
+
+export class Asteroid {
+  position: Position;
+  velocity: Velocity;
+  size: AsteroidSize;
+  radius: number;
+  health: number;
+  maxHealth: number;
+  isAlive: boolean;
+  rotation: number;
+  rotationSpeed: number;
+  points: number;
+  canvasWidth: number;
+  canvasHeight: number;
+
+  // Visual properties
+  glowColor: string;
+  vertices: { angle: number; radius: number }[]; // Irregular shape
+  pulseOffset: number;
+  flashTimer: number;
+
+  constructor(
+    x: number,
+    y: number,
+    size: AsteroidSize,
+    canvasWidth: number,
+    canvasHeight: number,
+    velocity?: Velocity
+  ) {
+    this.position = { x, y };
+    this.size = size;
+    this.isAlive = true;
+    this.canvasWidth = canvasWidth;
+    this.canvasHeight = canvasHeight;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+    this.pulseOffset = Math.random() * Math.PI * 2;
+    this.flashTimer = 0;
+
+    // Size-based properties (BALANCED for fun gameplay)
+    switch (size) {
+      case 'large':
+        this.radius = 35; // Smaller for easier maneuvering (was 45)
+        this.health = 2;  // 2 hits to destroy (was 3) → splits to 2 medium
+        this.points = 100;
+        this.glowColor = '#22d3ee'; // Cyan
+        break;
+      case 'medium':
+        this.radius = 22; // Smaller (was 28)
+        this.health = 1;  // 1 hit to destroy (was 2) → splits to 2 small
+        this.points = 75;
+        this.glowColor = '#ec4899'; // Pink
+        break;
+      case 'small':
+        this.radius = 12; // Smaller (was 16)
+        this.health = 1;  // 1 hit to destroy → no split
+        this.points = 50;
+        this.glowColor = '#a855f7'; // Purple
+        break;
+    }
+    this.maxHealth = this.health;
+
+    // Velocity - splits move faster
+    if (velocity) {
+      // Inherited velocity from split (1.3x faster)
+      this.velocity = {
+        x: velocity.x * 1.3,
+        y: velocity.y * 1.3
+      };
+    } else {
+      // Initial random drift
+      const speed = 1 + Math.random() * 1.5;
+      const angle = Math.random() * Math.PI * 2;
+      this.velocity = {
+        x: Math.cos(angle) * speed,
+        y: Math.sin(angle) * speed
+      };
+    }
+
+    // Generate irregular polygon shape
+    this.vertices = [];
+    const vertexCount = 8 + Math.floor(Math.random() * 4); // 8-11 vertices
+    for (let i = 0; i < vertexCount; i++) {
+      const angle = (i / vertexCount) * Math.PI * 2;
+      const radiusVariation = 0.7 + Math.random() * 0.6; // 70-130% of base radius
+      this.vertices.push({ angle, radius: radiusVariation });
+    }
+  }
+
+  update(deltaTime: number = 1, isFrozen: boolean = false) {
+    if (!isFrozen) {
+      this.position.x += this.velocity.x * deltaTime;
+      this.position.y += this.velocity.y * deltaTime;
+      this.rotation += this.rotationSpeed * deltaTime;
+    }
+
+    this.pulseOffset += 0.05 * deltaTime;
+
+    if (this.flashTimer > 0) {
+      this.flashTimer--;
+    }
+
+    // Screen wrapping (classic Asteroids behavior)
+    if (this.position.x < -this.radius) {
+      this.position.x = this.canvasWidth + this.radius;
+    } else if (this.position.x > this.canvasWidth + this.radius) {
+      this.position.x = -this.radius;
+    }
+
+    if (this.position.y < -this.radius) {
+      this.position.y = this.canvasHeight + this.radius;
+    } else if (this.position.y > this.canvasHeight + this.radius) {
+      this.position.y = -this.radius;
+    }
+  }
+
+  render(ctx: CanvasRenderingContext2D) {
+    if (!this.isAlive) return;
+
+    const pulse = 1 + Math.sin(this.pulseOffset) * 0.05;
+
+    ctx.save();
+    ctx.translate(this.position.x, this.position.y);
+    ctx.rotate(this.rotation);
+    ctx.scale(pulse, pulse);
+
+    // Flash effect when hit
+    if (this.flashTimer > 0 && Math.floor(this.flashTimer / 3) % 2 === 0) {
+      ctx.globalAlpha = 0.5;
+    }
+
+    // Draw asteroid body (dark with glow edge)
+    ctx.beginPath();
+    for (let i = 0; i < this.vertices.length; i++) {
+      const v = this.vertices[i];
+      const x = Math.cos(v.angle) * this.radius * v.radius;
+      const y = Math.sin(v.angle) * this.radius * v.radius;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.closePath();
+
+    // Fill with dark color
+    ctx.fillStyle = '#1a1a2e';
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.glowColor;
+    ctx.fill();
+
+    // Glowing edge
+    ctx.strokeStyle = this.glowColor;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.glowColor;
+    ctx.stroke();
+
+    // Inner glow lines for detail
+    ctx.beginPath();
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = this.glowColor;
+    ctx.lineWidth = 1;
+    // Draw some internal "cracks"
+    for (let i = 0; i < 3; i++) {
+      const startV = this.vertices[i * 2 % this.vertices.length];
+      const endV = this.vertices[(i * 2 + 4) % this.vertices.length];
+      ctx.moveTo(
+        Math.cos(startV.angle) * this.radius * startV.radius * 0.5,
+        Math.sin(startV.angle) * this.radius * startV.radius * 0.5
+      );
+      ctx.lineTo(
+        Math.cos(endV.angle) * this.radius * endV.radius * 0.5,
+        Math.sin(endV.angle) * this.radius * endV.radius * 0.5
+      );
+    }
+    ctx.stroke();
+
+    // Health indicator for large/medium asteroids
+    if (this.maxHealth > 1 && this.health < this.maxHealth) {
+      ctx.globalAlpha = 1;
+      const healthPercent = this.health / this.maxHealth;
+      const barWidth = this.radius * 1.5;
+      const barHeight = 4;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(-barWidth / 2, -this.radius - 12, barWidth, barHeight);
+
+      const healthColor = healthPercent > 0.5 ? '#10b981' : '#ef4444';
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = healthColor;
+      ctx.fillStyle = healthColor;
+      ctx.fillRect(-barWidth / 2, -this.radius - 12, barWidth * healthPercent, barHeight);
+    }
+
+    ctx.restore();
+  }
+
+  getBounds() {
+    return {
+      left: this.position.x - this.radius,
+      right: this.position.x + this.radius,
+      top: this.position.y - this.radius,
+      bottom: this.position.y + this.radius
+    };
+  }
+
+  hit(damage: number = 1): { destroyed: boolean; splitInto?: Asteroid[] } {
+    this.health -= damage;
+    this.flashTimer = 15;
+
+    if (this.health <= 0) {
+      this.isAlive = false;
+
+      // Split into smaller asteroids
+      if (this.size === 'large') {
+        return {
+          destroyed: true,
+          splitInto: this.createSplits('medium', 2)
+        };
+      } else if (this.size === 'medium') {
+        return {
+          destroyed: true,
+          splitInto: this.createSplits('small', 2)
+        };
+      }
+
+      // Small asteroid - just destroyed, no split
+      return { destroyed: true };
+    }
+
+    return { destroyed: false };
+  }
+
+  private createSplits(newSize: AsteroidSize, count: number): Asteroid[] {
+    const splits: Asteroid[] = [];
+
+    for (let i = 0; i < count; i++) {
+      // Split velocity - perpendicular to original, plus some randomness
+      const angleOffset = (i === 0 ? -1 : 1) * (Math.PI / 4 + Math.random() * Math.PI / 4);
+      const originalAngle = Math.atan2(this.velocity.y, this.velocity.x);
+      const newAngle = originalAngle + angleOffset;
+      const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+
+      const splitVelocity: Velocity = {
+        x: Math.cos(newAngle) * speed,
+        y: Math.sin(newAngle) * speed
+      };
+
+      splits.push(new Asteroid(
+        this.position.x + (i === 0 ? -10 : 10),
+        this.position.y + (i === 0 ? -10 : 10),
+        newSize,
+        this.canvasWidth,
+        this.canvasHeight,
+        splitVelocity
+      ));
+    }
+
+    return splits;
+  }
+
+  // Check collision with a circular entity (player ship approximated as circle)
+  checkCircleCollision(otherX: number, otherY: number, otherRadius: number): boolean {
+    const dx = this.position.x - otherX;
+    const dy = this.position.y - otherY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < this.radius + otherRadius;
   }
 }

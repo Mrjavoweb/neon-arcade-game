@@ -99,6 +99,8 @@ export default function GamePage() {
 
     // Expose engine to window for debugging
     (window as any).engine = engine;
+    // Shortcut for skipping to specific waves
+    (window as any).skipToWave = (wave: number) => engine.debugSkipToWave(wave);
 
     // Set level up callback - Disabled to avoid blocking gameplay
     // engine.setLevelUpCallback((level: number, upgrade: string) => {
@@ -249,9 +251,9 @@ export default function GamePage() {
 
       gameLoop();
 
-      // Check for daily reward AFTER assets loaded and game loop started
-      // This ensures enemies are properly initialized before pausing
-      engine.checkDailyReward();
+      // NOTE: Daily reward check removed from GamePage
+      // HomePage already handles the daily reward popup
+      // This prevents the popup from appearing twice
     };
 
     init();
