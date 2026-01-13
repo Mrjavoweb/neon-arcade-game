@@ -123,7 +123,7 @@ export class CosmeticManager {
         superpower: {
           type: 'dual_guns',
           name: 'Twin Plasma Cannons',
-          description: 'Fires 2 bullets side-by-side',
+          description: 'Always fires 2 bullets side-by-side',
           value: 2
         },
         unlocked: false

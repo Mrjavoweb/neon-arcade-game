@@ -1361,18 +1361,19 @@ export class GameEngine {
         this.projectiles.push(projectile);
       });
     }
-    // Dual Guns superpower (Gold Elite) - Fires 2-3 bullets depending on powerups
+    // Dual Guns superpower (Gold Elite) - Always fires 2 bullets side-by-side
+    // BALANCED: Powerups increase spread but don't add a 3rd bullet to avoid being OP
     else if (isDualGuns) {
-      // Base dual guns pattern
+      // Base dual guns pattern - always 2 bullets
       let offsets = [-8, 8];
 
-      // Plasma powerup: 3 bullets with symmetric spread
+      // Plasma powerup: wider spread (still 2 bullets)
       if (plasmaActive) {
-        offsets = [-10, 0, 10]; // Centered symmetric spread (3 bullets)
+        offsets = [-12, 12]; // Wider spread for area coverage
       }
-      // Rapid Fire: 3 bullets in tight pattern
+      // Rapid Fire: tighter spread (still 2 bullets for focused damage)
       else if (this.player.rapidActive) {
-        offsets = [-8, 0, 8]; // Center + sides (3 bullets)
+        offsets = [-6, 6]; // Tighter spread for concentrated fire
       }
 
       offsets.forEach((offset) => {

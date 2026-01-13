@@ -159,11 +159,22 @@ export class Player {
     this.savedPosition = null;
   }
 
+  /**
+   * Clear the filtered image cache - call this when the skin changes
+   * to ensure the new filter is applied fresh
+   */
+  clearFilterCache(): void {
+    this.filteredImageCache.clear();
+    console.log('🎨 Player filter cache cleared');
+  }
+
   setImage(img: HTMLImageElement) {
     if (!img) {
       console.error('❌ Player.setImage called with null/undefined image');
       return;
     }
+    // Clear filter cache when new image is set to ensure correct colors
+    this.filteredImageCache.clear();
     if (!img.complete || img.naturalWidth === 0) {
       console.warn('⚠️ Player image not fully loaded:', {
         complete: img.complete,
@@ -277,13 +288,10 @@ export class Player {
 
     ctx.save();
 
-    // CRITICAL FIX: Apply filter here, inside the save/restore block
-    if (skinFilter && skinFilter !== 'none' && skinFilter !== 'undefined') {
-      ctx.filter = skinFilter;
-    } else {
-      // Explicitly set to 'none' if no filter
-      ctx.filter = 'none';
-    }
+    // NOTE: Do NOT apply filter to main context here!
+    // The filter is applied to an offscreen canvas below (lines 317-338)
+    // Applying it here too would cause double-filtering (e.g., Gold → Purple)
+    ctx.filter = 'none';
 
     // Invulnerability flashing effect
     if (this.invulnerable) {
@@ -670,12 +678,10 @@ export class Player {
     // Rotate ship (add 90 degrees because sprite faces up by default)
     ctx.rotate(this.rotation + Math.PI / 2);
 
-    // Apply skin filter
-    if (skinFilter && skinFilter !== 'none' && skinFilter !== 'undefined') {
-      ctx.filter = skinFilter;
-    } else {
-      ctx.filter = 'none';
-    }
+    // NOTE: Do NOT apply filter to main context here!
+    // The filter is applied to an offscreen canvas below (lines 705+)
+    // Applying it here too would cause double-filtering (e.g., Gold → Purple)
+    ctx.filter = 'none';
 
     // Invulnerability flashing
     if (this.invulnerable) {
