@@ -209,6 +209,16 @@ export interface ShipSkin {
   // Unlock conditions
   unlocked: boolean;
   requiresAchievement?: string; // Achievement ID needed to unlock
+  requirementDescription?: string; // Human-readable description of unlock requirement
+
+  // Recommended module synergy
+  recommendedBuild?: ShipModuleSynergy;
+}
+
+export interface ShipModuleSynergy {
+  buildName: string; // e.g., "Glass Cannon", "Immortal Tank"
+  modules: string[]; // Module names that synergize
+  description: string; // Brief explanation of the synergy
 }
 
 export interface PlayerCosmetics {

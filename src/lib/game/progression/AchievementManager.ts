@@ -154,6 +154,17 @@ export class AchievementManager {
         unlocked: false
       },
       {
+        id: 'endurance',
+        name: 'Endurance',
+        description: 'Reach Wave 30',
+        icon: '💪',
+        requirement: { type: 'waves', target: 30 },
+        rewards: { stardust: 350 },
+        category: 'survival',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
         id: 'immortal',
         name: 'Immortal',
         description: 'Reach Wave 50',
@@ -222,8 +233,19 @@ export class AchievementManager {
       },
 
       // ========================================================================
-      // BOSS ACHIEVEMENTS (4 total)
+      // BOSS ACHIEVEMENTS (5 total)
       // ========================================================================
+      {
+        id: 'boss_novice',
+        name: 'Boss Novice',
+        description: 'Defeat 3 bosses',
+        icon: '👾',
+        requirement: { type: 'bosses', target: 3 },
+        rewards: { stardust: 100 },
+        category: 'mastery',
+        difficulty: 'easy',
+        unlocked: false
+      },
       {
         id: 'boss_hunter',
         name: 'Boss Hunter',
@@ -233,6 +255,17 @@ export class AchievementManager {
         rewards: { stardust: 150 },
         category: 'mastery',
         difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'boss_master',
+        name: 'Boss Master',
+        description: 'Defeat 12 bosses',
+        icon: '👾',
+        requirement: { type: 'bosses', target: 12 },
+        rewards: { stardust: 500 },
+        category: 'mastery',
+        difficulty: 'medium',
         unlocked: false
       },
       {

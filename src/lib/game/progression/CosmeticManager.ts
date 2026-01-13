@@ -1,5 +1,6 @@
-import { ShipSkin, ShipSkinId, PlayerCosmetics, STORAGE_KEYS } from './ProgressionTypes';
+import { ShipSkin, ShipSkinId, PlayerCosmetics, ShipModuleSynergy, STORAGE_KEYS } from './ProgressionTypes';
 import { CurrencyManager } from './CurrencyManager';
+import type { AchievementManager } from './AchievementManager';
 
 /**
  * CosmeticManager - Manages ship skins and cosmetics
@@ -114,26 +115,33 @@ export class CosmeticManager {
       {
         id: 'gold_elite',
         name: 'Gold Elite',
-        description: 'Elite destroyer with twin plasma cannons.',
+        description: 'Elite destroyer with twin plasma cannons. Balanced: fire rate powerups affect spread only.',
         tier: 'rare',
-        price: 1500,
+        price: 2500,
         filter: 'hue-rotate(220deg) saturate(200%) brightness(130%)', // Cyan to Gold: 190° + 220° = 410° = 50° (gold/yellow)
         bulletColor: '#ffd700',
         role: 'offensive',
         superpower: {
           type: 'dual_guns',
           name: 'Twin Plasma Cannons',
-          description: 'Always fires 2 bullets side-by-side',
+          description: 'Always fires 2 bullets (powerups adjust spread, not rate)',
           value: 2
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'boss_hunter',
+        requirementDescription: 'Defeat 5 bosses',
+        recommendedBuild: {
+          buildName: 'Boss Killer',
+          modules: ['Boss Buster', 'Impact Rounds II', 'Quick Trigger II'],
+          description: 'Dual guns + boss damage bonus melts bosses fast'
+        }
       },
       {
         id: 'cyan_frost',
         name: 'Cyan Frost',
         description: 'Frost predator with armor-piercing rounds.',
         tier: 'rare',
-        price: 1500,
+        price: 1800,
         filter: 'hue-rotate(180deg) saturate(120%) brightness(110%)',
         bulletColor: '#06b6d4',
         role: 'offensive',
@@ -143,7 +151,14 @@ export class CosmeticManager {
           description: 'Bullets penetrate first enemy',
           value: 1
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'boss_novice',
+        requirementDescription: 'Defeat 3 bosses',
+        recommendedBuild: {
+          buildName: 'Piercing Master',
+          modules: ['Impact Rounds III', 'Quick Trigger III', 'Chain Lightning'],
+          description: 'Pierce + chain lightning for devastating wave clears'
+        }
       },
 
       // ========================================================================
@@ -152,19 +167,26 @@ export class CosmeticManager {
       {
         id: 'rainbow_streak',
         name: 'Rainbow Streak',
-        description: 'Rainbow spectrum ship with multi-barrel arsenal.',
+        description: 'Rainbow spectrum ship with multi-barrel arsenal. Balanced: fire rate powerups affect spread only.',
         tier: 'epic',
-        price: 3000,
+        price: 3500,
         filter: 'hue-rotate(var(--rainbow-hue)) saturate(200%)', // Dynamic!
         bulletColor: 'rainbow', // Special flag for dynamic color
         role: 'offensive',
         superpower: {
           type: 'triple_shot',
           name: 'Multi-Barrel Arsenal',
-          description: 'Always fires 3 bullets (without powerup!)',
+          description: 'Always fires 3 bullets (powerups adjust spread, not rate)',
           value: 3
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'endurance',
+        requirementDescription: 'Reach Wave 30',
+        recommendedBuild: {
+          buildName: 'AoE Dominator',
+          modules: ['Chain Lightning', 'Impact Rounds II', 'Lucky Star II'],
+          description: 'Triple shot + chain = screen-clearing devastation'
+        }
       },
       {
         id: 'dark_matter',
@@ -181,14 +203,21 @@ export class CosmeticManager {
           description: '10% of damage taken converts to score bonus',
           value: 10
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'combo_master',
+        requirementDescription: 'Achieve 10x combo',
+        recommendedBuild: {
+          buildName: 'Score Farmer',
+          modules: ['Stardust Hunter II', 'Combo Keeper', 'Lucky Star II'],
+          description: 'Maximize rewards with lifesteal safety net'
+        }
       },
       {
         id: 'solar_flare',
         name: 'Solar Flare',
         description: 'Solar incarnate with explosive ordnance.',
         tier: 'epic',
-        price: 3000,
+        price: 3500,
         filter: 'hue-rotate(30deg) saturate(300%) brightness(150%)',
         bulletColor: '#ff8c00',
         role: 'offensive',
@@ -198,7 +227,14 @@ export class CosmeticManager {
           description: 'Bullets explode on impact (small AoE)',
           value: 30
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'centurion',
+        requirementDescription: 'Kill 1,000 enemies',
+        recommendedBuild: {
+          buildName: 'Explosive Expert',
+          modules: ['Impact Rounds III', 'Boss Buster', 'Magnet II'],
+          description: 'Explosive rounds + damage stacking = massive AoE'
+        }
       },
 
       // ========================================================================
@@ -209,7 +245,7 @@ export class CosmeticManager {
         name: 'Cosmic Void',
         description: 'Galaxy phenomenon with gravitational weapons + extended powerups.',
         tier: 'legendary',
-        price: 5000,
+        price: 6000,
         filter: 'hue-rotate(var(--galaxy-hue)) contrast(150%) saturate(150%)', // Dynamic!
         bulletColor: 'galaxy', // Special flag for dynamic color
         role: 'utility',
@@ -219,14 +255,21 @@ export class CosmeticManager {
           description: 'Bullets pull enemies slightly + All powerups last +3 seconds',
           value: 3
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'immortal',
+        requirementDescription: 'Reach Wave 50',
+        recommendedBuild: {
+          buildName: 'Utility Master',
+          modules: ['Lucky Star II', 'Stardust Hunter II', 'Magnet II'],
+          description: 'Extended powerups + resource farming powerhouse'
+        }
       },
       {
         id: 'diamond_elite',
         name: 'Diamond Elite',
         description: 'Crystalline perfection with auto-regenerating barriers.',
         tier: 'legendary',
-        price: 7500,
+        price: 8000,
         filter: 'grayscale(100%) brightness(200%) contrast(150%)',
         bulletColor: '#e0e7ff',
         role: 'defensive',
@@ -237,7 +280,14 @@ export class CosmeticManager {
           value: 3,
           duration: 180
         },
-        unlocked: false
+        unlocked: false,
+        requiresAchievement: 'boss_master',
+        requirementDescription: 'Defeat 12 bosses',
+        recommendedBuild: {
+          buildName: 'Immortal Tank',
+          modules: ['Emergency Shield', 'Reinforced Hull III', 'Shield Boost II'],
+          description: 'Auto-shield + emergency = near-unkillable defender'
+        }
       }
     ];
 
@@ -408,6 +458,34 @@ export class CosmeticManager {
    */
   ownsSkin(skinId: ShipSkinId): boolean {
     return this.cosmetics.ownedSkins.includes(skinId);
+  }
+
+  /**
+   * Check if a ship is locked due to achievement requirements
+   * Returns true if the ship requires an achievement that hasn't been unlocked
+   */
+  isShipLocked(skinId: ShipSkinId, achievementManager: AchievementManager): boolean {
+    const skin = this.skins.get(skinId);
+    if (!skin?.requiresAchievement) return false;
+
+    const achievement = achievementManager.getAchievementById(skin.requiresAchievement);
+    return !achievement?.unlocked;
+  }
+
+  /**
+   * Get the human-readable reason why a ship is locked
+   * Returns null if the ship is not locked
+   */
+  getShipLockReason(skinId: ShipSkinId): string | null {
+    const skin = this.skins.get(skinId);
+    return skin?.requirementDescription || null;
+  }
+
+  /**
+   * Get skin info by ID
+   */
+  getSkinById(skinId: ShipSkinId): ShipSkin | undefined {
+    return this.skins.get(skinId);
   }
 
   // ============================================================================

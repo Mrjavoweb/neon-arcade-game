@@ -1094,7 +1094,12 @@ export class GameEngine {
           this.fire();
         }
         // Adjust interval based on rapid fire status
-        const interval = this.player.rapidActive ? 200 : 400;
+        // BALANCED: Triple Shot and Dual Guns ships don't get rapid fire speed bonus
+        const superpower = this.cosmeticManager.getActiveSuperpower();
+        const rapidRateApplies = this.player.rapidActive &&
+          superpower.type !== 'triple_shot' &&
+          superpower.type !== 'dual_guns';
+        const interval = rapidRateApplies ? 200 : 400;
         this.autoFireInterval = window.setTimeout(autoFire, interval);
       };
       this.autoFireInterval = window.setTimeout(autoFire, 400);
@@ -1320,7 +1325,12 @@ export class GameEngine {
     const superpower = this.cosmeticManager.getActiveSuperpower();
 
     // Apply fire rate boost if applicable
-    let fireRate = this.player.rapidActive ? this.fireDelay / 2 : this.fireDelay;
+    // BALANCED: Triple Shot and Dual Guns ships don't get rapid fire speed bonus
+    // (to prevent overwhelming firepower)
+    const rapidRateApplies = this.player.rapidActive &&
+      superpower.type !== 'triple_shot' &&
+      superpower.type !== 'dual_guns';
+    let fireRate = rapidRateApplies ? this.fireDelay / 2 : this.fireDelay;
     if (superpower.type === 'fire_rate_boost' && superpower.value) {
       fireRate = fireRate * (1 - superpower.value / 100);
     }
@@ -1346,8 +1356,21 @@ export class GameEngine {
     const isGravity = superpower.type === 'gravity_bullets';
 
     // Triple Shot superpower (Rainbow Streak) - Always fires 3 bullets
+    // BALANCED: Powerups affect spread but don't add more bullets to avoid being OP
     if (isTripleShot) {
-      [-15, 0, 15].forEach((offset) => {
+      // Base triple shot pattern - always 3 bullets
+      let offsets = [-15, 0, 15];
+
+      // Plasma powerup: wider spread (still 3 bullets for area coverage)
+      if (plasmaActive) {
+        offsets = [-20, 0, 20];
+      }
+      // Rapid Fire: tighter spread (still 3 bullets for focused damage)
+      else if (this.player.rapidActive) {
+        offsets = [-12, 0, 12];
+      }
+
+      offsets.forEach((offset) => {
         const projectile = new Projectile(
           this.player.position.x + this.player.size.width / 2 - 2 + offset,
           this.player.position.y,

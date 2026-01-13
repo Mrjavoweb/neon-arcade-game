@@ -11,6 +11,20 @@ import { Module, ModuleCategory, ModuleTier } from '@/lib/game/progression/Progr
 
 type ShopTab = 'ships' | 'modules';
 
+interface ShipSuperpower {
+  type: string;
+  name: string;
+  description: string;
+  value?: number;
+  duration?: number;
+}
+
+interface ShipModuleSynergy {
+  buildName: string;
+  modules: string[];
+  description: string;
+}
+
 interface ShipSkin {
   id: string;
   name: string;
@@ -20,6 +34,9 @@ interface ShipSkin {
   filter: string;
   tier: string;
   role?: 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
+  superpower?: ShipSuperpower;
+  recommendedBuild?: ShipModuleSynergy;
+  bulletColor?: string;
 }
 
 export default function ShopPage() {
@@ -340,6 +357,8 @@ export default function ShopPage() {
             const isActive = skin.id === activeSkinId;
             const isDefault = skin.tier === 'default';
             const canAfford = stardust >= skin.price;
+            const isLocked = engine?.cosmeticManager.isShipLocked(skin.id, engine.achievementManager) ?? false;
+            const lockReason = engine?.cosmeticManager.getShipLockReason(skin.id);
 
             const roleBadge = getRoleBadge(skin.role);
 
@@ -347,27 +366,36 @@ export default function ShopPage() {
               <motion.div
                 key={skin.id}
                 className={`bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-2 rounded-xl p-6 transition-all cursor-pointer ${
-                  isActive
+                  isLocked
+                    ? 'opacity-70 border-gray-600/40'
+                    : isActive
                     ? 'border-cyan-400 shadow-lg shadow-cyan-400/50'
                     : selectedSkin?.id === skin.id
                     ? 'border-purple-400 shadow-lg shadow-purple-400/30'
                     : 'border-purple-400/30 hover:border-purple-400/60'
                 }`}
                 onClick={() => setSelectedSkin(skin)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}>
+                whileHover={{ scale: isLocked ? 1.0 : 1.02 }}
+                whileTap={{ scale: isLocked ? 1.0 : 0.98 }}>
 
                 {/* Badge Row */}
                 <div className="flex flex-wrap gap-2 mb-3">
+                  {/* Locked Badge - Priority display */}
+                  {isLocked && (
+                    <div className="inline-block px-3 py-1 bg-gray-600/80 text-gray-300 text-xs font-bold rounded-full">
+                      🔒 LOCKED
+                    </div>
+                  )}
+
                   {/* Active Badge */}
-                  {isActive && (
+                  {!isLocked && isActive && (
                     <div className="inline-block px-3 py-1 bg-cyan-500 text-black text-xs font-bold rounded-full">
                       ✓ EQUIPPED
                     </div>
                   )}
 
                   {/* Owned Badge */}
-                  {!isActive && skin.unlocked && !isDefault && (
+                  {!isLocked && !isActive && skin.unlocked && !isDefault && (
                     <div className="inline-block px-3 py-1 bg-green-500/70 text-white text-xs font-bold rounded-full">
                       ✓ OWNED
                     </div>
@@ -389,19 +417,24 @@ export default function ShopPage() {
                 </div>
 
                 {/* Ship Preview */}
-                <div className="relative h-32 mb-4 flex items-center justify-center bg-black/40 rounded-lg border border-cyan-400/20">
-                  <ShipPreview filter={skin.filter} size={64} showEngineGlow={true} />
+                <div className={`relative h-32 mb-4 flex items-center justify-center bg-black/40 rounded-lg border ${isLocked ? 'border-gray-600/40 grayscale' : 'border-cyan-400/20'}`}>
+                  <ShipPreview filter={skin.filter} size={64} showEngineGlow={!isLocked} />
                 </div>
 
                 {/* Name */}
-                <h3 className="text-xl font-bold text-white mb-2 font-['Sora']">{skin.name}</h3>
+                <h3 className={`text-xl font-bold mb-2 font-['Sora'] ${isLocked ? 'text-gray-400' : 'text-white'}`}>{skin.name}</h3>
 
                 {/* Description */}
-                <p className="text-sm text-cyan-200/80 mb-4 font-['Space_Grotesk'] line-clamp-2">{skin.description}</p>
+                <p className={`text-sm mb-4 font-['Space_Grotesk'] line-clamp-2 ${isLocked ? 'text-gray-500' : 'text-cyan-200/80'}`}>{skin.description}</p>
 
-                {/* Price Display */}
+                {/* Price/Lock Display */}
                 <div className="mb-3 text-center">
-                  {isDefault ? (
+                  {isLocked ? (
+                    <div className="text-sm text-gray-400 font-['Space_Grotesk']">
+                      <div className="text-xs text-gray-500 mb-1">Requires:</div>
+                      <div className="text-yellow-400/80 font-bold">{lockReason}</div>
+                    </div>
+                  ) : isDefault ? (
                     <div className="text-sm text-gray-400 font-['Space_Grotesk']">Free - Default Ship</div>
                   ) : skin.unlocked ? (
                     <div className="text-sm text-green-400 font-bold font-['Space_Grotesk']">✓ Owned</div>
@@ -418,8 +451,12 @@ export default function ShopPage() {
                 {/* View Details Button */}
                 <button
                   onClick={() => setSelectedSkin(skin)}
-                  className="w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/90 hover:to-pink-500/90 border border-purple-400/40 text-white">
-                  View Details & Superpowers
+                  className={`w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
+                    isLocked
+                      ? 'bg-gray-700/50 text-gray-400 border border-gray-600/40'
+                      : 'bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/90 hover:to-pink-500/90 border border-purple-400/40 text-white'
+                  }`}>
+                  {isLocked ? 'View Requirements' : 'View Details & Superpowers'}
                 </button>
               </motion.div>
             );
@@ -598,13 +635,16 @@ export default function ShopPage() {
           skin={{
             ...selectedSkin,
             isPurchased: selectedSkin.unlocked,
-            isDefault: selectedSkin.tier === 'default'
+            isDefault: selectedSkin.tier === 'default',
+            previewColor: selectedSkin.bulletColor || '#22d3ee'
           }}
           onClose={() => setSelectedSkin(null)}
           onPurchase={handlePurchase}
           onEquip={handleEquip}
           canAfford={stardust >= selectedSkin.price}
           isActive={selectedSkin.id === activeSkinId}
+          isLocked={engine?.cosmeticManager.isShipLocked(selectedSkin.id, engine.achievementManager) ?? false}
+          lockReason={engine?.cosmeticManager.getShipLockReason(selectedSkin.id)}
         />
       )}
 

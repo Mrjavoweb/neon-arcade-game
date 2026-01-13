@@ -10,6 +10,12 @@ interface ShipSuperpower {
   duration?: number;
 }
 
+interface ShipModuleSynergy {
+  buildName: string;
+  modules: string[];
+  description: string;
+}
+
 interface ShipSkin {
   id: string;
   name: string;
@@ -22,6 +28,7 @@ interface ShipSkin {
   superpower?: ShipSuperpower;
   tier?: string;
   role?: 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
+  recommendedBuild?: ShipModuleSynergy;
 }
 
 interface ShopItemModalProps {
@@ -31,6 +38,8 @@ interface ShopItemModalProps {
   onEquip: (skinId: string) => void;
   canAfford: boolean;
   isActive: boolean;
+  isLocked?: boolean;
+  lockReason?: string | null;
 }
 
 export default function ShopItemModal({
@@ -39,7 +48,9 @@ export default function ShopItemModal({
   onPurchase,
   onEquip,
   canAfford,
-  isActive
+  isActive,
+  isLocked = false,
+  lockReason
 }: ShopItemModalProps) {
   if (!skin) return null;
 
@@ -100,19 +111,29 @@ export default function ShopItemModal({
           <div className="flex flex-col md:flex-row gap-6">
             {/* Left Side - Ship Preview */}
             <div className="md:w-1/3 flex flex-col items-center justify-center">
-              <div className="relative w-full bg-black/40 rounded-xl border border-cyan-400/30 p-6 flex items-center justify-center min-h-[180px]">
+              <div className={`relative w-full bg-black/40 rounded-xl border p-6 flex items-center justify-center min-h-[180px] ${isLocked ? 'border-gray-600/40' : 'border-cyan-400/30'}`}>
+                {/* Locked Badge */}
+                {isLocked && (
+                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-gray-600 text-gray-300 text-xs font-bold rounded-full">
+                    🔒 LOCKED
+                  </div>
+                )}
                 {/* Active Badge */}
-                {isActive && (
+                {!isLocked && isActive && (
                   <div className="absolute top-2 left-2 px-2 py-0.5 bg-cyan-500 text-black text-xs font-bold rounded-full">
                     ✓ EQUIPPED
                   </div>
                 )}
-                <ShipPreview filter={skin.filter} size={100} showEngineGlow={true} />
+                <div className={isLocked ? 'grayscale opacity-60' : ''}>
+                  <ShipPreview filter={skin.filter} size={100} showEngineGlow={!isLocked} />
+                </div>
               </div>
 
-              {/* Price Display (below preview) */}
+              {/* Price/Lock Display (below preview) */}
               <div className="mt-4 text-center">
-                {skin.isDefault ? (
+                {isLocked ? (
+                  <div className="text-gray-400 font-bold text-sm">🔒 Locked</div>
+                ) : skin.isDefault ? (
                   <div className="text-gray-300 font-bold text-sm">FREE - Default</div>
                 ) : skin.isPurchased ? (
                   <div className="text-green-400 font-bold text-lg">✓ OWNED</div>
@@ -161,9 +182,43 @@ export default function ShopItemModal({
                 </div>
               )}
 
+              {/* Recommended Build Display */}
+              {skin.recommendedBuild && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-400/30 rounded-xl">
+                  <div className="text-xs uppercase tracking-wider text-cyan-400 mb-1 font-['Space_Grotesk'] font-bold">
+                    💡 RECOMMENDED BUILD: {skin.recommendedBuild.buildName}
+                  </div>
+                  <div className="text-sm text-cyan-200 font-['Space_Grotesk'] mb-2">
+                    {skin.recommendedBuild.description}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {skin.recommendedBuild.modules.map((module, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-400/30 rounded text-xs text-cyan-300 font-['Space_Grotesk']"
+                      >
+                        {module}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="mt-auto space-y-2">
-                {skin.isDefault || skin.isPurchased ? (
+                {isLocked ? (
+                  <>
+                    <div className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600/40 text-center">
+                      <div className="text-gray-400 font-bold font-['Space_Grotesk']">🔒 Ship Locked</div>
+                      <div className="text-sm text-yellow-400/80 font-['Space_Grotesk'] mt-1">
+                        Requires: {lockReason}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 text-center font-['Space_Grotesk']">
+                      Complete the achievement to unlock this ship for purchase
+                    </p>
+                  </>
+                ) : skin.isDefault || skin.isPurchased ? (
                   <>
                     <button
                       onClick={handleEquipClick}
