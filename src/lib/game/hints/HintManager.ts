@@ -142,6 +142,23 @@ const HINTS: GameHint[] = [
     showOnce: true,
     duration: 5000,
   },
+  // Asteroid wave control hints
+  {
+    id: 'asteroid_controls_desktop',
+    message: 'Use Arrow Keys to thrust! UP = accelerate forward',
+    condition: 'First asteroid wave (desktop)',
+    priority: 10,
+    showOnce: false, // Can show twice (first 2 asteroid waves)
+    duration: 5000,
+  },
+  {
+    id: 'asteroid_controls_mobile',
+    message: 'Tap the screen to thrust forward!',
+    condition: 'First asteroid wave (mobile)',
+    priority: 10,
+    showOnce: false, // Can show twice (first 2 asteroid waves)
+    duration: 5000,
+  },
 ];
 
 export class HintManager {
@@ -152,6 +169,7 @@ export class HintManager {
   private hintAlpha: number = 0;
   private lowHealthShownThisLife: boolean = false;
   private isMobile: boolean = false;
+  private asteroidWaveHintCount: number = 0; // Track how many times asteroid hint was shown
 
   constructor(isMobile: boolean = false) {
     this.isMobile = isMobile;
@@ -290,6 +308,15 @@ export class HintManager {
 
   onPlayerStruggling(): void {
     this.triggerHint('upgrade_struggle');
+  }
+
+  onAsteroidWaveStart(): void {
+    // Only show hint for first 2 asteroid waves
+    if (this.asteroidWaveHintCount < 2) {
+      this.asteroidWaveHintCount++;
+      const hintId = this.isMobile ? 'asteroid_controls_mobile' : 'asteroid_controls_desktop';
+      this.triggerHint(hintId);
+    }
   }
 
   // ============================================================================

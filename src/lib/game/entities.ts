@@ -478,12 +478,18 @@ export class Player {
       y: this.canvasHeight / 2 - this.size.height / 2
     };
 
-    // Reset momentum and rotation
-    this.thrustVelocity = { x: 0, y: 0 };
+    // Reset rotation to face up
     this.rotation = -Math.PI / 2; // Face up
     this.asteroidModeActive = true;
 
-    console.log('🚀 Entered Asteroid Mode - Ship centered at:', this.position);
+    // Give a small initial forward thrust so player knows they can move
+    // Thrust direction matches ship facing (up)
+    this.thrustVelocity = {
+      x: Math.cos(this.rotation) * 0.8, // ~0 (facing up)
+      y: Math.sin(this.rotation) * 0.8  // ~-0.8 (upward)
+    };
+
+    console.log('🚀 Entered Asteroid Mode - Ship centered with initial thrust');
   }
 
   exitAsteroidMode() {
@@ -1593,16 +1599,16 @@ export class Asteroid {
     }
     this.maxHealth = this.health;
 
-    // Velocity - splits move faster
+    // Velocity - splits move slightly faster
     if (velocity) {
-      // Inherited velocity from split (1.3x faster)
+      // Inherited velocity from split (1.1x faster - gentler than before)
       this.velocity = {
-        x: velocity.x * 1.3,
-        y: velocity.y * 1.3
+        x: velocity.x * 1.1,
+        y: velocity.y * 1.1
       };
     } else {
-      // Initial random drift
-      const speed = 1 + Math.random() * 1.5;
+      // Initial random drift (slower base)
+      const speed = 0.8 + Math.random() * 1.0;
       const angle = Math.random() * Math.PI * 2;
       this.velocity = {
         x: Math.cos(angle) * speed,

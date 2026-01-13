@@ -635,16 +635,16 @@ export class GameEngine {
     this.asteroidWaveActive = true;
     this.asteroidWaveTimer = 60 * 60; // 60 seconds (1 minute) at 60fps
 
-    // Scale asteroids GENTLY by wave cycle
+    // Scale asteroids VERY GENTLY by wave cycle
     // Wave 3 = cycle 1, Wave 8 = cycle 2, Wave 13 = cycle 3, etc.
     const asteroidCycle = Math.floor(wave / 5) + 1;
 
-    // MUCH easier scaling: 3-5 large asteroids max, medium only in later cycles
-    const largeCount = Math.min(2 + asteroidCycle, 5); // 3, 4, 5, 5 (capped at 5)
-    const mediumCount = asteroidCycle >= 3 ? Math.min(asteroidCycle - 2, 2) : 0; // 0, 0, 1, 2 (capped at 2)
+    // EASIER scaling: 2-4 large asteroids max, medium only in later cycles
+    const largeCount = Math.min(1 + asteroidCycle, 4); // 2, 3, 4, 4 (capped at 4)
+    const mediumCount = asteroidCycle >= 4 ? Math.min(asteroidCycle - 3, 2) : 0; // 0, 0, 0, 1, 2 (delayed start)
 
-    // Gentle speed scaling: slow and manageable
-    const baseSpeed = 0.6 + (asteroidCycle - 1) * 0.15; // 0.6, 0.75, 0.9, 1.05 (very gentle)
+    // Very gentle speed scaling: slow and manageable
+    const baseSpeed = 0.5 + (asteroidCycle - 1) * 0.1; // 0.5, 0.6, 0.7, 0.8 (very slow)
 
     console.log(`☄️ ASTEROID WAVE! Cycle ${asteroidCycle} - ${largeCount} large, ${mediumCount} medium asteroids (speed: ${baseSpeed.toFixed(2)})`);
 
@@ -2543,6 +2543,12 @@ export class GameEngine {
         this.asteroidIntroTimer = 0;
         this.player.enterAsteroidMode();
         this.audioManager.playSound('wave_complete', 0.5);
+
+        // Show asteroid control hint for first 2 asteroid waves
+        // Small delay so it appears after "GO!" notification
+        setTimeout(() => {
+          this.hintManager.onAsteroidWaveStart();
+        }, 1000);
 
         // Show "GO!" notification
         this.comboNotifications.push({
