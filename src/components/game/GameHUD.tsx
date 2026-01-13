@@ -80,12 +80,13 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
           </div>
         </div>
 
-        {/* Center-Left - Active Power-Ups (positioned away from boss health bar) */}
-        <div className="flex items-center mr-8 sm:mr-12">
+        {/* Center - Power-Up Indicator + Wave (grouped together) */}
+        <div className="flex items-start gap-2 sm:gap-3 mr-14 sm:mr-16">
+          {/* Active Power-Ups - immediately left of wave indicator */}
           <AnimatePresence>
             {activePowerUps && (
-              <div className={`flex flex-col gap-1.5 ${
-                isLandscape ? 'max-w-[200px]' : 'max-w-[220px]'
+              <div className={`flex flex-col gap-1 ${
+                isLandscape ? 'max-w-[180px]' : 'max-w-[190px]'
               }`}>
                 {Object.entries(activePowerUps).map(([key, value]: [string, any]) => {
                   if (!value.active) return null;
@@ -137,26 +138,26 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
                           ease: "easeInOut"
                         } : {}
                       }}
-                      className={`flex items-center gap-2.5 border-2 rounded-lg backdrop-blur-sm ${
+                      className={`flex items-center gap-2 border-2 rounded-lg backdrop-blur-sm ${
                         isExpiring ? 'border-red-400' : 'border-cyan-400/70'
-                      } ${isLandscape ? 'px-3 py-2' : 'px-4 py-2.5'}`}
+                      } ${isLandscape ? 'px-2.5 py-1' : 'px-3.5 py-1.5'}`}
                       style={{
                         boxShadow: isExpiring
                           ? '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4)'
                           : '0 0 12px rgba(34, 211, 238, 0.6)'
                       }}
                     >
-                      <div className={`${isLandscape ? 'text-3xl' : 'text-4xl'}`}>
+                      <div className={`${isLandscape ? 'text-xl' : 'text-2xl'}`}>
                         {powerUpIcons[key] || '⚡'}
                       </div>
                       <div className="flex flex-col">
                         <div className={`text-cyan-300 font-bold leading-tight ${
-                          isLandscape ? 'text-[0.75rem]' : 'text-[0.85rem]'
+                          isLandscape ? 'text-[0.65rem]' : 'text-[0.7rem]'
                         }`}>
                           {powerUpNames[key]}
                         </div>
                         <div className={`text-white font-bold leading-tight ${
-                          isLandscape ? 'text-[0.65rem]' : 'text-[0.75rem]'
+                          isLandscape ? 'text-[0.55rem]' : 'text-[0.6rem]'
                         }`}>
                           {seconds}s
                         </div>
@@ -167,17 +168,17 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
               </div>
             )}
           </AnimatePresence>
-        </div>
 
-        {/* Center - Wave */}
-        <div className="text-center">
-          <div className={`text-pink-400 font-bold tracking-wider ${
-            isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
-          }`}>WAVE</div>
-          <div className={`font-bold ${
-            isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
-          }`} style={{ textShadow: '0 0 10px rgba(236, 72, 153, 0.8)' }}>
-            {stats.wave}
+          {/* Wave indicator */}
+          <div className="text-center">
+            <div className={`text-pink-400 font-bold tracking-wider ${
+              isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
+            }`}>WAVE</div>
+            <div className={`font-bold ${
+              isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
+            }`} style={{ textShadow: '0 0 10px rgba(236, 72, 153, 0.8)' }}>
+              {stats.wave}
+            </div>
           </div>
         </div>
 
