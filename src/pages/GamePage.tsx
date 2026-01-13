@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
 import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
 
 export default function GamePage() {
@@ -83,6 +83,7 @@ export default function GamePage() {
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const dailyRewardClaimedRef = useRef(false);
+  const [upgradeSuggestion, setUpgradeSuggestion] = useState<string | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -156,6 +157,17 @@ export default function GamePage() {
       }
     };
     window.addEventListener('daily-reward-available', handleDailyRewardAvailable);
+
+    // Listen for upgrade suggestions (shows when player struggles)
+    const handleUpgradeSuggestion = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.message) {
+        setUpgradeSuggestion(customEvent.detail.message);
+        // Auto-hide after 6 seconds
+        setTimeout(() => setUpgradeSuggestion(null), 6000);
+      }
+    };
+    window.addEventListener('upgrade-suggestion', handleUpgradeSuggestion);
 
     // Initialize stardust from game engine
     const initialStardust = engine.currencyManager.getStardust();
@@ -267,6 +279,7 @@ export default function GamePage() {
       window.removeEventListener('currency-changed', handleCurrencyChange);
       window.removeEventListener('achievement-unlocked', handleAchievementUnlock);
       window.removeEventListener('daily-reward-available', handleDailyRewardAvailable);
+      window.removeEventListener('upgrade-suggestion', handleUpgradeSuggestion);
       engine.cleanup();
     };
   }, [isMobile]);
@@ -495,6 +508,45 @@ export default function GamePage() {
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Upgrade Suggestion Toast (shows after 3 consecutive deaths) */}
+      <AnimatePresence>
+        {upgradeSuggestion && gameState.state === 'gameOver' && (
+          <motion.div
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+          >
+            <div
+              className="px-6 py-4 bg-gradient-to-r from-yellow-600/90 to-orange-600/90 border-2 border-yellow-400 rounded-xl shadow-2xl"
+              style={{ boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">💡</span>
+                <div>
+                  <p className="text-white font-bold font-['Space_Grotesk'] text-lg">
+                    {upgradeSuggestion}
+                  </p>
+                  <p className="text-yellow-200 text-sm font-['Space_Grotesk'] mt-1">
+                    Ships & Modules can give you an edge!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setUpgradeSuggestion(null);
+                  handleShop();
+                }}
+                className="mt-3 w-full px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/40 rounded-lg text-white font-bold font-['Space_Grotesk'] transition-all"
+              >
+                🛍️ Open Shop
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

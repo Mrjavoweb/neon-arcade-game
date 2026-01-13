@@ -138,6 +138,12 @@ export class GameEngine {
   private consecutiveBossDeaths: number = 0;
   private readonly ADAPTIVE_DIFFICULTY_KEY = 'alien_invasion_boss_deaths';
 
+  // Upgrade notification system - helps players discover shop/modules
+  private consecutiveGameOvers: number = 0;
+  private upgradeHintShownBoss1: boolean = false;
+  private upgradeHintShownBoss2: boolean = false;
+  private upgradeHintShownStruggle: boolean = false;
+
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -3551,6 +3557,25 @@ export class GameEngine {
     this.achievementManager.trackBossDefeat();
     // Update module slots after boss defeat
     this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated + 1);
+
+    // Reset consecutive game overs on boss victory (player is progressing)
+    this.consecutiveGameOvers = 0;
+    this.upgradeHintShownStruggle = false;
+
+    // Show upgrade hints after boss 1 and 2 to help players discover shop
+    const bossNumber = this.stats.wave / 5;
+    if (bossNumber === 1 && !this.upgradeHintShownBoss1) {
+      this.upgradeHintShownBoss1 = true;
+      // Delayed notification so it doesn't overlap with victory celebration
+      setTimeout(() => {
+        this.addComboNotification('💡 TIP: Visit SHOP to\nupgrade your ship!', '#fbbf24', 1.8);
+      }, 1500);
+    } else if (bossNumber === 2 && !this.upgradeHintShownBoss2) {
+      this.upgradeHintShownBoss2 = true;
+      setTimeout(() => {
+        this.addComboNotification('🔧 NEW: MODULES unlocked!\nCheck the SHOP', '#a855f7', 1.8);
+      }, 1500);
+    }
   }
 
   createImpactParticles(x: number, y: number, color: string) {
@@ -4138,6 +4163,21 @@ export class GameEngine {
 
     // Track final score for achievements
     this.achievementManager.trackScore(this.stats.score);
+
+    // Track consecutive game overs for upgrade hint
+    this.consecutiveGameOvers++;
+
+    // Show upgrade hint after 3 consecutive deaths to help struggling players
+    if (this.consecutiveGameOvers >= 3 && !this.upgradeHintShownStruggle) {
+      this.upgradeHintShownStruggle = true;
+      // Dispatch event for UI to show upgrade suggestion
+      window.dispatchEvent(new CustomEvent('upgrade-suggestion', {
+        detail: {
+          message: 'Struggling? Try upgrading your ship in the SHOP!',
+          consecutiveDeaths: this.consecutiveGameOvers
+        }
+      }));
+    }
   }
 
   checkWaveComplete() {
@@ -4218,6 +4258,12 @@ export class GameEngine {
     this.awardStardust(10, 'wave_complete');
     this.achievementManager.trackWave(this.stats.wave);
     this.checkWaveMilestone(this.stats.wave);
+
+    // Reset consecutive game overs on wave completion (player is progressing)
+    if (this.consecutiveGameOvers > 0) {
+      this.consecutiveGameOvers = 0;
+      this.upgradeHintShownStruggle = false;
+    }
 
     // Track perfect wave (completed previous wave without damage)
     if (!this.tookDamageThisWave && this.stats.wave > 1) {
