@@ -23,11 +23,10 @@ export default function BossHealthBar({ show, health, maxHealth, phase }: BossHe
 
   return (
     <motion.div
-      className="absolute top-2 left-4 z-10"
-      initial={{ opacity: 0, x: -10 }}
+      className="absolute top-2 right-24 z-10"
+      initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{ marginLeft: '140px' }}>
+      transition={{ duration: 0.5 }}>
 
       <div className="bg-black/80 rounded-md border border-cyan-400/60 px-3 py-1.5 flex items-center gap-2"
       style={{ boxShadow: '0 0 10px rgba(34, 211, 238, 0.3)' }}>
