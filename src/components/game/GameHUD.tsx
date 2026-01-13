@@ -34,59 +34,71 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
              paddingTop: isLandscape ? '20px' : 'max(env(safe-area-inset-top, 0.25rem), 0.25rem)',
              fontSize: 'clamp(0.65rem, 2vw, 0.875rem)'
            }}>
-        {/* Left side - Score & Stardust */}
-        <div className="text-left">
-          <div className={`text-cyan-400 font-bold tracking-wider ${
-            isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
-          }`}>SCORE</div>
-          <div className={`font-bold ${
-            isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
-          }`} style={{ textShadow: '0 0 10px rgba(34, 211, 238, 0.8)' }}>
-            {stats.score.toString().padStart(6, '0')}
-          </div>
-
-          {/* Stardust Display */}
-          <div className={`mt-1 relative ${isLandscape ? 'mt-0.5' : 'mt-1'}`}>
-            <div className={`text-purple-400 font-bold tracking-wider ${
+        {/* Left side - Score, Stardust, Wave, Power-Ups (all grouped) */}
+        <div className="flex items-start gap-3 sm:gap-4">
+          {/* Score & Stardust Column */}
+          <div className="text-left">
+            <div className={`text-cyan-400 font-bold tracking-wider ${
               isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
-            }`}>STARDUST</div>
-            <div className={`font-bold text-purple-300 flex items-center gap-1 ${
-              isLandscape ? 'text-sm' : 'text-sm sm:text-base'
-            }`} style={{ textShadow: '0 0 8px rgba(192, 132, 252, 0.8)' }}>
-              <span className="inline-block text-base sm:text-lg">💎</span>
-              <span>{stardust.toLocaleString()}</span>
+            }`}>SCORE</div>
+            <div className={`font-bold ${
+              isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
+            }`} style={{ textShadow: '0 0 10px rgba(34, 211, 238, 0.8)' }}>
+              {stats.score.toString().padStart(6, '0')}
             </div>
 
-            {/* Floating +Stardust animation */}
-            <AnimatePresence>
-              {stardustEarned !== null && (
-                <motion.div
-                  className={`absolute font-bold text-purple-300 ${
-                    isLandscape ? 'text-[0.6rem] left-8' : 'text-xs sm:text-sm left-10'
-                  }`}
-                  style={{
-                    textShadow: '0 0 10px rgba(192, 132, 252, 1)',
-                    top: '50%'
-                  }}
-                  initial={{ opacity: 0, y: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, y: -20, scale: 1 }}
-                  exit={{ opacity: 0, y: -40 }}
-                  transition={{ duration: 1.5, ease: 'easeOut' }}
-                >
-                  +{stardustEarned} 💎
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+            {/* Stardust Display */}
+            <div className={`mt-1 relative ${isLandscape ? 'mt-0.5' : 'mt-1'}`}>
+              <div className={`text-purple-400 font-bold tracking-wider ${
+                isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
+              }`}>STARDUST</div>
+              <div className={`font-bold text-purple-300 flex items-center gap-1 ${
+                isLandscape ? 'text-sm' : 'text-sm sm:text-base'
+              }`} style={{ textShadow: '0 0 8px rgba(192, 132, 252, 0.8)' }}>
+                <span className="inline-block text-base sm:text-lg">💎</span>
+                <span>{stardust.toLocaleString()}</span>
+              </div>
 
-        {/* Center - Power-Up Indicator + Wave (grouped together) */}
-        <div className="flex items-start gap-2 sm:gap-3 mr-14 sm:mr-16">
-          {/* Active Power-Ups - immediately left of wave indicator */}
+              {/* Floating +Stardust animation */}
+              <AnimatePresence>
+                {stardustEarned !== null && (
+                  <motion.div
+                    className={`absolute font-bold text-purple-300 ${
+                      isLandscape ? 'text-[0.6rem] left-8' : 'text-xs sm:text-sm left-10'
+                    }`}
+                    style={{
+                      textShadow: '0 0 10px rgba(192, 132, 252, 1)',
+                      top: '50%'
+                    }}
+                    initial={{ opacity: 0, y: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, y: -20, scale: 1 }}
+                    exit={{ opacity: 0, y: -40 }}
+                    transition={{ duration: 1.5, ease: 'easeOut' }}
+                  >
+                    +{stardustEarned} 💎
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Wave indicator - next to Stardust */}
+          <div className="text-center">
+            <div className={`text-pink-400 font-bold tracking-wider ${
+              isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
+            }`}>WAVE</div>
+            <div className={`font-bold ${
+              isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
+            }`} style={{ textShadow: '0 0 10px rgba(236, 72, 153, 0.8)' }}>
+              {stats.wave}
+            </div>
+          </div>
+
+          {/* Active Power-Ups - next to Wave */}
           <AnimatePresence>
             {activePowerUps && (
-              <div className={`flex flex-col gap-1 ${
-                isLandscape ? 'max-w-[180px]' : 'max-w-[190px]'
+              <div className={`flex flex-col gap-0.5 ${
+                isLandscape ? 'max-w-[140px]' : 'max-w-[150px]'
               }`}>
                 {Object.entries(activePowerUps).map(([key, value]: [string, any]) => {
                   if (!value.active) return null;
@@ -138,29 +150,27 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
                           ease: "easeInOut"
                         } : {}
                       }}
-                      className={`flex items-center gap-2 border-2 rounded-lg backdrop-blur-sm ${
-                        isExpiring ? 'border-red-400' : 'border-cyan-400/70'
-                      } ${isLandscape ? 'px-2.5 py-1' : 'px-3.5 py-1.5'}`}
+                      className={`flex items-center gap-1.5 border rounded-md backdrop-blur-sm ${
+                        isExpiring ? 'border-red-400' : 'border-cyan-400/60'
+                      } ${isLandscape ? 'px-1.5 py-0.5' : 'px-2 py-0.5'}`}
                       style={{
                         boxShadow: isExpiring
-                          ? '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4)'
-                          : '0 0 12px rgba(34, 211, 238, 0.6)'
+                          ? '0 0 12px rgba(239, 68, 68, 0.6)'
+                          : '0 0 8px rgba(34, 211, 238, 0.4)'
                       }}
                     >
-                      <div className={`${isLandscape ? 'text-xl' : 'text-2xl'}`}>
+                      <div className={`${isLandscape ? 'text-sm' : 'text-base'}`}>
                         {powerUpIcons[key] || '⚡'}
                       </div>
-                      <div className="flex flex-col">
-                        <div className={`text-cyan-300 font-bold leading-tight ${
-                          isLandscape ? 'text-[0.65rem]' : 'text-[0.7rem]'
-                        }`}>
-                          {powerUpNames[key]}
-                        </div>
-                        <div className={`text-white font-bold leading-tight ${
-                          isLandscape ? 'text-[0.55rem]' : 'text-[0.6rem]'
-                        }`}>
-                          {seconds}s
-                        </div>
+                      <div className={`text-cyan-300 font-bold leading-none ${
+                        isLandscape ? 'text-[0.5rem]' : 'text-[0.55rem]'
+                      }`}>
+                        {powerUpNames[key]}
+                      </div>
+                      <div className={`text-white font-bold leading-none ${
+                        isLandscape ? 'text-[0.5rem]' : 'text-[0.55rem]'
+                      }`}>
+                        {seconds}s
                       </div>
                     </motion.div>
                   );
@@ -168,29 +178,10 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
               </div>
             )}
           </AnimatePresence>
-
-          {/* Wave indicator */}
-          <div className="text-center">
-            <div className={`text-pink-400 font-bold tracking-wider ${
-              isLandscape ? 'text-[0.5rem]' : 'text-[0.6rem] sm:text-xs'
-            }`}>WAVE</div>
-            <div className={`font-bold ${
-              isLandscape ? 'text-xs' : 'text-sm sm:text-lg md:text-2xl'
-            }`} style={{ textShadow: '0 0 10px rgba(236, 72, 153, 0.8)' }}>
-              {stats.wave}
-            </div>
-          </div>
         </div>
 
-        {/* Center-Right - Game Controls (Pause & Sound) - Placeholder for positioning */}
-        <div className="flex items-center gap-2" style={{
-          visibility: 'hidden',
-          pointerEvents: 'none'
-        }}>
-          {/* Invisible placeholders to reserve space - actual buttons are positioned absolutely in GamePage */}
-          <div className={isLandscape ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'} />
-          <div className={isLandscape ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'} />
-        </div>
+        {/* Center spacer - room for boss health bar (rendered in GameEngine) */}
+        <div className="flex-1" />
 
         {/* Right side - Lives */}
         <div className="text-right">
