@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import ShopItemModal from '@/components/game/ShopItemModal';
+import ModuleModal from '@/components/game/ModuleModal';
 import ShipPreview from '@/components/game/ShipPreview';
 import { Module, ModuleCategory, ModuleTier } from '@/lib/game/progression/ProgressionTypes';
 
@@ -231,6 +232,22 @@ export default function ShopPage() {
       if (!achievement?.unlocked) return true;
     }
     return false;
+  };
+
+  const getModuleLockReason = (module: Module): string => {
+    if (achievementCount < module.achievementCountRequired) {
+      return `Need ${module.achievementCountRequired} achievements (you have ${achievementCount})`;
+    }
+    if (module.specificAchievement) {
+      return `Requires "${module.specificAchievement}" achievement`;
+    }
+    return 'Locked';
+  };
+
+  const getEquippedSlot = (moduleId: string): number | undefined => {
+    const equippedList = engine?.moduleManager.getEquippedModules() ?? [];
+    const index = equippedList.findIndex(m => m.id === moduleId);
+    return index >= 0 ? index : undefined;
   };
 
   if (!engine) {
@@ -493,7 +510,7 @@ export default function ShopPage() {
                       return (
                         <motion.div
                           key={module.id}
-                          className={`bg-gradient-to-br from-gray-900/60 to-gray-800/60 border-2 rounded-xl p-4 transition-all ${
+                          className={`bg-gradient-to-br from-gray-900/60 to-gray-800/60 border-2 rounded-xl p-4 transition-all cursor-pointer ${
                             locked
                               ? 'border-gray-600/40 opacity-60'
                               : isEquipped
@@ -502,7 +519,9 @@ export default function ShopPage() {
                               ? 'border-green-400/60'
                               : getTierColor(module.tier)
                           }`}
-                          whileHover={{ scale: locked ? 1 : 1.02 }}>
+                          onClick={() => setSelectedModule(module)}
+                          whileHover={{ scale: locked ? 1 : 1.02 }}
+                          whileTap={{ scale: 0.98 }}>
                           {/* Header */}
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-2xl">{module.icon}</span>
@@ -520,42 +539,29 @@ export default function ShopPage() {
                           </div>
 
                           {/* Description */}
-                          <p className="text-xs text-gray-400 mb-3 font-['Space_Grotesk']">{module.description}</p>
+                          <p className="text-xs text-gray-400 mb-3 font-['Space_Grotesk'] line-clamp-2">{module.description}</p>
 
-                          {/* Status / Actions */}
+                          {/* Status Display */}
                           {locked ? (
-                            <div className="text-xs text-gray-500 text-center">
-                              🔒 {module.achievementCountRequired > achievementCount
-                                ? `Need ${module.achievementCountRequired} achievements`
-                                : `Requires "${module.specificAchievement}" achievement`}
-                            </div>
+                            <div className="text-xs text-gray-500 text-center">🔒 Locked</div>
                           ) : module.owned ? (
                             isEquipped ? (
                               <div className="text-sm text-cyan-400 font-bold text-center">✓ Equipped</div>
                             ) : (
-                              <div className="flex gap-2">
-                                {[0, 1, 2].filter(s => s < slotsUnlocked).map((slot) => (
-                                  <button
-                                    key={slot}
-                                    onClick={() => handleModuleEquip(module.id, slot)}
-                                    className="flex-1 px-2 py-1.5 text-xs bg-cyan-600/60 hover:bg-cyan-600/80 border border-cyan-400/40 rounded text-white font-bold">
-                                    Slot {slot + 1}
-                                  </button>
-                                ))}
-                              </div>
+                              <div className="text-sm text-green-400 font-bold text-center">✓ Owned</div>
                             )
                           ) : (
-                            <button
-                              onClick={() => handleModulePurchase(module.id)}
-                              disabled={!canAfford}
-                              className={`w-full px-3 py-2 rounded-lg font-bold text-sm font-['Space_Grotesk'] transition-all ${
-                                canAfford
-                                  ? 'bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/90 hover:to-pink-500/90 border border-purple-400/40 text-white'
-                                  : 'bg-gray-700/60 border border-gray-500/40 text-gray-400 cursor-not-allowed'
-                              }`}>
-                              💎 {module.price.toLocaleString()}
-                            </button>
+                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-purple-200">
+                              <span>💎</span>
+                              <span>{module.price.toLocaleString()}</span>
+                            </div>
                           )}
+
+                          {/* View Details Button */}
+                          <button
+                            className="w-full mt-2 px-3 py-1.5 rounded-lg font-bold text-xs font-['Space_Grotesk'] bg-gradient-to-r from-purple-600/60 to-pink-600/60 hover:from-purple-500/70 hover:to-pink-500/70 border border-purple-400/30 text-white">
+                            View Details
+                          </button>
                         </motion.div>
                       );
                     })}
@@ -599,6 +605,30 @@ export default function ShopPage() {
           onEquip={handleEquip}
           canAfford={stardust >= selectedSkin.price}
           isActive={selectedSkin.id === activeSkinId}
+        />
+      )}
+
+      {/* Module Modal */}
+      {selectedModule && (
+        <ModuleModal
+          module={selectedModule}
+          onClose={() => setSelectedModule(null)}
+          onPurchase={(moduleId) => {
+            handleModulePurchase(moduleId);
+            // Refresh the selected module to show updated state
+            const updated = modules.find(m => m.id === moduleId);
+            if (updated) setSelectedModule({ ...updated, owned: true });
+          }}
+          onEquip={(moduleId, slot) => {
+            handleModuleEquip(moduleId, slot);
+            setSelectedModule(null);
+          }}
+          canAfford={stardust >= selectedModule.price}
+          isEquipped={equippedModules.includes(selectedModule.id)}
+          isLocked={isModuleLocked(selectedModule)}
+          lockReason={getModuleLockReason(selectedModule)}
+          slotsUnlocked={slotsUnlocked}
+          equippedSlot={getEquippedSlot(selectedModule.id)}
         />
       )}
 
