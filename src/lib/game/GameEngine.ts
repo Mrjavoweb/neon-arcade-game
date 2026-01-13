@@ -119,6 +119,10 @@ export class GameEngine {
   readonly MAX_EXPLOSIONS: number;
   private performanceLogTimer = 0;
 
+  // Particle throttle thresholds (% of MAX_PARTICLES)
+  private readonly PARTICLE_THROTTLE_START = 0.6; // Start reducing at 60% capacity
+  private readonly PARTICLE_THROTTLE_HEAVY = 0.85; // Heavy reduction at 85% capacity
+
   // FPS counter
   private fpsFrameCount = 0;
   private fpsLastTime = 0;
@@ -1781,6 +1785,11 @@ export class GameEngine {
       this.addScreenShake(12);
       this.triggerChromaticAberration(0.5);
 
+      // === JUICE: Dramatic time dilation on boss phase transition ===
+      this.triggerHitStop(4, true); // Brief freeze for impact
+      this.triggerCameraZoom(1.06); // Zoom in for dramatic effect
+      this.triggerTimeDilation(0.3, 30); // 0.3x slow-mo for ~0.5 seconds
+
       // Switch boss appearance based on current phase
       const bossImageMap = {
         phase1: this.assets.bossPhase1,
@@ -2708,6 +2717,13 @@ export class GameEngine {
             const xpReward = enemy.type === 'heavy' ? 25 : enemy.type === 'fast' ? 15 : 10;
             this.awardXP(xpReward);
 
+            // === JUICE: Death flash before explosion (1F) ===
+            this.createDeathFlash(
+              enemy.position.x + enemy.size.width / 2,
+              enemy.position.y + enemy.size.height / 2,
+              enemy.size.width
+            );
+
             this.createExplosion(
               enemy.position.x + enemy.size.width / 2,
               enemy.position.y + enemy.size.height / 2
@@ -2767,6 +2783,14 @@ export class GameEngine {
             this.stats.enemiesDestroyed++;
             this.registerKill(minion.points); // Track combo
             this.awardXP(15); // Fast enemy XP
+
+            // === JUICE: Death flash for minion (1F) ===
+            this.createDeathFlash(
+              minion.position.x + minion.size.width / 2,
+              minion.position.y + minion.size.height / 2,
+              minion.size.width
+            );
+
             this.createExplosion(
               minion.position.x + minion.size.width / 2,
               minion.position.y + minion.size.height / 2
@@ -3234,6 +3258,49 @@ export class GameEngine {
     }
   }
 
+  /**
+   * 1F: Death Flash - Brief white pulse effect before enemy death
+   * Creates bright white particles that fade quickly for impact feedback
+   */
+  createDeathFlash(x: number, y: number, size: number = 40) {
+    // PERF: Skip if particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
+    // Create a ring of bright white particles that expand and fade quickly
+    const particleCount = Math.max(4, Math.floor((this.isMobile ? 6 : 10) * spawnMultiplier));
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const speed = 3 + Math.random() * 2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: size * 0.15 + Math.random() * 3,
+        color: '#ffffff',
+        alpha: 1,
+        decay: 0.15, // Fast fade for flash effect
+        lifetime: 0,
+        maxLifetime: 12 // Very short lifetime
+      });
+    }
+
+    // Center bright particle
+    this.particles.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      size: size * 0.4,
+      color: '#ffffff',
+      alpha: 1,
+      decay: 0.2, // Very fast fade
+      lifetime: 0,
+      maxLifetime: 8
+    });
+  }
+
   createExplosiveRoundDamage(x: number, y: number) {
     // Explosive rounds - damage nearby enemies in small AoE
     const explosionRadius = 30;
@@ -3487,8 +3554,13 @@ export class GameEngine {
   }
 
   createImpactParticles(x: number, y: number, color: string) {
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
     // Drastically reduced particles for mobile performance
-    const particleCount = this.isMobile ? 3 : 8;
+    const baseCount = this.isMobile ? 3 : 8;
+    const particleCount = Math.max(1, Math.floor(baseCount * spawnMultiplier));
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.PI * 2 * i / particleCount;
       const speed = 2 + Math.random() * 5;
@@ -3509,8 +3581,13 @@ export class GameEngine {
   }
 
   spawnDebrisParticles(x: number, y: number, color: string) {
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
     // Drastically reduced particles for mobile performance
-    const particleCount = this.isMobile ? 6 : 18;
+    const baseCount = this.isMobile ? 6 : 18;
+    const particleCount = Math.max(2, Math.floor(baseCount * spawnMultiplier));
     const colors = [color, '#ffffff', '#ff6600', '#ffaa00', '#ff0000'];
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -3536,12 +3613,16 @@ export class GameEngine {
    * 1E: Kill Burst with directional particles
    */
   spawnDirectionalDebris(x: number, y: number, color: string, bulletVx: number, bulletVy: number, enemyType: 'basic' | 'fast' | 'heavy' = 'basic') {
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
     // Calculate opposite direction from bullet
     const bulletAngle = Math.atan2(bulletVy, bulletVx);
     const oppositeAngle = bulletAngle + Math.PI; // Opposite direction
 
     // Enemy-type specific settings (1F: Death Enhancements)
-    let particleCount: number;
+    let baseParticleCount: number;
     let speedMultiplier: number;
     let sizeMultiplier: number;
     let spreadAngle: number; // How wide the burst spreads
@@ -3549,25 +3630,28 @@ export class GameEngine {
     switch (enemyType) {
       case 'heavy':
         // Heavy enemies: larger, slower particles, wider spread
-        particleCount = this.isMobile ? 10 : 24;
+        baseParticleCount = this.isMobile ? 10 : 24;
         speedMultiplier = 0.7;
         sizeMultiplier = 1.8;
         spreadAngle = Math.PI * 0.8; // Wide spread
         break;
       case 'fast':
         // Fast enemies: quick, scattered particles, narrow burst
-        particleCount = this.isMobile ? 8 : 20;
+        baseParticleCount = this.isMobile ? 8 : 20;
         speedMultiplier = 1.5;
         sizeMultiplier = 0.7;
         spreadAngle = Math.PI * 0.4; // Narrow, focused burst
         break;
       default:
         // Basic enemies: balanced
-        particleCount = this.isMobile ? 6 : 16;
+        baseParticleCount = this.isMobile ? 6 : 16;
         speedMultiplier = 1.0;
         sizeMultiplier = 1.0;
         spreadAngle = Math.PI * 0.6;
     }
+
+    // Apply throttle multiplier
+    const particleCount = Math.max(3, Math.floor(baseParticleCount * spawnMultiplier));
 
     // Color palette includes enemy color prominently
     const colors = [color, color, '#ffffff', '#ff6600', '#ffaa00'];
@@ -3617,7 +3701,12 @@ export class GameEngine {
    * Boss phase transition radial explosion (1E)
    */
   spawnBossPhaseParticles(x: number, y: number) {
-    const particleCount = this.isMobile ? 20 : 40;
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
+    const baseCount = this.isMobile ? 20 : 40;
+    const particleCount = Math.max(8, Math.floor(baseCount * spawnMultiplier));
     const colors = ['#dc2626', '#f97316', '#fbbf24', '#ffffff', '#a855f7'];
 
     for (let i = 0; i < particleCount; i++) {
@@ -3640,8 +3729,9 @@ export class GameEngine {
       });
     }
 
-    // Inner ring of bright particles
-    const innerCount = this.isMobile ? 8 : 16;
+    // Inner ring of bright particles (also throttled)
+    const innerBaseCount = this.isMobile ? 8 : 16;
+    const innerCount = Math.max(4, Math.floor(innerBaseCount * spawnMultiplier));
     for (let i = 0; i < innerCount; i++) {
       const angle = (i / innerCount) * Math.PI * 2 + Math.PI / innerCount;
       const speed = 1.5 + Math.random() * 2;
@@ -3749,11 +3839,21 @@ export class GameEngine {
 
     // Reset combo if too much time has passed
     if (now - this.lastKillTime > this.comboTimeout) {
+      // === JUICE: Exit flow state when combo resets ===
+      if (this.stats.combo >= 25 && this.timeDilationTarget === 1.2) {
+        this.timeDilationTarget = 1.0; // Return to normal speed
+      }
       this.stats.combo = 0;
     }
 
     this.lastKillTime = now;
     this.stats.combo++;
+
+    // === JUICE: Enter flow state at 25x combo (1.2x speedup) ===
+    if (this.stats.combo === 25) {
+      this.timeDilationTarget = 1.2; // Subtle speedup for "flow state"
+      this.addComboNotification('FLOW STATE!', '#06b6d4', 1.5);
+    }
 
     // Track max combo
     if (this.stats.combo > this.stats.maxCombo) {
@@ -3873,8 +3973,13 @@ export class GameEngine {
     // Screen shake - stronger for milestones
     this.addScreenShake(isMilestone ? 20 : 12);
 
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
     // Reduced particle burst from screen edges (Option 1 optimization)
-    const particleCount = this.isMobile ? isMilestone ? 20 : 16 : isMilestone ? 40 : 32;
+    const baseParticleCount = this.isMobile ? isMilestone ? 20 : 16 : isMilestone ? 40 : 32;
+    const particleCount = Math.max(8, Math.floor(baseParticleCount * spawnMultiplier));
     const colors = isMilestone ?
     ['#fbbf24', '#f59e0b', '#ff6600', '#ec4899', '#a855f7'] // Gold, orange, pink, purple for milestones
     : ['#22d3ee', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1']; // Cyan, blue spectrum for normal
@@ -3912,8 +4017,9 @@ export class GameEngine {
     if (isMilestone) {
       const centerX = this.canvas.width / 2;
       const centerY = this.canvas.height / 2;
+      const centerCount = Math.max(6, Math.floor((this.isMobile ? 15 : 30) * spawnMultiplier));
 
-      for (let i = 0; i < (this.isMobile ? 15 : 30); i++) {
+      for (let i = 0; i < centerCount; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 4 + Math.random() * 12;
         const particleColor = colors[Math.floor(Math.random() * colors.length)];
@@ -3959,6 +4065,10 @@ export class GameEngine {
     }
 
     // Reset combo on hit
+    // === JUICE: Exit flow state when hit ===
+    if (this.stats.combo >= 25 && this.timeDilationTarget === 1.2) {
+      this.timeDilationTarget = 1.0; // Return to normal speed
+    }
     this.stats.combo = 0;
 
     // SCREEN SHAKE - Intense shake on hit
@@ -3967,9 +4077,11 @@ export class GameEngine {
     // RED FLASH - Screen flash on hit
     this.hitFlashAlpha = 0.4;
 
-    // PARTICLE BURST - Explosion at player position
+    // PARTICLE BURST - Explosion at player position (throttled)
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
     const burstColors = ['#ff0000', '#ff4500', '#ff6347', '#ffa500', '#ffff00'];
-    const particleCount = this.isMobile ? 20 : 30;
+    const baseParticleCount = this.isMobile ? 20 : 30;
+    const particleCount = spawnMultiplier === 0 ? 0 : Math.max(8, Math.floor(baseParticleCount * spawnMultiplier));
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.PI * 2 * i / particleCount + Math.random() * 0.3;
@@ -4360,6 +4472,10 @@ export class GameEngine {
     // Reset combo if timeout reached
     const now = Date.now();
     if (this.stats.combo > 0 && now - this.lastKillTime > this.comboTimeout) {
+      // === JUICE: Exit flow state when combo times out ===
+      if (this.stats.combo >= 25 && this.timeDilationTarget === 1.2) {
+        this.timeDilationTarget = 1.0; // Return to normal speed
+      }
       this.stats.combo = 0;
     }
 
@@ -5160,6 +5276,21 @@ export class GameEngine {
     }
   }
 
+  /**
+   * PERF: Returns a spawn multiplier based on current particle count
+   * - 1.0 when below 60% capacity (normal spawning)
+   * - 0.5 when between 60-85% capacity (reduced spawning)
+   * - 0.25 when above 85% capacity (heavy reduction)
+   * - 0.0 when at max capacity (skip spawning entirely)
+   */
+  getParticleSpawnMultiplier(): number {
+    const usage = this.particles.length / this.MAX_PARTICLES;
+    if (usage >= 1.0) return 0;
+    if (usage >= this.PARTICLE_THROTTLE_HEAVY) return 0.25;
+    if (usage >= this.PARTICLE_THROTTLE_START) return 0.5;
+    return 1.0;
+  }
+
   setLevelUpCallback(callback: (level: number, upgrade: string) => void) {
     this.levelUpCallback = callback;
   }
@@ -5246,10 +5377,15 @@ export class GameEngine {
   }
 
   spawnLevelUpParticles(x: number, y: number) {
+    // PERF: Throttle spawning when particle count is high
+    const spawnMultiplier = this.getParticleSpawnMultiplier();
+    if (spawnMultiplier === 0) return;
+
     // Reduced level up burst for better performance (Option 1 optimization)
     const ringCount = this.isMobile ? 2 : 3;
     for (let ring = 0; ring < ringCount; ring++) {
-      const particlesInRing = this.isMobile ? 8 + ring * 4 : 15 + ring * 5;
+      const baseParticlesInRing = this.isMobile ? 8 + ring * 4 : 15 + ring * 5;
+      const particlesInRing = Math.max(4, Math.floor(baseParticlesInRing * spawnMultiplier));
       for (let i = 0; i < particlesInRing; i++) {
         const angle = Math.PI * 2 * i / particlesInRing;
         const speed = 3 + ring * 2 + Math.random() * 4;
