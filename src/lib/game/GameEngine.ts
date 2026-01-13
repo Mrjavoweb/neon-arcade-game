@@ -139,9 +139,8 @@ export class GameEngine {
   private readonly ADAPTIVE_DIFFICULTY_KEY = 'alien_invasion_boss_deaths';
 
   // Upgrade notification system - helps players discover shop/modules
+  // HintManager handles boss hint showOnce logic via localStorage
   private consecutiveGameOvers: number = 0;
-  private upgradeHintShownBoss1: boolean = false;
-  private upgradeHintShownBoss2: boolean = false;
   private upgradeHintShownStruggle: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, isMobile: boolean) {
@@ -4155,7 +4154,9 @@ export class GameEngine {
     // Show upgrade hint after 3 consecutive deaths to help struggling players
     if (this.consecutiveGameOvers >= 3 && !this.upgradeHintShownStruggle) {
       this.upgradeHintShownStruggle = true;
-      // Dispatch event for UI to show upgrade suggestion
+      // Use HintManager for prominent in-game hint (shows on next game start)
+      this.hintManager.onPlayerStruggling();
+      // Also dispatch event for UI toast on game over screen
       window.dispatchEvent(new CustomEvent('upgrade-suggestion', {
         detail: {
           message: 'Struggling? Try upgrading your ship in the SHOP!',
@@ -4219,18 +4220,11 @@ export class GameEngine {
       // Show upgrade hints after boss 1 and 2 to help players discover shop
       // At this point, wave hasn't incremented yet, so wave 5 = boss 1, wave 10 = boss 2
       const bossNumber = this.stats.wave / 5;
-      if (bossNumber === 1 && !this.upgradeHintShownBoss1) {
-        this.upgradeHintShownBoss1 = true;
-        // Small delay so notification appears after wave transition starts
-        setTimeout(() => {
-          this.addComboNotification('💡 TIP: Visit SHOP to\nupgrade your ship!', '#fbbf24', 1.8);
-        }, 500);
-      } else if (bossNumber === 2 && !this.upgradeHintShownBoss2) {
-        this.upgradeHintShownBoss2 = true;
-        setTimeout(() => {
-          this.addComboNotification('🔧 NEW: MODULES unlocked!\nCheck the SHOP', '#a855f7', 1.8);
-        }, 500);
-      }
+      // Use HintManager for more prominent, longer-lasting hints
+      // Small delay so hint appears after wave transition UI settles
+      setTimeout(() => {
+        this.hintManager.onBossDefeated(bossNumber);
+      }, 800);
     }
 
     this.stats.wave++;

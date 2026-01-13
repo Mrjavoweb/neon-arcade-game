@@ -117,6 +117,31 @@ const HINTS: GameHint[] = [
     showOnce: true,
     duration: 3000,
   },
+  // Upgrade/Shop awareness hints
+  {
+    id: 'upgrade_boss1',
+    message: 'Great job! Visit the SHOP to upgrade your ship!',
+    condition: 'After defeating boss 1',
+    priority: 7,
+    showOnce: true,
+    duration: 5000,
+  },
+  {
+    id: 'upgrade_boss2',
+    message: 'MODULES unlocked! Check the SHOP for upgrades!',
+    condition: 'After defeating boss 2',
+    priority: 8,
+    showOnce: true,
+    duration: 5000,
+  },
+  {
+    id: 'upgrade_struggle',
+    message: 'Struggling? Upgrade your ship in the SHOP!',
+    condition: 'After 3 consecutive deaths',
+    priority: 9,
+    showOnce: true,
+    duration: 5000,
+  },
 ];
 
 export class HintManager {
@@ -253,6 +278,18 @@ export class HintManager {
 
   onStardustEarned(): void {
     this.triggerHint('stardust_earned');
+  }
+
+  onBossDefeated(bossNumber: number): void {
+    if (bossNumber === 1) {
+      this.triggerHint('upgrade_boss1');
+    } else if (bossNumber === 2) {
+      this.triggerHint('upgrade_boss2');
+    }
+  }
+
+  onPlayerStruggling(): void {
+    this.triggerHint('upgrade_struggle');
   }
 
   // ============================================================================
