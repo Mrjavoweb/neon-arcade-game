@@ -141,9 +141,14 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       // Listen for daily reward available
       const handleDailyRewardAvailable = (event: Event) => {
         const customEvent = event as CustomEvent;
-        if (customEvent.detail?.reward) {
+        const engine = gameEngineRef.current;
+        // Only show popup if shouldShowPopup() returns true (prevents duplicates)
+        if (customEvent.detail?.reward && engine?.dailyRewardManager.shouldShowPopup()) {
           // Get next milestone info
-          const nextMilestone = gameEngineRef.current?.dailyRewardManager.getNextMilestone();
+          const nextMilestone = engine?.dailyRewardManager.getNextMilestone();
+
+          // Mark as shown so it doesn't appear again this session
+          engine?.dailyRewardManager.markPopupShownThisSession();
 
           setDailyReward({
             day: customEvent.detail.day,
@@ -240,6 +245,8 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     if (gameEngineRef.current) {
       const result = gameEngineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
+        // Clear the session flag since reward was successfully claimed
+        gameEngineRef.current.dailyRewardManager.clearPopupShownFlag();
         // Update popup state with milestones if any were unlocked
         if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
           setDailyReward(prev => prev ? {

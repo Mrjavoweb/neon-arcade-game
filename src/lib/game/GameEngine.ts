@@ -389,9 +389,9 @@ export class GameEngine {
       return new Promise((resolve, reject) => {
         const img = new Image();
 
-        // Try loading without CORS first for better compatibility
-        // Only enable CORS if we need to apply filters
-        // img.crossOrigin = 'anonymous';
+        // CRITICAL: Enable CORS for all images to allow canvas filters to work
+        // Without CORS, the canvas becomes "tainted" and filters fail silently
+        img.crossOrigin = 'anonymous';
 
         img.onload = () => {
           console.log(`✅ Loaded ${name}:`, src.substring(0, 60) + '...');
@@ -5196,6 +5196,18 @@ export class GameEngine {
 
     // Show tutorial hints for new players
     this.hintManager.onGameStart();
+
+    // Notify UI about active ship and superpower (for visual feedback)
+    const activeSkin = this.cosmeticManager.getActiveSkin();
+    const activeSuperpower = this.cosmeticManager.getActiveSuperpower();
+    if (activeSuperpower.type !== 'none') {
+      window.dispatchEvent(new CustomEvent('superpower-active', {
+        detail: {
+          shipName: activeSkin.name,
+          superpower: activeSuperpower
+        }
+      }));
+    }
   }
 
   resetFromWave1() {

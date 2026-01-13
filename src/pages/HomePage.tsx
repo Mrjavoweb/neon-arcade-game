@@ -84,30 +84,38 @@ export default function HomePage() {
       // Preload assets in background so they're ready when user clicks Play
       newEngine.loadAssets().catch(err => console.warn('Background asset preload:', err));
 
-      // Check for daily reward on homepage
-      const rewardCheck = newEngine.dailyRewardManager.checkReward();
-      if (rewardCheck.available && rewardCheck.reward) {
-        setDailyReward({
-          day: rewardCheck.day,
-          reward: rewardCheck.reward,
-          streak: rewardCheck.streak,
-          comebackBonus: rewardCheck.comebackBonus,
-          nextMilestone: newEngine.dailyRewardManager.getNextMilestone()
-        });
+      // Check for daily reward on homepage (only show once per session)
+      if (newEngine.dailyRewardManager.shouldShowPopup()) {
+        const rewardCheck = newEngine.dailyRewardManager.checkReward();
+        if (rewardCheck.available && rewardCheck.reward) {
+          // Mark as shown so it doesn't appear again this session
+          newEngine.dailyRewardManager.markPopupShownThisSession();
+          setDailyReward({
+            day: rewardCheck.day,
+            reward: rewardCheck.reward,
+            streak: rewardCheck.streak,
+            comebackBonus: rewardCheck.comebackBonus,
+            nextMilestone: newEngine.dailyRewardManager.getNextMilestone()
+          });
+        }
       }
     } else {
       setStardust(engine.currencyManager.getStardust());
 
-      // Check for daily reward if engine already exists
-      const rewardCheck = engine.dailyRewardManager.checkReward();
-      if (rewardCheck.available && rewardCheck.reward) {
-        setDailyReward({
-          day: rewardCheck.day,
-          reward: rewardCheck.reward,
-          streak: rewardCheck.streak,
-          comebackBonus: rewardCheck.comebackBonus,
-          nextMilestone: engine.dailyRewardManager.getNextMilestone()
-        });
+      // Check for daily reward if engine already exists (only show once per session)
+      if (engine.dailyRewardManager.shouldShowPopup()) {
+        const rewardCheck = engine.dailyRewardManager.checkReward();
+        if (rewardCheck.available && rewardCheck.reward) {
+          // Mark as shown so it doesn't appear again this session
+          engine.dailyRewardManager.markPopupShownThisSession();
+          setDailyReward({
+            day: rewardCheck.day,
+            reward: rewardCheck.reward,
+            streak: rewardCheck.streak,
+            comebackBonus: rewardCheck.comebackBonus,
+            nextMilestone: engine.dailyRewardManager.getNextMilestone()
+          });
+        }
       }
     }
 
@@ -136,6 +144,8 @@ export default function HomePage() {
       const result = currentEngine.dailyRewardManager.claimReward();
       if (result.success) {
         setStardust(currentEngine.currencyManager.getStardust());
+        // Clear the session flag since reward was successfully claimed
+        currentEngine.dailyRewardManager.clearPopupShownFlag();
         // Don't update dailyReward state here - let DailyRewardPopup handle closing via its internal setTimeout
         // Updating state here causes re-render which can reset the popup's internal "claimed" state
       }

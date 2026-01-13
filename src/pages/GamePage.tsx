@@ -84,6 +84,10 @@ export default function GamePage() {
   const [showSettings, setShowSettings] = useState(false);
   const dailyRewardClaimedRef = useRef(false);
   const [upgradeSuggestion, setUpgradeSuggestion] = useState<string | null>(null);
+  const [superpowerNotification, setSuperpowerNotification] = useState<{
+    shipName: string;
+    superpower: { name: string; description: string };
+  } | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -136,9 +140,13 @@ export default function GamePage() {
     // Listen for daily reward available
     const handleDailyRewardAvailable = (event: Event) => {
       const customEvent = event as CustomEvent;
-      if (customEvent.detail?.reward) {
+      // Only show popup if shouldShowPopup() returns true (prevents duplicates)
+      if (customEvent.detail?.reward && engine.dailyRewardManager.shouldShowPopup()) {
         // Get next milestone info
         const nextMilestone = engine.dailyRewardManager.getNextMilestone();
+
+        // Mark as shown so it doesn't appear again this session
+        engine.dailyRewardManager.markPopupShownThisSession();
 
         setDailyReward({
           day: customEvent.detail.day,
@@ -168,6 +176,20 @@ export default function GamePage() {
       }
     };
     window.addEventListener('upgrade-suggestion', handleUpgradeSuggestion);
+
+    // Listen for superpower activation notification
+    const handleSuperpowerActive = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.superpower) {
+        setSuperpowerNotification({
+          shipName: customEvent.detail.shipName,
+          superpower: customEvent.detail.superpower
+        });
+        // Auto-hide after 4 seconds
+        setTimeout(() => setSuperpowerNotification(null), 4000);
+      }
+    };
+    window.addEventListener('superpower-active', handleSuperpowerActive);
 
     // Initialize stardust from game engine
     const initialStardust = engine.currencyManager.getStardust();
@@ -280,6 +302,7 @@ export default function GamePage() {
       window.removeEventListener('achievement-unlocked', handleAchievementUnlock);
       window.removeEventListener('daily-reward-available', handleDailyRewardAvailable);
       window.removeEventListener('upgrade-suggestion', handleUpgradeSuggestion);
+      window.removeEventListener('superpower-active', handleSuperpowerActive);
       engine.cleanup();
     };
   }, [isMobile]);
@@ -329,6 +352,8 @@ export default function GamePage() {
       if (result.success && result.reward) {
         // Set flag to trigger video when popup closes
         dailyRewardClaimedRef.current = true;
+        // Clear the session flag since reward was successfully claimed
+        engineRef.current.dailyRewardManager.clearPopupShownFlag();
         console.log('🎁 Daily reward claimed, flag set to trigger video');
 
         // Update popup state with milestones if any were unlocked
@@ -508,6 +533,37 @@ export default function GamePage() {
             milestonesUnlocked={dailyReward.milestonesUnlocked}
             nextMilestone={dailyReward.nextMilestone}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Superpower Notification (shows at game start when ship has superpower) */}
+      <AnimatePresence>
+        {superpowerNotification && gameState.state === 'playing' && (
+          <motion.div
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+            initial={{ opacity: 0, y: -30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <div
+              className="px-5 py-3 bg-gradient-to-r from-purple-600/90 to-pink-600/90 border-2 border-purple-400 rounded-xl shadow-2xl"
+              style={{ boxShadow: '0 0 25px rgba(168, 85, 247, 0.6)' }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚡</span>
+                <div className="text-center">
+                  <p className="text-white font-bold font-['Space_Grotesk'] text-sm">
+                    {superpowerNotification.shipName}
+                  </p>
+                  <p className="text-purple-200 text-xs font-['Space_Grotesk']">
+                    {superpowerNotification.superpower.name}: {superpowerNotification.superpower.description}
+                  </p>
+                </div>
+                <span className="text-2xl">⚡</span>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

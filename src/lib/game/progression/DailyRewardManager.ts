@@ -1,6 +1,9 @@
 import { DailyLoginData, DailyReward, MilestoneReward, ComebackBonus, STORAGE_KEYS } from './ProgressionTypes';
 import { CurrencyManager } from './CurrencyManager';
 
+// Session storage key to track if popup was shown this session
+const DAILY_REWARD_SHOWN_KEY = 'alienInvasion_dailyRewardShownThisSession';
+
 /**
  * DailyRewardManager - Manages daily login rewards and streaks
  *
@@ -10,6 +13,7 @@ import { CurrencyManager } from './CurrencyManager';
  * - Milestone rewards for total logins
  * - localStorage persistence
  * - Auto-grant rewards on claim
+ * - Session tracking to prevent duplicate popups
  */
 export class DailyRewardManager {
   private data: DailyLoginData;
@@ -300,6 +304,63 @@ export class DailyRewardManager {
    */
   hasClaimedToday(): boolean {
     return this.data.lastLoginDate === this.getTodayDateString();
+  }
+
+  /**
+   * Check if the popup was already shown in this browser session
+   * This prevents the popup from appearing multiple times when navigating between pages
+   */
+  wasPopupShownThisSession(): boolean {
+    try {
+      const shown = sessionStorage.getItem(DAILY_REWARD_SHOWN_KEY);
+      const today = this.getTodayDateString();
+      // Check if shown today (session might span midnight)
+      return shown === today;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Mark that the popup was shown in this session
+   * Called when the popup is displayed to the user
+   */
+  markPopupShownThisSession(): void {
+    try {
+      sessionStorage.setItem(DAILY_REWARD_SHOWN_KEY, this.getTodayDateString());
+    } catch (error) {
+      console.warn('Failed to save popup shown flag to sessionStorage:', error);
+    }
+  }
+
+  /**
+   * Clear the popup shown flag (called when reward is claimed)
+   * This allows the next day's popup to show
+   */
+  clearPopupShownFlag(): void {
+    try {
+      sessionStorage.removeItem(DAILY_REWARD_SHOWN_KEY);
+    } catch (error) {
+      // Ignore errors
+    }
+  }
+
+  /**
+   * Check if daily reward should be shown
+   * Returns true only if: reward is available AND popup hasn't been shown this session
+   */
+  shouldShowPopup(): boolean {
+    // If already claimed today, never show
+    if (this.hasClaimedToday()) {
+      return false;
+    }
+    // If popup was already shown this session, don't show again
+    if (this.wasPopupShownThisSession()) {
+      return false;
+    }
+    // Check if reward is available
+    const check = this.checkReward();
+    return check.available;
   }
 
   // ============================================================================
