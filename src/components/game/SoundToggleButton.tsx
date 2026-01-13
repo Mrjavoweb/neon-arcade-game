@@ -49,14 +49,14 @@ export default function SoundToggleButton({ variant = 'game' }: SoundToggleButto
     if (variant === 'homepage') {
       return 'p-3 sm:p-4';
     }
-    return isMobile && isLandscape ? 'p-1.5' : 'p-2 sm:p-3';
+    return isMobile && isLandscape ? 'p-1' : 'p-1.5 sm:p-2';
   };
 
   const getIconSizeClass = () => {
     if (variant === 'homepage') {
       return 'w-6 h-6 sm:w-8 sm:h-8';
     }
-    return isMobile && isLandscape ? 'w-3 h-3' : 'w-4 h-4 sm:w-6 sm:h-6';
+    return isMobile && isLandscape ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5 sm:w-5 sm:h-5';
   };
 
   return (

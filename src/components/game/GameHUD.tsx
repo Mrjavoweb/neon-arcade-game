@@ -152,23 +152,23 @@ export default function GameHUD({ stats, stardust = 0, activePowerUps }: GameHUD
                       }}
                       className={`flex items-center gap-1.5 border rounded-md backdrop-blur-sm ${
                         isExpiring ? 'border-red-400' : 'border-cyan-400/60'
-                      } ${isLandscape ? 'px-2 py-1' : 'px-2.5 py-1'}`}
+                      } ${isLandscape ? 'px-2.5 py-1' : 'px-3 py-1.5'}`}
                       style={{
                         boxShadow: isExpiring
                           ? '0 0 12px rgba(239, 68, 68, 0.6)'
                           : '0 0 8px rgba(34, 211, 238, 0.4)'
                       }}
                     >
-                      <div className={`${isLandscape ? 'text-base' : 'text-lg'}`}>
+                      <div className={`${isLandscape ? 'text-lg' : 'text-xl'}`}>
                         {powerUpIcons[key] || '⚡'}
                       </div>
                       <div className={`text-cyan-300 font-bold leading-none ${
-                        isLandscape ? 'text-[0.55rem]' : 'text-[0.65rem]'
+                        isLandscape ? 'text-[0.6rem]' : 'text-[0.7rem]'
                       }`}>
                         {powerUpNames[key]}
                       </div>
                       <div className={`text-white font-bold leading-none ${
-                        isLandscape ? 'text-[0.55rem]' : 'text-[0.65rem]'
+                        isLandscape ? 'text-[0.6rem]' : 'text-[0.7rem]'
                       }`}>
                         {seconds}s
                       </div>
