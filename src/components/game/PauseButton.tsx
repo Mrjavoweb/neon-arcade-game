@@ -12,8 +12,8 @@ export default function PauseButton({ onPause }: PauseButtonProps) {
       onClick={onPause}
       className={`absolute z-50 pointer-events-auto ${
       isMobile && isLandscape ?
-      'top-1 right-[25%]' :
-      'top-2 right-[22%] sm:top-4 sm:right-[20%]'}`
+      'top-1 right-[17%]' :
+      'top-2 right-[14%] sm:top-4 sm:right-[12%]'}`
       }
       style={{
         paddingTop: isMobile && !isLandscape ? 'max(env(safe-area-inset-top, 0.5rem), 0.5rem)' : undefined,

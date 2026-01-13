@@ -39,10 +39,10 @@ export default function SoundToggleButton({ variant = 'game' }: SoundToggleButto
     if (variant === 'homepage') {
       return 'top-4 right-4 sm:top-6 sm:right-6';
     }
-    // Game variant - original positioning
+    // Game variant - positioned right, closer to health indicator
     return isMobile && isLandscape
-      ? 'top-1 right-[30%]'
-      : 'top-2 right-[28%] sm:top-4 sm:right-[26%]';
+      ? 'top-1 right-[22%]'
+      : 'top-2 right-[20%] sm:top-4 sm:right-[18%]';
   };
 
   const getPaddingClass = () => {
