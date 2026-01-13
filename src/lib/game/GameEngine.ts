@@ -3561,21 +3561,6 @@ export class GameEngine {
     // Reset consecutive game overs on boss victory (player is progressing)
     this.consecutiveGameOvers = 0;
     this.upgradeHintShownStruggle = false;
-
-    // Show upgrade hints after boss 1 and 2 to help players discover shop
-    const bossNumber = this.stats.wave / 5;
-    if (bossNumber === 1 && !this.upgradeHintShownBoss1) {
-      this.upgradeHintShownBoss1 = true;
-      // Delayed notification so it doesn't overlap with victory celebration
-      setTimeout(() => {
-        this.addComboNotification('💡 TIP: Visit SHOP to\nupgrade your ship!', '#fbbf24', 1.8);
-      }, 1500);
-    } else if (bossNumber === 2 && !this.upgradeHintShownBoss2) {
-      this.upgradeHintShownBoss2 = true;
-      setTimeout(() => {
-        this.addComboNotification('🔧 NEW: MODULES unlocked!\nCheck the SHOP', '#a855f7', 1.8);
-      }, 1500);
-    }
   }
 
   createImpactParticles(x: number, y: number, color: string) {
@@ -4230,6 +4215,22 @@ export class GameEngine {
     // Switch back to gameplay music after boss victory
     if (this.bossState.isBossWave) {
       this.audioManager.playMusic('gameplay_theme', true);
+
+      // Show upgrade hints after boss 1 and 2 to help players discover shop
+      // At this point, wave hasn't incremented yet, so wave 5 = boss 1, wave 10 = boss 2
+      const bossNumber = this.stats.wave / 5;
+      if (bossNumber === 1 && !this.upgradeHintShownBoss1) {
+        this.upgradeHintShownBoss1 = true;
+        // Small delay so notification appears after wave transition starts
+        setTimeout(() => {
+          this.addComboNotification('💡 TIP: Visit SHOP to\nupgrade your ship!', '#fbbf24', 1.8);
+        }, 500);
+      } else if (bossNumber === 2 && !this.upgradeHintShownBoss2) {
+        this.upgradeHintShownBoss2 = true;
+        setTimeout(() => {
+          this.addComboNotification('🔧 NEW: MODULES unlocked!\nCheck the SHOP', '#a855f7', 1.8);
+        }, 500);
+      }
     }
 
     this.stats.wave++;
