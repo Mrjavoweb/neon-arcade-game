@@ -6,7 +6,7 @@ interface ShipPreviewProps {
   showEngineGlow?: boolean;
 }
 
-const SHIP_IMAGE_URL = 'https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/f3b62150-4a75-4f79-a287-beb738d7988f.webp';
+const SHIP_IMAGE_URL = '/assets/playerShip.webp';
 
 export default function ShipPreview({ filter, size = 64, showEngineGlow = false }: ShipPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

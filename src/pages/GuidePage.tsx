@@ -232,7 +232,7 @@ export default function GuidePage() {
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-14 h-14 flex items-center justify-center">
                   <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp"
+                    src="/assets/alienBasic.webp"
                     alt="Basic Alien"
                     className="w-12 h-12 object-contain"
                     style={{ filter: 'drop-shadow(0 0 8px #ec4899)' }}
@@ -248,7 +248,7 @@ export default function GuidePage() {
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-14 h-14 flex items-center justify-center">
                   <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp"
+                    src="/assets/alienHeavy.webp"
                     alt="Heavy Alien"
                     className="w-12 h-12 object-contain"
                     style={{ filter: 'drop-shadow(0 0 8px #f97316)' }}
@@ -264,7 +264,7 @@ export default function GuidePage() {
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-14 h-14 flex items-center justify-center">
                   <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp"
+                    src="/assets/alienFast.webp"
                     alt="Fast Alien"
                     className="w-12 h-12 object-contain"
                     style={{ filter: 'drop-shadow(0 0 8px #eab308)' }}
@@ -280,7 +280,7 @@ export default function GuidePage() {
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-14 h-14 flex items-center justify-center">
                   <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp"
+                    src="/assets/bossPhase1.webp"
                     alt="Boss Alien"
                     className="w-12 h-12 object-contain"
                     style={{ filter: 'drop-shadow(0 0 10px #dc2626)' }}

@@ -91,7 +91,7 @@ export default function PWAInstallButton({ variant = 'button' }: PWAInstallButto
               <div className="flex flex-col items-center text-center">
                 <div className="mb-4 relative">
                   <img
-                    src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/1a28f673-668b-49f6-854a-a05a4752eb9d.webp"
+                    src="/assets/app-icon.webp"
                     alt="Alien Attack Icon"
                     className="w-24 h-24 rounded-2xl"
                     style={{
