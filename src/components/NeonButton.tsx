@@ -11,7 +11,7 @@ export default function NeonButton({ children, onClick, className = '' }: NeonBu
   return (
     <motion.button
       onClick={onClick}
-      className={`relative px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-5 text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white bg-transparent border-2 border-cyan-400 rounded-lg overflow-hidden group ${className}`}
+      className={`relative px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm md:text-base font-bold text-white bg-transparent border-2 border-cyan-400 rounded-lg overflow-hidden group ${className}`}
       style={{
         fontFamily: "'Sora', sans-serif",
         textShadow: '0 0 10px rgba(34, 211, 238, 0.8), 0 0 20px rgba(34, 211, 238, 0.5)',
@@ -23,7 +23,7 @@ export default function NeonButton({ children, onClick, className = '' }: NeonBu
       }}
       whileTap={{ scale: 0.95 }}
       animate={{
-        y: [0, -8, 0]
+        y: [0, -4, 0]
       }}
       transition={{
         y: {

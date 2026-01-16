@@ -1223,8 +1223,8 @@ export class Projectile {
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
 
-    // Trail particles
-    if (Math.random() < 0.4) {
+    // Trail particles (reduced spawn rate for performance)
+    if (Math.random() < 0.2) {
       this.trailParticles.push({
         x: this.position.x + this.size.width / 2,
         y: this.position.y + this.size.height / 2,

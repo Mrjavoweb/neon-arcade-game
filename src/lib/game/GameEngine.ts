@@ -5,6 +5,7 @@ import { DailyRewardManager } from './progression/DailyRewardManager';
 import { AchievementManager } from './progression/AchievementManager';
 import { CosmeticManager } from './progression/CosmeticManager';
 import { ModuleManager } from './progression/ModuleManager';
+import { ChallengeManager } from './progression/ChallengeManager';
 import { getSettingsManager } from './settings/SettingsManager';
 import { GameSettings, DIFFICULTY_CONFIGS } from './settings/SettingsTypes';
 import { getAudioManager, AudioManager } from './audio/AudioManager';
@@ -37,6 +38,8 @@ export class GameEngine {
   config: GameConfig;
   keys: Set<string>;
   lastFireTime: number;
+  lastDeathSoundTime: number;
+  lastLaserDamageTime: number;
   fireDelay: number;
   enemyDirection: number;
   enemySpeed: number;
@@ -91,12 +94,18 @@ export class GameEngine {
   has50ComboReward: boolean;
   tookDamageThisWave: boolean; // Track if player took damage this wave (for perfect wave achievement)
 
+  // Session tracking for challenges
+  sessionBossesKilled: number;
+  sessionPerfectWaves: number;
+  sessionPowerupsCollected: number;
+
   // Progression systems
   currencyManager: CurrencyManager;
   dailyRewardManager: DailyRewardManager;
   achievementManager: AchievementManager;
   cosmeticManager: CosmeticManager;
   moduleManager: ModuleManager;
+  challengeManager: ChallengeManager;
 
   // Settings system
   private settings: GameSettings;
@@ -159,6 +168,8 @@ export class GameEngine {
     this.keys = new Set();
     this.state = 'playing';
     this.lastFireTime = 0;
+    this.lastDeathSoundTime = 0;
+    this.lastLaserDamageTime = 0;
     this.fireDelay = 250;
     this.enemyDirection = 1;
     this.lastEnemyFireTime = 0;
@@ -201,6 +212,9 @@ export class GameEngine {
     this.has30ComboReward = false;
     this.has50ComboReward = false;
     this.tookDamageThisWave = false;
+    this.sessionBossesKilled = 0;
+    this.sessionPerfectWaves = 0;
+    this.sessionPowerupsCollected = 0;
 
     // Start from checkpoint if available, otherwise start from wave 1
     const startWave = this.lastCheckpoint > 0 ? this.lastCheckpoint : 1;
@@ -273,6 +287,7 @@ export class GameEngine {
     this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
     this.cosmeticManager = new CosmeticManager(this.currencyManager);
     this.moduleManager = new ModuleManager(this.currencyManager, this.achievementManager);
+    this.challengeManager = new ChallengeManager(this.currencyManager);
 
     // Apply module HP boost
     const moduleHPBoost = this.moduleManager.getEffectValue('max_hp_boost');
@@ -727,8 +742,8 @@ export class GameEngine {
   private spawnFormation(wave: number, formation: FormationType) {
     const isLandscape = this.canvas.width > this.canvas.height;
 
-    // Base enemy count scales with wave
-    let baseCount = Math.min(15 + Math.floor(wave * 1.5), 50);
+    // Base enemy count scales with wave (increased for 4+ rows in early waves)
+    let baseCount = Math.min(32 + Math.floor(wave * 2), 60);
 
     // Harder formations spawn fewer enemies to compensate
     const formationCountModifier: Record<FormationType, number> = {
@@ -741,9 +756,17 @@ export class GameEngine {
     };
     baseCount = Math.floor(baseCount * formationCountModifier[formation]);
 
-    // Mobile adjustments
+    // Mobile adjustments (reduced penalty from 0.7 to 0.85 for better balance)
     if (this.isMobile) {
-      baseCount = Math.floor(baseCount * 0.7);
+      baseCount = Math.floor(baseCount * 0.85);
+    }
+
+    // Ensure minimum 4 rows for early waves (beginner engagement)
+    const cols = this.isMobile && isLandscape ? 10 : 8;
+    const minRows = 4;
+    const minCount = cols * minRows;
+    if (wave <= 10 && baseCount < minCount) {
+      baseCount = minCount;
     }
 
     const enemyWidth = this.isMobile ? isLandscape ? 24 : 20 : 40;
@@ -926,6 +949,18 @@ export class GameEngine {
         }
         break;
       }
+    }
+
+    // Clamp all positions to ensure enemies spawn on-screen
+    // This prevents spiral/swarm formations from placing aliens above canvas
+    const minY = 10; // Minimum Y to keep aliens visible
+    const maxY = this.canvas.height * 0.5; // Don't spawn in bottom half
+    const minX = 10;
+    const maxX = this.canvas.width - enemyWidth - 10;
+
+    for (const pos of positions) {
+      pos.x = Math.max(minX, Math.min(maxX, pos.x));
+      pos.y = Math.max(minY, Math.min(maxY, pos.y));
     }
 
     return positions;
@@ -1114,14 +1149,15 @@ export class GameEngine {
     const touchY = touch.clientY - rect.top;
 
     // Triple-tap cheat codes in corners (for testing)
-    const cornerSize = 100; // 100px corner area
+    // Larger corner areas on mobile for easier activation
+    const cornerSize = this.isMobile ? 120 : 100;
     const now = Date.now();
 
     // Top corners - Wave navigation
     if (touchY < cornerSize) {
       // Top-left corner: Skip ahead 5 waves
       if (touchX < cornerSize) {
-        if (now - this.lastTapTime < 500) {
+        if (now - this.lastTapTime < 800) {
           this.tapCount++;
         } else {
           this.tapCount = 1;
@@ -1147,7 +1183,7 @@ export class GameEngine {
 
       // Top-right corner: Go back 5 waves
       if (touchX > this.canvas.width - cornerSize) {
-        if (now - this.lastTapTime < 500) {
+        if (now - this.lastTapTime < 800) {
           this.tapCount++;
         } else {
           this.tapCount = 1;
@@ -1176,21 +1212,22 @@ export class GameEngine {
     if (touchY > this.canvas.height - cornerSize) {
       // Bottom-left corner: Boss 1 (Wave 5) or Boss 3 (Wave 15)
       if (touchX < cornerSize) {
-        if (now - this.lastTapTime < 500) {
+        if (now - this.lastTapTime < 800) {
           this.tapCount++;
         } else {
           this.tapCount = 1;
         }
         this.lastTapTime = now;
 
-        if (this.tapCount >= 3 && this.state === 'playing') {
-          console.log('🎮 MOBILE CHEAT: Jumping to Boss 1 (Wave 5)!');
-          this.stats.wave = 4; // Will become wave 5 on nextWave()
-          this.nextWave();
-          this.tapCount = 0;
-        } else if (this.tapCount === 5 && this.state === 'playing') {
+        // Check 5-tap FIRST, then 3-tap (fixed bug where 5-tap could never trigger)
+        if (this.tapCount >= 5 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Jumping to Boss 3 (Wave 15)!');
           this.stats.wave = 14; // Will become wave 15 on nextWave()
+          this.nextWave();
+          this.tapCount = 0;
+        } else if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 1 (Wave 5)!');
+          this.stats.wave = 4; // Will become wave 5 on nextWave()
           this.nextWave();
           this.tapCount = 0;
         }
@@ -1199,21 +1236,22 @@ export class GameEngine {
 
       // Bottom-right corner: Boss 2 (Wave 10) or Boss 4 (Wave 20)
       if (touchX > this.canvas.width - cornerSize) {
-        if (now - this.lastTapTime < 500) {
+        if (now - this.lastTapTime < 800) {
           this.tapCount++;
         } else {
           this.tapCount = 1;
         }
         this.lastTapTime = now;
 
-        if (this.tapCount >= 3 && this.state === 'playing') {
-          console.log('🎮 MOBILE CHEAT: Jumping to Boss 2 (Wave 10)!');
-          this.stats.wave = 9; // Will become wave 10 on nextWave()
-          this.nextWave();
-          this.tapCount = 0;
-        } else if (this.tapCount === 5 && this.state === 'playing') {
+        // Check 5-tap FIRST, then 3-tap (fixed bug where 5-tap could never trigger)
+        if (this.tapCount >= 5 && this.state === 'playing') {
           console.log('🎮 MOBILE CHEAT: Jumping to Boss 4 (Wave 20)!');
           this.stats.wave = 19; // Will become wave 20 on nextWave()
+          this.nextWave();
+          this.tapCount = 0;
+        } else if (this.tapCount >= 3 && this.state === 'playing') {
+          console.log('🎮 MOBILE CHEAT: Jumping to Boss 2 (Wave 10)!');
+          this.stats.wave = 9; // Will become wave 10 on nextWave()
           this.nextWave();
           this.tapCount = 0;
         }
@@ -1330,7 +1368,12 @@ export class GameEngine {
     const rapidRateApplies = this.player.rapidActive &&
       superpower.type !== 'triple_shot' &&
       superpower.type !== 'dual_guns';
-    let fireRate = rapidRateApplies ? this.fireDelay / 2 : this.fireDelay;
+    let fireRate = rapidRateApplies ? this.fireDelay / 1.25 : this.fireDelay;
+
+    // Plasma fires 3 bullets at once, so slow it down slightly for balance
+    if (this.player.plasmaActive && !rapidRateApplies) {
+      fireRate = fireRate * 1.2; // 20% slower when plasma is active (300ms instead of 250ms)
+    }
     if (superpower.type === 'fire_rate_boost' && superpower.value) {
       fireRate = fireRate * (1 - superpower.value / 100);
     }
@@ -1339,6 +1382,9 @@ export class GameEngine {
     if (moduleFireRateBoost > 0) {
       fireRate = fireRate * (1 - moduleFireRateBoost / 100);
     }
+
+    // Cap minimum fire rate to prevent overwhelming firepower (max 10 shots/sec)
+    fireRate = Math.max(fireRate, 100);
 
     if (now - this.lastFireTime < fireRate) return;
 
@@ -1850,17 +1896,17 @@ export class GameEngine {
     if (!this.player.freezeActive) {
       const now = Date.now();
 
-      // Base attack delay by phase
-      const baseDelay = this.boss.phase === 'phase4' ? 1200 :
-      this.boss.phase === 'phase3' ? 1800 :
-      this.boss.phase === 'phase2' ? 2400 : 3000;
+      // Base attack delay by phase (reduced for more aggressive bosses)
+      const baseDelay = this.boss.phase === 'phase4' ? 800 :
+      this.boss.phase === 'phase3' ? 1200 :
+      this.boss.phase === 'phase2' ? 1600 : 2000;
 
       // Wave-based scaling: Each boss wave increases attack speed progressively
-      // Boss 1: 100% | Boss 2: 85% | Boss 3: 72% | Boss 4: 61% | Boss 5: 52%
+      // Boss 1: 100% | Boss 2: 90% | Boss 3: 81% | Boss 4: 73% | Boss 5: 66%
       const bossNumber = this.stats.wave / 5; // 1, 2, 3, 4...
-      const waveMultiplier = Math.max(0.5, 1 - (bossNumber - 1) * 0.15); // -15% per boss
-      // Mobile-friendly: 20% longer attack delay on mobile (more time to react)
-      const mobileDelayMultiplier = this.isMobile ? 1.2 : 1.0;
+      const waveMultiplier = Math.max(0.6, 1 - (bossNumber - 1) * 0.10); // -10% per boss
+      // Mobile-friendly: 10% longer attack delay on mobile (more time to react)
+      const mobileDelayMultiplier = this.isMobile ? 1.1 : 1.0;
       // Adaptive difficulty: increase delay after consecutive boss deaths
       const adaptive = this.getAdaptiveDifficultyModifiers();
       const attackDelay = baseDelay * waveMultiplier * mobileDelayMultiplier * adaptive.delayMultiplier;
@@ -2734,8 +2780,12 @@ export class GameEngine {
           enemy.hit(damage);
 
           if (!enemy.isAlive) {
-            // Play enemy death sound and haptic
-            this.audioManager.playSound('enemy_death', 0.4);
+            // Play enemy death sound and haptic (throttled to prevent audio spam)
+            const now = performance.now();
+            if (now - this.lastDeathSoundTime > 50) {
+              this.audioManager.playSound('enemy_death', 0.4);
+              this.lastDeathSoundTime = now;
+            }
             this.hapticManager.onEnemyKill();
 
             // === JUICE: Hit stop on enemy kill ===
@@ -2934,6 +2984,7 @@ export class GameEngine {
             // Progression tracking for boss defeat
             this.awardStardust(100, 'boss_defeat');
             this.achievementManager.trackBossDefeat();
+            this.sessionBossesKilled++;
             // Update module slots after boss defeat
             this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated + 1);
           } else {
@@ -2975,8 +3026,12 @@ export class GameEngine {
             const result = asteroid.hit(damage);
 
             if (result.destroyed) {
-              // Asteroid destroyed!
-              this.audioManager.playSound('enemy_death', 0.5);
+              // Asteroid destroyed! (sound throttled to prevent audio spam)
+              const now = performance.now();
+              if (now - this.lastDeathSoundTime > 50) {
+                this.audioManager.playSound('enemy_death', 0.5);
+                this.lastDeathSoundTime = now;
+              }
               this.hapticManager.onEnemyKill();
 
               // Hit stop for asteroid destruction
@@ -3243,8 +3298,9 @@ export class GameEngine {
         break;
     }
 
-    // Track power-up collection for achievements
+    // Track power-up collection for achievements and challenges
     this.achievementManager.trackPowerUpCollected(type);
+    this.sessionPowerupsCollected++;
   }
 
   checkCollision(bounds1: any, bounds2: any): boolean {
@@ -3351,7 +3407,12 @@ export class GameEngine {
       if (distance < explosionRadius) {
         enemy.hit();
         if (!enemy.isAlive) {
-          this.audioManager.playSound('enemy_death', 0.3);
+          // Sound throttled to prevent audio spam during chain explosions
+          const now = performance.now();
+          if (now - this.lastDeathSoundTime > 50) {
+            this.audioManager.playSound('enemy_death', 0.3);
+            this.lastDeathSoundTime = now;
+          }
           this.hapticManager.onEnemyKill();
           this.stats.score += Math.floor(enemy.points * this.scoreMultiplier);
           this.stats.enemiesDestroyed++;
@@ -3584,6 +3645,7 @@ export class GameEngine {
     // Progression tracking for boss defeat
     this.awardStardust(100, 'boss_defeat');
     this.achievementManager.trackBossDefeat();
+    this.sessionBossesKilled++;
     // Update module slots after boss defeat
     this.moduleManager.updateSlotUnlocks(this.stats.level, this.achievementManager.getProgress().bossesDefeated + 1);
 
@@ -3668,22 +3730,22 @@ export class GameEngine {
 
     switch (enemyType) {
       case 'heavy':
-        // Heavy enemies: larger, slower particles, wider spread
-        baseParticleCount = this.isMobile ? 10 : 24;
+        // Heavy enemies: larger, slower particles, wider spread (reduced for performance)
+        baseParticleCount = this.isMobile ? 6 : 12;
         speedMultiplier = 0.7;
         sizeMultiplier = 1.8;
         spreadAngle = Math.PI * 0.8; // Wide spread
         break;
       case 'fast':
-        // Fast enemies: quick, scattered particles, narrow burst
-        baseParticleCount = this.isMobile ? 8 : 20;
+        // Fast enemies: quick, scattered particles, narrow burst (reduced for performance)
+        baseParticleCount = this.isMobile ? 5 : 10;
         speedMultiplier = 1.5;
         sizeMultiplier = 0.7;
         spreadAngle = Math.PI * 0.4; // Narrow, focused burst
         break;
       default:
-        // Basic enemies: balanced
-        baseParticleCount = this.isMobile ? 6 : 16;
+        // Basic enemies: balanced (reduced for performance)
+        baseParticleCount = this.isMobile ? 4 : 8;
         speedMultiplier = 1.0;
         sizeMultiplier = 1.0;
         spreadAngle = Math.PI * 0.6;
@@ -4178,6 +4240,17 @@ export class GameEngine {
     // Track final score for achievements
     this.achievementManager.trackScore(this.stats.score);
 
+    // Track session stats for daily/weekly challenges
+    this.challengeManager.trackSessionProgress({
+      kills: this.stats.enemiesDestroyed,
+      maxCombo: this.stats.maxCombo,
+      wavesReached: this.stats.wave,
+      bossesKilled: this.sessionBossesKilled,
+      perfectWaves: this.sessionPerfectWaves,
+      score: this.stats.score,
+      powerups: this.sessionPowerupsCollected
+    });
+
     // Track consecutive game overs for upgrade hint
     this.consecutiveGameOvers++;
 
@@ -4293,6 +4366,7 @@ export class GameEngine {
     // Track perfect wave (completed previous wave without damage)
     if (!this.tookDamageThisWave && this.stats.wave > 1) {
       this.achievementManager.trackPerfectWave();
+      this.sessionPerfectWaves++;
       console.log(`✨ Perfect Wave ${this.stats.wave - 1}! No damage taken.`);
     }
 
@@ -4572,13 +4646,20 @@ export class GameEngine {
         endY: 0
       };
 
+      // Laser damage cooldown - only deal damage every 200ms (5 hits/sec instead of 60)
+      const laserNow = performance.now();
+      const canDealLaserDamage = laserNow - this.lastLaserDamageTime >= 200;
+      if (canDealLaserDamage) {
+        this.lastLaserDamageTime = laserNow;
+      }
+
       // Check laser collision with all enemies
       for (const enemy of this.enemies) {
         if (!enemy.isAlive) continue;
         const beamX = this.laserBeam.startX;
         // Check if beam intersects enemy hitbox
         if (beamX >= enemy.position.x && beamX <= enemy.position.x + enemy.size.width) {
-          if (enemy.position.y <= this.player.position.y) {
+          if (enemy.position.y <= this.player.position.y && canDealLaserDamage) {
             enemy.hit();
             if (!enemy.isAlive) {
               // Handle enemy death
@@ -4606,7 +4687,7 @@ export class GameEngine {
         if (!minion.isAlive) continue;
         const beamX = this.laserBeam.startX;
         if (beamX >= minion.position.x && beamX <= minion.position.x + minion.size.width) {
-          if (minion.position.y <= this.player.position.y) {
+          if (minion.position.y <= this.player.position.y && canDealLaserDamage) {
             minion.hit();
             if (!minion.isAlive) {
               this.stats.score += Math.floor(minion.points * this.scoreMultiplier);
@@ -4628,7 +4709,7 @@ export class GameEngine {
       }
 
       // Check laser collision with boss
-      if (this.boss && this.boss.isAlive) {
+      if (this.boss && this.boss.isAlive && canDealLaserDamage) {
         const beamX = this.laserBeam.startX;
         if (beamX >= this.boss.position.x && beamX <= this.boss.position.x + this.boss.size.width) {
           if (this.boss.position.y <= this.player.position.y) {
@@ -5165,6 +5246,9 @@ export class GameEngine {
     this.has30ComboReward = false;
     this.has50ComboReward = false;
     this.tookDamageThisWave = false;
+    this.sessionBossesKilled = 0;
+    this.sessionPerfectWaves = 0;
+    this.sessionPowerupsCollected = 0;
     this.boss = null;
     this.bossMinions = [];
     this.asteroids = [];
@@ -5239,6 +5323,60 @@ export class GameEngine {
     this.lastCheckpoint = 0;
     this.saveCheckpoint();
     console.log(`🔄 Starting fresh from Wave 1`);
+    this.reset();
+  }
+
+  /**
+   * Full reset - clears ALL game progress including stardust, achievements, challenges, etc.
+   * This is a destructive operation that returns the game to a fresh state.
+   */
+  fullReset() {
+    console.log('🔄 FULL RESET: Clearing all game progress...');
+
+    // Import STORAGE_KEYS for clearing localStorage
+    const keysToReset = [
+      'alienInvasion_currency',
+      'alienInvasion_achievements',
+      'alienInvasion_achievementProgress',
+      'alienInvasion_dailyRewards',
+      'alienInvasion_cosmetics',
+      'alienInvasion_modules',
+      'alienInvasion_challenges',
+      'alienInvasion_checkpoint'
+    ];
+
+    // Clear all progression data from localStorage
+    keysToReset.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`  ✓ Cleared ${key}`);
+    });
+
+    // Reset currency manager (stardust back to 0)
+    this.currencyManager = new CurrencyManager();
+
+    // Reset achievement manager
+    this.achievementManager = new AchievementManager(this.currencyManager);
+
+    // Reset cosmetic manager (owned skins reset, default ship equipped)
+    this.cosmeticManager = new CosmeticManager(this.currencyManager);
+
+    // Reset daily reward manager
+    this.dailyRewardManager = new DailyRewardManager(this.currencyManager);
+
+    // Reset challenge manager
+    this.challengeManager = new ChallengeManager(this.currencyManager);
+
+    // Clear checkpoint
+    this.lastCheckpoint = 0;
+
+    // Dispatch event to update UI
+    window.dispatchEvent(new CustomEvent('currency-changed', {
+      detail: { balance: 0, reason: 'full_reset' }
+    }));
+
+    console.log('🔄 FULL RESET: Complete! All progress cleared.');
+
+    // Start fresh game
     this.reset();
   }
 

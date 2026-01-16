@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
-import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
+import { Achievement, DailyReward, MilestoneReward, ComebackBonus, Challenge } from '@/lib/game/progression/ProgressionTypes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
 
@@ -88,6 +88,8 @@ export default function GamePage() {
     shipName: string;
     superpower: { name: string; description: string };
   } | null>(null);
+  const [challengeNotification, setChallengeNotification] = useState<Challenge | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -190,6 +192,17 @@ export default function GamePage() {
       }
     };
     window.addEventListener('superpower-active', handleSuperpowerActive);
+
+    // Listen for challenge completion
+    const handleChallengeCompleted = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.challenge) {
+        setChallengeNotification(customEvent.detail.challenge);
+        // Auto-hide after 3 seconds
+        setTimeout(() => setChallengeNotification(null), 3000);
+      }
+    };
+    window.addEventListener('challenge-completed', handleChallengeCompleted);
 
     // Initialize stardust from game engine
     const initialStardust = engine.currencyManager.getStardust();
@@ -303,6 +316,7 @@ export default function GamePage() {
       window.removeEventListener('daily-reward-available', handleDailyRewardAvailable);
       window.removeEventListener('upgrade-suggestion', handleUpgradeSuggestion);
       window.removeEventListener('superpower-active', handleSuperpowerActive);
+      window.removeEventListener('challenge-completed', handleChallengeCompleted);
       engine.cleanup();
     };
   }, [isMobile]);
@@ -331,7 +345,17 @@ export default function GamePage() {
   };
 
   const handleRestartFromWave1 = () => {
-    engineRef.current?.resetFromWave1();
+    // Show confirmation dialog before full reset
+    setShowResetConfirm(true);
+  };
+
+  const handleConfirmFullReset = () => {
+    setShowResetConfirm(false);
+    engineRef.current?.fullReset();
+  };
+
+  const handleCancelReset = () => {
+    setShowResetConfirm(false);
   };
 
   const handleMainMenu = () => {
@@ -567,6 +591,40 @@ export default function GamePage() {
         )}
       </AnimatePresence>
 
+      {/* Challenge Completed Toast */}
+      <AnimatePresence>
+        {challengeNotification && (
+          <motion.div
+            className="fixed top-32 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+            initial={{ opacity: 0, y: -30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+          >
+            <div
+              className="px-4 py-2.5 bg-gradient-to-r from-cyan-600/90 to-blue-600/90 border-2 border-cyan-400 rounded-xl shadow-2xl"
+              style={{ boxShadow: '0 0 25px rgba(34, 211, 238, 0.6)' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎯</span>
+                <div className="text-center">
+                  <p className="text-white font-bold font-['Space_Grotesk'] text-xs uppercase">
+                    Challenge Complete!
+                  </p>
+                  <p className="text-cyan-200 text-[0.65rem] font-['Space_Grotesk']">
+                    {challengeNotification.description}
+                  </p>
+                  <p className="text-yellow-300 text-xs font-bold font-['Space_Grotesk'] mt-0.5">
+                    +{challengeNotification.reward} 💎
+                  </p>
+                </div>
+                <span className="text-xl">🎯</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Upgrade Suggestion Toast (shows after 3 consecutive deaths) */}
       <AnimatePresence>
         {upgradeSuggestion && gameState.state === 'gameOver' && (
@@ -603,6 +661,70 @@ export default function GamePage() {
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Full Reset Confirmation Modal */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 bg-black/80 z-[200] backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelReset}
+            />
+            {/* Modal */}
+            <motion.div
+              className="fixed inset-0 z-[201] flex items-center justify-center p-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+            >
+              <div
+                className="bg-gradient-to-br from-red-900 via-orange-900 to-red-900 border-2 border-red-400 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+                style={{ boxShadow: '0 0 50px rgba(239, 68, 68, 0.5)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center">
+                  <span className="text-4xl mb-3 block">⚠️</span>
+                  <h2 className="text-xl font-black text-white font-['Sora'] mb-2">
+                    FULL RESET
+                  </h2>
+                  <p className="text-red-200 text-sm mb-4 font-['Space_Grotesk']">
+                    This will permanently delete ALL your progress:
+                  </p>
+                  <div className="text-left bg-black/30 rounded-lg p-3 mb-4 text-sm text-red-100 font-['Space_Grotesk']">
+                    <div>• All Stardust (currency)</div>
+                    <div>• All unlocked achievements</div>
+                    <div>• All purchased ships</div>
+                    <div>• Daily rewards & streaks</div>
+                    <div>• Challenge progress</div>
+                  </div>
+                  <p className="text-yellow-300 text-xs mb-4 font-bold">
+                    This action cannot be undone!
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCancelReset}
+                      className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-lg transition-all font-['Space_Grotesk']"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmFullReset}
+                      className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all font-['Space_Grotesk']"
+                      style={{ boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)' }}
+                    >
+                      Reset All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 

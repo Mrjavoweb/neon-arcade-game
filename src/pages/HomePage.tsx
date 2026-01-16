@@ -9,6 +9,8 @@ import SettingsOverlay from '@/components/game/SettingsOverlay';
 import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import DailyRewardPopup from '@/components/game/DailyRewardPopup';
+import ChallengeWidget from '@/components/game/ChallengeWidget';
+import ChallengeModal from '@/components/game/ChallengeModal';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { getAudioManager } from '@/lib/game/audio/AudioManager';
@@ -20,6 +22,7 @@ export default function HomePage() {
   const { engine, setEngine } = useGameEngine();
   const [stardust, setStardust] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth <= window.innerHeight);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -80,6 +83,9 @@ export default function HomePage() {
       setEngine(newEngine);
       setStardust(newEngine.currencyManager.getStardust());
       currentEngine = newEngine;
+
+      // Dispatch event to notify components that engine is ready
+      window.dispatchEvent(new CustomEvent('engine-ready', { detail: { engine: newEngine } }));
 
       // Preload assets in background so they're ready when user clicks Play
       newEngine.loadAssets().catch(err => console.warn('Background asset preload:', err));
@@ -168,154 +174,161 @@ export default function HomePage() {
       {/* Sound Toggle Button */}
       <SoundToggleButton variant="homepage" />
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-screen px-4 py-2">
-        {/* Hero Section */}
-        <motion.div
-          className="text-center mb-2 sm:mb-4"
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut' }}>
+      {/* Main content - Two-column landscape layout */}
+      <div className="relative z-10 flex flex-col landscape:flex-row lg:flex-row h-screen px-4 py-2 landscape:overflow-y-auto landscape:overflow-x-hidden">
 
-          {/* Game Title */}
-          <motion.h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-2 sm:mb-4"
-            style={{
-              fontFamily: "'Sora', sans-serif",
-              background: 'linear-gradient(180deg, #22d3ee 0%, #3b82f6 50%, #ec4899 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              textShadow: '0 0 80px rgba(34, 211, 238, 0.5)',
-              filter: 'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))'
-            }}
-            animate={{
-              filter: [
-              'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
-              'drop-shadow(0 0 50px rgba(34, 211, 238, 1)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.6))',
-              'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))']
+        {/* LEFT COLUMN - Navigation (stacks on mobile/portrait) */}
+        <div className="flex flex-col justify-center items-center landscape:items-start lg:items-start landscape:w-3/5 lg:w-3/5 landscape:pr-4 lg:pr-6">
 
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut'
-            }}>
+          {/* Hero Section */}
+          <motion.div
+            className="text-center landscape:text-left lg:text-left mb-2"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: 'easeOut' }}>
 
-            ALIEN ATTACK
-          </motion.h1>
+            {/* Game Title */}
+            <motion.h1
+              className="text-3xl sm:text-4xl lg:text-5xl font-black mb-1"
+              style={{
+                fontFamily: "'Sora', sans-serif",
+                background: 'linear-gradient(180deg, #22d3ee 0%, #3b82f6 50%, #ec4899 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                textShadow: '0 0 80px rgba(34, 211, 238, 0.5)',
+                filter: 'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))'
+              }}
+              animate={{
+                filter: [
+                'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))',
+                'drop-shadow(0 0 50px rgba(34, 211, 238, 1)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.6))',
+                'drop-shadow(0 0 40px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 80px rgba(236, 72, 153, 0.4))']
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut'
+              }}>
+              ALIEN ATTACK
+            </motion.h1>
 
-          {/* Tagline */}
-          <motion.p
-            className="text-base sm:text-lg md:text-xl text-cyan-300"
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              textShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
-            }}
+            {/* Tagline */}
+            <motion.p
+              className="text-sm lg:text-base text-cyan-300"
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                textShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.3 }}>
+              Defend Earth against the Cosmic Assault
+            </motion.p>
+          </motion.div>
+
+          {/* Best Experience Notice - Mobile/Portrait Only */}
+          {isMobile && isPortrait && (
+            <motion.div
+              className="mb-2 px-3 py-1.5 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
+            >
+              <p className="text-yellow-300 font-bold text-xs font-['Space_Grotesk'] text-center"
+                 style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
+                💡 Best experience on desktop or landscape view
+              </p>
+            </motion.div>
+          )}
+
+          {/* Buttons - 3x2 Grid for landscape, stacked on mobile */}
+          <motion.div
+            className="w-full max-w-md lg:max-w-xl"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <NeonButton onClick={() => navigate('/game')}>
+                ▶ PLAY
+              </NeonButton>
+
+              <NeonButton onClick={() => navigate('/shop', { state: { from: '/' } })}>
+                🛍️ SHOP
+              </NeonButton>
+
+              <NeonButton onClick={() => navigate('/achievements', { state: { from: '/' } })}>
+                🏆 ACHIEVE
+              </NeonButton>
+
+              <NeonButton onClick={() => navigate('/leaderboard', { state: { from: '/' } })}>
+                📊 RANKS
+              </NeonButton>
+
+              <NeonButton onClick={() => navigate('/guide', { state: { from: '/' } })}>
+                📖 GUIDE
+              </NeonButton>
+
+              <NeonButton onClick={() => setShowSettings(true)}>
+                ⚙️ SETTINGS
+              </NeonButton>
+            </div>
+
+            {/* Install PWA - Text link instead of button */}
+            <div className="mt-3 text-center landscape:text-left lg:text-left">
+              <PWAInstallButton variant="text" />
+            </div>
+          </motion.div>
+
+          {/* Footer Credits */}
+          <motion.div
+            className="mt-3 text-center landscape:text-left lg:text-left"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}>
-
-            Defend Earth against the Cosmic Assault
-          </motion.p>
-        </motion.div>
-
-        {/* Best Experience Notice - Mobile/Portrait Only */}
-        {isMobile && isPortrait && (
-          <motion.div
-            className="mb-2 px-3 py-1.5 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
-          >
-            <p className="text-yellow-300 font-bold text-xs font-['Space_Grotesk'] text-center"
-               style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
-              💡 Best experience on desktop or landscape view
+            transition={{ duration: 1, delay: 1 }}>
+            <p
+              className="text-[0.6rem] text-gray-500"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <a href="https://aliens.digitalpalapp.com" className="hover:text-cyan-400 transition-colors duration-300" rel="noopener">DigitalPal Apps</a> • 60fps • Desktop & Mobile
             </p>
           </motion.div>
-        )}
+        </div>
 
-        {/* Buttons - Two Row Layout */}
-        <motion.div
-          className="flex flex-col gap-2 sm:gap-3 max-w-3xl mx-auto"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}>
+        {/* RIGHT COLUMN - Stats & Challenges (below buttons on mobile) */}
+        <div className="flex flex-col justify-center items-center landscape:w-2/5 lg:w-2/5 landscape:pl-4 lg:pl-6 mt-3 landscape:mt-0 lg:mt-0 landscape:max-h-screen landscape:overflow-y-auto">
 
-          {/* First Row: Play, Shop, Achievements */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <NeonButton onClick={() => navigate('/game')}>
-              ▶ PLAY GAME
-            </NeonButton>
-
-            <NeonButton onClick={() => navigate('/shop', { state: { from: '/' } })}>
-              🛍️ SHIP SHOP
-            </NeonButton>
-
-            <NeonButton onClick={() => navigate('/achievements', { state: { from: '/' } })}>
-              🏆 ACHIEVEMENTS
-            </NeonButton>
-          </div>
-
-          {/* Second Row: Leaderboard, Game Guide, Settings */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <NeonButton onClick={() => navigate('/leaderboard', { state: { from: '/' } })}>
-              📊 LEADERBOARD
-            </NeonButton>
-
-            <NeonButton onClick={() => navigate('/guide', { state: { from: '/' } })}>
-              📖 GAME GUIDE
-            </NeonButton>
-
-            <NeonButton onClick={() => setShowSettings(true)}>
-              ⚙️ SETTINGS
-            </NeonButton>
-          </div>
-
-          {/* Third Row: Install PWA (if available) */}
-          <div className="flex justify-center">
-            <div className="w-full sm:w-auto">
-              <PWAInstallButton />
+          {/* Stardust Display */}
+          <motion.div
+            className="px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl mb-3"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <div className="text-purple-300 font-bold flex items-center gap-2 text-sm"
+                 style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
+              <span>💎</span>
+              <span>{stardust.toLocaleString()} Stardust</span>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Stardust Display */}
-        <motion.div
-          className="mt-2 sm:mt-3 px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <div className="text-purple-300 font-bold flex items-center gap-2 text-sm sm:text-base"
-               style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
-            <span>💎</span>
-            <span>{stardust.toLocaleString()} Stardust</span>
-          </div>
-        </motion.div>
+          {/* Challenge Widget - Full width in right column */}
+          <motion.div
+            className="w-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+          >
+            <ChallengeWidget engine={engine} onViewAll={() => setShowChallengeModal(true)} />
+          </motion.div>
+        </div>
 
         {/* Settings Overlay */}
         <SettingsOverlay
           isOpen={showSettings}
           onClose={() => setShowSettings(false)}
           isMobile={isMobile} />
-
-        {/* Footer Credits */}
-        <motion.div
-          className="mt-2 sm:mt-4 text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}>
-
-          <p
-
-            className="text-[0.65rem] sm:text-xs text-gray-500"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-
-            <a href="https://aliens.digitalpalapp.com" className="hover:text-cyan-400 transition-colors duration-300" rel="noopener">DigitalPal Apps</a> • Optimized for 60fps • Desktop & Mobile
-          </p>
-        </motion.div>
       </div>
 
       {/* Ambient gradient overlays */}
@@ -357,6 +370,13 @@ export default function HomePage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Challenge Modal */}
+      <ChallengeModal
+        isOpen={showChallengeModal}
+        onClose={() => setShowChallengeModal(false)}
+        engine={engine}
+      />
     </div>);
 
 }

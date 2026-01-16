@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { Download, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function PWAInstallButton() {
+interface PWAInstallButtonProps {
+  variant?: 'button' | 'text';
+}
+
+export default function PWAInstallButton({ variant = 'button' }: PWAInstallButtonProps) {
   const [showButton, setShowButton] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showAlreadyInstalled, setShowAlreadyInstalled] = useState(false);
@@ -136,56 +140,69 @@ export default function PWAInstallButton() {
         )}
       </AnimatePresence>
 
-      {/* Install Button */}
-      <motion.button
-      onClick={handleInstall}
-      className="relative w-full px-4 py-2 sm:px-6 sm:py-3 md:px-12 md:py-5 text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white bg-transparent border-2 border-green-400 rounded-lg overflow-hidden group"
-      style={{
-        fontFamily: "'Sora', sans-serif",
-        textShadow: '0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.5)',
-        boxShadow: '0 0 20px rgba(34, 197, 94, 0.5), inset 0 0 20px rgba(34, 197, 94, 0.1)'
-      }}
-      whileHover={{
-        scale: 1.05,
-        boxShadow: '0 0 30px rgba(34, 197, 94, 0.8), inset 0 0 30px rgba(34, 197, 94, 0.2)'
-      }}
-      whileTap={{ scale: 0.95 }}
-      animate={{
-        y: [0, -8, 0]
-      }}
-      transition={{
-        y: {
-          duration: 2,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }
-      }}
-    >
-      {/* Animated background glow */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20"
-        animate={{
-          x: ['-100%', '100%']
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'linear'
-        }}
-      />
+      {/* Text variant - Simple inline link */}
+      {variant === 'text' ? (
+        <p className="text-xs text-gray-400 font-['Space_Grotesk']">
+          📱 Add game to homescreen:{' '}
+          <button
+            onClick={handleInstall}
+            className="text-cyan-400 hover:text-cyan-300 underline transition-colors"
+          >
+            Click Here
+          </button>
+        </p>
+      ) : (
+        /* Button variant - Full styled button */
+        <motion.button
+          onClick={handleInstall}
+          className="relative w-full px-4 py-2 sm:px-6 sm:py-3 md:px-12 md:py-5 text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white bg-transparent border-2 border-green-400 rounded-lg overflow-hidden group"
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            textShadow: '0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.5)',
+            boxShadow: '0 0 20px rgba(34, 197, 94, 0.5), inset 0 0 20px rgba(34, 197, 94, 0.1)'
+          }}
+          whileHover={{
+            scale: 1.05,
+            boxShadow: '0 0 30px rgba(34, 197, 94, 0.8), inset 0 0 30px rgba(34, 197, 94, 0.2)'
+          }}
+          whileTap={{ scale: 0.95 }}
+          animate={{
+            y: [0, -8, 0]
+          }}
+          transition={{
+            y: {
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut'
+            }
+          }}
+        >
+          {/* Animated background glow */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20"
+            animate={{
+              x: ['-100%', '100%']
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'linear'
+            }}
+          />
 
-      {/* Button content */}
-      <span className="relative z-10 flex items-center justify-center gap-2">
-        <Download size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
-        <span>INSTALL APP</span>
-      </span>
+          {/* Button content */}
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            <Download size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+            <span>INSTALL APP</span>
+          </span>
 
-      {/* Corner accents */}
-      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </motion.button>
+          {/* Corner accents */}
+          <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </motion.button>
+      )}
     </>
   );
 }

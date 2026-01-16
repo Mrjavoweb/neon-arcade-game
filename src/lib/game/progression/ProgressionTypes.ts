@@ -309,6 +309,48 @@ export const MODULE_CAPS = {
 } as const;
 
 // ============================================================================
+// CHALLENGE TYPES
+// ============================================================================
+
+export type ChallengeType = 'kills' | 'combo' | 'waves' | 'bosses' |
+  'perfect_waves' | 'score' | 'powerups';
+
+export type ChallengeDifficulty = 'easy' | 'medium' | 'hard' | 'weekly';
+
+export interface Challenge {
+  id: string;
+  type: ChallengeType;
+  target: number;
+  current: number;
+  difficulty: ChallengeDifficulty;
+  description: string;
+  reward: number; // Stardust
+  completed: boolean;
+  completedAt?: string; // ISO date
+}
+
+export interface ChallengeData {
+  dailyChallenges: Challenge[];
+  weeklyChallenge: Challenge | null;
+  lastDailyReset: string; // ISO date (YYYY-MM-DD)
+  lastWeeklyReset: string; // ISO date (YYYY-MM-DD)
+  allDailyCompleted: boolean;
+  dailyBonusClaimed: boolean;
+  totalChallengesCompleted: number;
+  currentStreak: number; // Days completing all 3
+}
+
+export interface SessionStats {
+  kills: number;
+  maxCombo: number;
+  wavesReached: number;
+  bossesKilled: number;
+  perfectWaves: number;
+  score: number;
+  powerups: number;
+}
+
+// ============================================================================
 // STORAGE KEYS
 // ============================================================================
 
@@ -319,7 +361,8 @@ export const STORAGE_KEYS = {
   DAILY_REWARDS: 'alienInvasion_dailyRewards',
   COSMETICS: 'alienInvasion_cosmetics',
   MODULES: 'alienInvasion_modules',
-  SETTINGS: 'alienInvasion_settings'
+  SETTINGS: 'alienInvasion_settings',
+  CHALLENGES: 'alienInvasion_challenges'
 } as const;
 
 // ============================================================================
