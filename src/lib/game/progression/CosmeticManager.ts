@@ -33,215 +33,215 @@ export class CosmeticManager {
 
   private initializeSkins(): void {
     const skinDefinitions: ShipSkin[] = [
-    // ========================================================================
-    // DEFAULT (Always Unlocked)
-    // ========================================================================
-    {
-      id: 'default',
-      name: 'Default',
-      description: 'Your trusty cyan defender. Balanced stats and reliable firepower.',
-      tier: 'default',
-      price: 0,
-      filter: 'none',
-      bulletColor: '#22d3ee',
-      role: 'balanced',
-      superpower: {
-        type: 'none',
-        name: 'Standard Configuration',
-        description: 'No special abilities - learn the basics'
+      // ========================================================================
+      // DEFAULT (Always Unlocked)
+      // ========================================================================
+      {
+        id: 'default',
+        name: 'Default',
+        description: 'Your trusty cyan defender. Balanced stats and reliable firepower.',
+        tier: 'default',
+        price: 0,
+        filter: 'none',
+        bulletColor: '#22d3ee',
+        role: 'balanced',
+        superpower: {
+          type: 'none',
+          name: 'Standard Configuration',
+          description: 'No special abilities - learn the basics'
+        },
+        unlocked: true
       },
-      unlocked: true
-    },
 
-    // ========================================================================
-    // COMMON TIER (600 Stardust each)
-    // ========================================================================
-    {
-      id: 'red_phoenix',
-      name: 'Red Phoenix',
-      description: 'Blazing war machine with enhanced firing mechanisms.',
-      tier: 'common',
-      price: 600,
-      filter: 'hue-rotate(170deg) saturate(150%)', // Cyan to Red: 190° + 170° = 360° = 0° (red)
-      bulletColor: '#ff6b6b',
-      role: 'offensive',
-      superpower: {
-        type: 'fire_rate_boost',
-        name: 'Enhanced Firing System',
-        description: '+10% Fire Rate',
-        value: 10
+      // ========================================================================
+      // COMMON TIER (600 Stardust each)
+      // ========================================================================
+      {
+        id: 'red_phoenix',
+        name: 'Red Phoenix',
+        description: 'Blazing war machine with enhanced firing mechanisms.',
+        tier: 'common',
+        price: 600,
+        filter: 'hue-rotate(170deg) saturate(150%)', // Cyan to Red: 190° + 170° = 360° = 0° (red)
+        bulletColor: '#ff6b6b',
+        role: 'offensive',
+        superpower: {
+          type: 'fire_rate_boost',
+          name: 'Enhanced Firing System',
+          description: '+10% Fire Rate',
+          value: 10
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'green_viper',
-      name: 'Green Viper',
-      description: 'Nimble striker with boosted thrusters.',
-      tier: 'common',
-      price: 600,
-      filter: 'hue-rotate(290deg) saturate(130%)', // Cyan to Green: 190° + 290° = 480° = 120° (green)
-      bulletColor: '#51cf66',
-      role: 'mobility',
-      superpower: {
-        type: 'movement_speed_boost',
-        name: 'Boosted Thrusters',
-        description: '+15% Movement Speed',
-        value: 15
+      {
+        id: 'green_viper',
+        name: 'Green Viper',
+        description: 'Nimble striker with boosted thrusters.',
+        tier: 'common',
+        price: 600,
+        filter: 'hue-rotate(290deg) saturate(130%)', // Cyan to Green: 190° + 290° = 480° = 120° (green)
+        bulletColor: '#51cf66',
+        role: 'mobility',
+        superpower: {
+          type: 'movement_speed_boost',
+          name: 'Boosted Thrusters',
+          description: '+15% Movement Speed',
+          value: 15
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'purple_shadow',
-      name: 'Purple Shadow',
-      description: 'Phantom with reinforced shield generators.',
-      tier: 'common',
-      price: 600,
-      filter: 'hue-rotate(80deg) saturate(140%)', // Cyan to Purple: 190° + 80° = 270° (purple/magenta)
-      bulletColor: '#a855f7',
-      role: 'defensive',
-      superpower: {
-        type: 'shield_duration_boost',
-        name: 'Reinforced Shields',
-        description: '+20% Shield Duration',
-        value: 20
+      {
+        id: 'purple_shadow',
+        name: 'Purple Shadow',
+        description: 'Phantom with reinforced shield generators.',
+        tier: 'common',
+        price: 600,
+        filter: 'hue-rotate(80deg) saturate(140%)', // Cyan to Purple: 190° + 80° = 270° (purple/magenta)
+        bulletColor: '#a855f7',
+        role: 'defensive',
+        superpower: {
+          type: 'shield_duration_boost',
+          name: 'Reinforced Shields',
+          description: '+20% Shield Duration',
+          value: 20
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
 
-    // ========================================================================
-    // RARE TIER (1500 Stardust each)
-    // ========================================================================
-    {
-      id: 'gold_elite',
-      name: 'Gold Elite',
-      description: 'Elite destroyer with twin plasma cannons.',
-      tier: 'rare',
-      price: 1500,
-      filter: 'hue-rotate(220deg) saturate(200%) brightness(130%)', // Cyan to Gold: 190° + 220° = 410° = 50° (gold/yellow)
-      bulletColor: '#ffd700',
-      role: 'offensive',
-      superpower: {
-        type: 'dual_guns',
-        name: 'Twin Plasma Cannons',
-        description: 'Fires 2 bullets side-by-side',
-        value: 2
+      // ========================================================================
+      // RARE TIER (1500 Stardust each)
+      // ========================================================================
+      {
+        id: 'gold_elite',
+        name: 'Gold Elite',
+        description: 'Elite destroyer with twin plasma cannons.',
+        tier: 'rare',
+        price: 1500,
+        filter: 'hue-rotate(220deg) saturate(200%) brightness(130%)', // Cyan to Gold: 190° + 220° = 410° = 50° (gold/yellow)
+        bulletColor: '#ffd700',
+        role: 'offensive',
+        superpower: {
+          type: 'dual_guns',
+          name: 'Twin Plasma Cannons',
+          description: 'Fires 2 bullets side-by-side',
+          value: 2
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'cyan_frost',
-      name: 'Cyan Frost',
-      description: 'Frost predator with armor-piercing rounds.',
-      tier: 'rare',
-      price: 1500,
-      filter: 'hue-rotate(180deg) saturate(120%) brightness(110%)',
-      bulletColor: '#06b6d4',
-      role: 'offensive',
-      superpower: {
-        type: 'piercing_shots',
-        name: 'Armor-Piercing Rounds',
-        description: 'Bullets penetrate first enemy',
-        value: 1
+      {
+        id: 'cyan_frost',
+        name: 'Cyan Frost',
+        description: 'Frost predator with armor-piercing rounds.',
+        tier: 'rare',
+        price: 1500,
+        filter: 'hue-rotate(180deg) saturate(120%) brightness(110%)',
+        bulletColor: '#06b6d4',
+        role: 'offensive',
+        superpower: {
+          type: 'piercing_shots',
+          name: 'Armor-Piercing Rounds',
+          description: 'Bullets penetrate first enemy',
+          value: 1
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
 
-    // ========================================================================
-    // EPIC TIER (3000 Stardust each)
-    // ========================================================================
-    {
-      id: 'rainbow_streak',
-      name: 'Rainbow Streak',
-      description: 'Rainbow spectrum ship with multi-barrel arsenal.',
-      tier: 'epic',
-      price: 3000,
-      filter: 'hue-rotate(var(--rainbow-hue)) saturate(200%)', // Dynamic!
-      bulletColor: 'rainbow', // Special flag for dynamic color
-      role: 'offensive',
-      superpower: {
-        type: 'triple_shot',
-        name: 'Multi-Barrel Arsenal',
-        description: 'Always fires 3 bullets (without powerup!)',
-        value: 3
+      // ========================================================================
+      // EPIC TIER (3000 Stardust each)
+      // ========================================================================
+      {
+        id: 'rainbow_streak',
+        name: 'Rainbow Streak',
+        description: 'Rainbow spectrum ship with multi-barrel arsenal.',
+        tier: 'epic',
+        price: 3000,
+        filter: 'hue-rotate(var(--rainbow-hue)) saturate(200%)', // Dynamic!
+        bulletColor: 'rainbow', // Special flag for dynamic color
+        role: 'offensive',
+        superpower: {
+          type: 'triple_shot',
+          name: 'Multi-Barrel Arsenal',
+          description: 'Always fires 3 bullets (without powerup!)',
+          value: 3
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'dark_matter',
-      name: 'Dark Matter',
-      description: 'Void assassin that feeds on destruction.',
-      tier: 'epic',
-      price: 3000,
-      filter: 'brightness(30%) contrast(150%)',
-      bulletColor: '#6366f1',
-      role: 'utility',
-      superpower: {
-        type: 'lifesteal',
-        name: 'Damage Absorption',
-        description: '10% of damage taken converts to score bonus',
-        value: 10
+      {
+        id: 'dark_matter',
+        name: 'Dark Matter',
+        description: 'Void assassin that feeds on destruction.',
+        tier: 'epic',
+        price: 3000,
+        filter: 'brightness(30%) contrast(150%)',
+        bulletColor: '#6366f1',
+        role: 'utility',
+        superpower: {
+          type: 'lifesteal',
+          name: 'Damage Absorption',
+          description: '10% of damage taken converts to score bonus',
+          value: 10
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'solar_flare',
-      name: 'Solar Flare',
-      description: 'Solar incarnate with explosive ordnance.',
-      tier: 'epic',
-      price: 3000,
-      filter: 'hue-rotate(30deg) saturate(300%) brightness(150%)',
-      bulletColor: '#ff8c00',
-      role: 'offensive',
-      superpower: {
-        type: 'explosive_rounds',
-        name: 'Explosive Ordnance',
-        description: 'Bullets explode on impact (small AoE)',
-        value: 30
+      {
+        id: 'solar_flare',
+        name: 'Solar Flare',
+        description: 'Solar incarnate with explosive ordnance.',
+        tier: 'epic',
+        price: 3000,
+        filter: 'hue-rotate(30deg) saturate(300%) brightness(150%)',
+        bulletColor: '#ff8c00',
+        role: 'offensive',
+        superpower: {
+          type: 'explosive_rounds',
+          name: 'Explosive Ordnance',
+          description: 'Bullets explode on impact (small AoE)',
+          value: 30
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
 
-    // ========================================================================
-    // LEGENDARY TIER (5000+ Stardust)
-    // ========================================================================
-    {
-      id: 'cosmic_void',
-      name: 'Cosmic Void',
-      description: 'Galaxy phenomenon with gravitational weapons + extended powerups.',
-      tier: 'legendary',
-      price: 5000,
-      filter: 'hue-rotate(var(--galaxy-hue)) contrast(150%) saturate(150%)', // Dynamic!
-      bulletColor: 'galaxy', // Special flag for dynamic color
-      role: 'utility',
-      superpower: {
-        type: 'gravity_bullets',
-        name: 'Gravitational Weapons',
-        description: 'Bullets pull enemies slightly + All powerups last +3 seconds',
-        value: 3
+      // ========================================================================
+      // LEGENDARY TIER (5000+ Stardust)
+      // ========================================================================
+      {
+        id: 'cosmic_void',
+        name: 'Cosmic Void',
+        description: 'Galaxy phenomenon with gravitational weapons + extended powerups.',
+        tier: 'legendary',
+        price: 5000,
+        filter: 'hue-rotate(var(--galaxy-hue)) contrast(150%) saturate(150%)', // Dynamic!
+        bulletColor: 'galaxy', // Special flag for dynamic color
+        role: 'utility',
+        superpower: {
+          type: 'gravity_bullets',
+          name: 'Gravitational Weapons',
+          description: 'Bullets pull enemies slightly + All powerups last +3 seconds',
+          value: 3
+        },
+        unlocked: false
       },
-      unlocked: false
-    },
-    {
-      id: 'diamond_elite',
-      name: 'Diamond Elite',
-      description: 'Crystalline perfection with auto-regenerating barriers.',
-      tier: 'legendary',
-      price: 7500,
-      filter: 'grayscale(100%) brightness(200%) contrast(150%)',
-      bulletColor: '#e0e7ff',
-      role: 'defensive',
-      superpower: {
-        type: 'auto_shield',
-        name: 'Auto-Regenerating Shields',
-        description: 'Start each wave with 3-second auto-shield',
-        value: 3,
-        duration: 180
-      },
-      unlocked: false
-    }];
+      {
+        id: 'diamond_elite',
+        name: 'Diamond Elite',
+        description: 'Crystalline perfection with auto-regenerating barriers.',
+        tier: 'legendary',
+        price: 7500,
+        filter: 'grayscale(100%) brightness(200%) contrast(150%)',
+        bulletColor: '#e0e7ff',
+        role: 'defensive',
+        superpower: {
+          type: 'auto_shield',
+          name: 'Auto-Regenerating Shields',
+          description: 'Start each wave with 3-second auto-shield',
+          value: 3,
+          duration: 180
+        },
+        unlocked: false
+      }
+    ];
 
-
-    skinDefinitions.forEach((skin) => {
+    skinDefinitions.forEach(skin => {
       this.skins.set(skin.id, skin);
     });
   }
@@ -255,7 +255,7 @@ export class CosmeticManager {
    */
   getAllSkins(): ShipSkin[] {
     const loadedCosmetics = this.cosmetics;
-    return Array.from(this.skins.values()).map((skin) => ({
+    return Array.from(this.skins.values()).map(skin => ({
       ...skin,
       unlocked: loadedCosmetics.ownedSkins.includes(skin.id)
     }));
@@ -265,7 +265,7 @@ export class CosmeticManager {
    * Get owned skins only
    */
   getOwnedSkins(): ShipSkin[] {
-    return this.getAllSkins().filter((skin) => skin.unlocked);
+    return this.getAllSkins().filter(skin => skin.unlocked);
   }
 
   /**
@@ -292,7 +292,7 @@ export class CosmeticManager {
   /**
    * Purchase a skin
    */
-  purchaseSkin(skinId: ShipSkinId): {success: boolean;message: string;} {
+  purchaseSkin(skinId: ShipSkinId): { success: boolean; message: string } {
     const skin = this.skins.get(skinId);
 
     if (!skin) {
@@ -328,7 +328,7 @@ export class CosmeticManager {
   /**
    * Equip a skin
    */
-  equipSkin(skinId: ShipSkinId): {success: boolean;message: string;} {
+  equipSkin(skinId: ShipSkinId): { success: boolean; message: string } {
     if (!this.cosmetics.ownedSkins.includes(skinId)) {
       return { success: false, message: 'Skin not owned' };
     }
@@ -390,7 +390,7 @@ export class CosmeticManager {
       return `hsl(${this.rainbowHue}, 100%, 60%)`;
     } else if (skin.bulletColor === 'galaxy') {
       // Return dynamic galaxy color (purple-blue shift)
-      return `hsl(${240 + this.galaxyHue * 0.3}, 80%, 60%)`;
+      return `hsl(${240 + (this.galaxyHue * 0.3)}, 80%, 60%)`;
     }
 
     return skin.bulletColor || '#22d3ee';

@@ -3,48 +3,48 @@ import { getSettingsManager } from '../settings/SettingsManager';
 
 // Sound effect identifiers
 export type SoundEffect =
-// Player
-'player_shoot' |
-'player_hit' |
-'player_death' |
-'player_powerup_collect'
-// Enemy
-| 'enemy_shoot' |
-'enemy_hit' |
-'enemy_death' |
-'enemy_spawn'
-// Boss
-| 'boss_spawn' |
-'boss_attack_laser' |
-'boss_attack_missile' |
-'boss_hit' |
-'boss_phase_change' |
-'boss_death'
-// Power-ups
-| 'powerup_shield_activate' |
-'powerup_rapid_fire' |
-'powerup_plasma' |
-'powerup_slowmo'
-// UI & Progression
-| 'ui_button_click' |
-'ui_button_hover' |
-'level_up' |
-'achievement_unlock' |
-'wave_complete' |
-'checkpoint_reached'
-// Ambient
-| 'combo_milestone' |
-'warning_low_health' |
-'game_over';
+  // Player
+  | 'player_shoot'
+  | 'player_hit'
+  | 'player_death'
+  | 'player_powerup_collect'
+  // Enemy
+  | 'enemy_shoot'
+  | 'enemy_hit'
+  | 'enemy_death'
+  | 'enemy_spawn'
+  // Boss
+  | 'boss_spawn'
+  | 'boss_attack_laser'
+  | 'boss_attack_missile'
+  | 'boss_hit'
+  | 'boss_phase_change'
+  | 'boss_death'
+  // Power-ups
+  | 'powerup_shield_activate'
+  | 'powerup_rapid_fire'
+  | 'powerup_plasma'
+  | 'powerup_slowmo'
+  // UI & Progression
+  | 'ui_button_click'
+  | 'ui_button_hover'
+  | 'level_up'
+  | 'achievement_unlock'
+  | 'wave_complete'
+  | 'checkpoint_reached'
+  // Ambient
+  | 'combo_milestone'
+  | 'warning_low_health'
+  | 'game_over';
 
 // Background music identifiers
 export type BackgroundMusic =
-'menu_theme' |
-'gameplay_theme' |
-'boss_battle_theme' |
-'game_over_theme' |
-'victory_theme' |
-'ambient_space';
+  | 'menu_theme'
+  | 'gameplay_theme'
+  | 'boss_battle_theme'
+  | 'game_over_theme'
+  | 'victory_theme'
+  | 'ambient_space';
 
 // Audio asset paths (will be populated when audio files are added)
 const SOUND_PATHS: Record<SoundEffect, string> = {
@@ -80,7 +80,7 @@ const SOUND_PATHS: Record<SoundEffect, string> = {
   // Ambient
   combo_milestone: '/sounds/sfx/combo_milestone.mp3',
   warning_low_health: '/sounds/sfx/warning_low_health.mp3',
-  game_over: '/sounds/sfx/game_over.mp3'
+  game_over: '/sounds/sfx/game_over.mp3',
 };
 
 const MUSIC_PATHS: Record<BackgroundMusic, string> = {
@@ -89,7 +89,7 @@ const MUSIC_PATHS: Record<BackgroundMusic, string> = {
   boss_battle_theme: '/sounds/music/boss_battle_theme.mp3',
   game_over_theme: '/sounds/music/game_over_theme.mp3',
   victory_theme: '/sounds/music/victory_theme.mp3',
-  ambient_space: '/sounds/music/ambient_space.mp3'
+  ambient_space: '/sounds/music/ambient_space.mp3',
 };
 
 export class AudioManager {
@@ -138,7 +138,7 @@ export class AudioManager {
   // ============================================================================
 
   preloadSounds(soundsToLoad: SoundEffect[]): void {
-    soundsToLoad.forEach((soundId) => {
+    soundsToLoad.forEach(soundId => {
       try {
         const audio = new Audio(SOUND_PATHS[soundId]);
         audio.preload = 'auto';
@@ -152,7 +152,7 @@ export class AudioManager {
   }
 
   preloadMusic(musicToLoad: BackgroundMusic[]): void {
-    musicToLoad.forEach((musicId) => {
+    musicToLoad.forEach(musicId => {
       try {
         const audio = new Audio(MUSIC_PATHS[musicId]);
         audio.preload = 'auto';
@@ -186,7 +186,7 @@ export class AudioManager {
       const sound = audio.cloneNode() as HTMLAudioElement;
       sound.volume = volume * this.sfxVolume * this.masterVolume;
 
-      sound.play().catch((error) => {
+      sound.play().catch(error => {
         console.warn(`Failed to play sound: ${soundId}`, error);
       });
     } catch (error) {
@@ -213,7 +213,7 @@ export class AudioManager {
       audio.volume = volume * this.sfxVolume * this.masterVolume;
       this.loopingSound = audio;
 
-      audio.play().catch((error) => {
+      audio.play().catch(error => {
         console.warn(`Failed to play looping sound: ${soundId}`, error);
       });
     } catch (error) {
@@ -261,13 +261,13 @@ export class AudioManager {
 
       if (fadeIn) {
         audio.volume = 0;
-        audio.play().catch((error) => {
+        audio.play().catch(error => {
           console.warn(`Failed to play music: ${musicId}`, error);
         });
         this.fadeInMusic(audio, this.musicVolume * this.masterVolume);
       } else {
         audio.volume = this.musicVolume * this.masterVolume;
-        audio.play().catch((error) => {
+        audio.play().catch(error => {
           console.warn(`Failed to play music: ${musicId}`, error);
         });
       }
@@ -306,7 +306,7 @@ export class AudioManager {
 
   resumeMusic(): void {
     if (this.currentMusic && this.musicEnabled) {
-      this.currentMusic.play().catch((error) => {
+      this.currentMusic.play().catch(error => {
         console.warn('Failed to resume music', error);
       });
     }
@@ -341,7 +341,7 @@ export class AudioManager {
 
     const fade = setInterval(() => {
       currentStep++;
-      audio.volume = Math.max(initialVolume - volumeStep * currentStep, 0);
+      audio.volume = Math.max(initialVolume - (volumeStep * currentStep), 0);
 
       if (currentStep >= fadeSteps || audio.volume <= 0) {
         clearInterval(fade);
@@ -357,7 +357,7 @@ export class AudioManager {
   setSfxVolume(volume: number): void {
     this.sfxVolume = Math.max(0, Math.min(1, volume));
     // Update all preloaded sounds
-    this.soundEffects.forEach((audio) => {
+    this.soundEffects.forEach(audio => {
       audio.volume = this.sfxVolume * this.masterVolume;
     });
   }
@@ -369,7 +369,7 @@ export class AudioManager {
       this.currentMusic.volume = this.musicVolume * this.masterVolume;
     }
     // Update all preloaded music
-    this.musicTracks.forEach((audio) => {
+    this.musicTracks.forEach(audio => {
       audio.volume = this.musicVolume * this.masterVolume;
     });
   }
@@ -416,7 +416,7 @@ export class AudioManager {
   }
 
   // Toggle both SFX and Music
-  toggleAllAudio(): {sfx: boolean;music: boolean;} {
+  toggleAllAudio(): { sfx: boolean; music: boolean } {
     const newState = !(this.soundEffectsEnabled && this.musicEnabled);
 
     this.soundEffectsEnabled = newState;

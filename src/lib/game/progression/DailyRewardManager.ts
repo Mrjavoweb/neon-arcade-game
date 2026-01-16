@@ -17,24 +17,24 @@ export class DailyRewardManager {
 
   // 7-Day base reward cycle
   private readonly baseRewards: DailyReward[] = [
-  { day: 1, stardust: 50, lives: 1 },
-  { day: 2, stardust: 100 },
-  { day: 3, stardust: 75, maxHealth: 1 },
-  { day: 4, stardust: 150 },
-  { day: 5, stardust: 100, powerUp: 'shield' },
-  { day: 6, stardust: 200 },
-  { day: 7, stardust: 300, lives: 2, special: 'weeklyBonus' }];
-
+    { day: 1, stardust: 50, lives: 1 },
+    { day: 2, stardust: 100 },
+    { day: 3, stardust: 75, maxHealth: 1 },
+    { day: 4, stardust: 150 },
+    { day: 5, stardust: 100, powerUp: 'shield' },
+    { day: 6, stardust: 200 },
+    { day: 7, stardust: 300, lives: 2, special: 'weeklyBonus' }
+  ];
 
   // Milestone rewards for total logins
   private readonly milestones: MilestoneReward[] = [
-  { id: 7, totalLogins: 7, stardust: 500, description: '7 Day Champion' },
-  { id: 14, totalLogins: 14, stardust: 1000, title: 'Dedicated', description: '14 Day Streak' },
-  { id: 30, totalLogins: 30, stardust: 2500, cosmetic: 'cyan_frost', description: '30 Day Warrior' },
-  { id: 60, totalLogins: 60, stardust: 5000, lives: 3, cosmetic: 'purple_shadow', description: '60 Day Legend' },
-  { id: 100, totalLogins: 100, stardust: 10000, lives: 5, maxHealth: 2, cosmetic: 'rainbow_streak', title: 'Centurion', description: '100 Day Master' },
-  { id: 365, totalLogins: 365, stardust: 50000, lives: 10, maxHealth: 5, cosmetic: 'cosmic_void', title: 'Eternal', description: '365 Day God' }];
-
+    { id: 7, totalLogins: 7, stardust: 500, description: '7 Day Champion' },
+    { id: 14, totalLogins: 14, stardust: 1000, title: 'Dedicated', description: '14 Day Streak' },
+    { id: 30, totalLogins: 30, stardust: 2500, cosmetic: 'cyan_frost', description: '30 Day Warrior' },
+    { id: 60, totalLogins: 60, stardust: 5000, lives: 3, cosmetic: 'purple_shadow', description: '60 Day Legend' },
+    { id: 100, totalLogins: 100, stardust: 10000, lives: 5, maxHealth: 2, cosmetic: 'rainbow_streak', title: 'Centurion', description: '100 Day Master' },
+    { id: 365, totalLogins: 365, stardust: 50000, lives: 10, maxHealth: 5, cosmetic: 'cosmic_void', title: 'Eternal', description: '365 Day God' }
+  ];
 
   constructor(currencyManager: CurrencyManager) {
     this.currencyManager = currencyManager;
@@ -49,14 +49,14 @@ export class DailyRewardManager {
    * Check if daily reward is available
    * Returns available status, day number, and reward info with escalation
    */
-  checkReward(): {available: boolean;day: number;reward?: DailyReward;streak: number;comebackBonus?: ComebackBonus;} {
+  checkReward(): { available: boolean; day: number; reward?: DailyReward; streak: number; comebackBonus?: ComebackBonus } {
     const today = this.getTodayDateString();
 
     // Already claimed today
     if (this.data.lastLoginDate === today) {
       return {
         available: false,
-        day: this.data.currentStreak % 7 + 1,
+        day: (this.data.currentStreak % 7) + 1,
         streak: this.data.currentStreak
       };
     }
@@ -102,7 +102,7 @@ export class DailyRewardManager {
     }
 
     // Get current day's reward (cycle through 1-7) with escalation
-    const dayIndex = (this.data.currentStreak - 1) % 7;
+    const dayIndex = ((this.data.currentStreak - 1) % 7);
     const baseReward = { ...this.baseRewards[dayIndex] };
 
     // Calculate week multiplier (1.0, 1.25, 1.5, 2.0, 2.5 cap)
@@ -230,7 +230,7 @@ export class DailyRewardManager {
     for (const milestone of this.milestones) {
       // Check if milestone is reached and not yet claimed
       if (this.data.totalLogins >= milestone.totalLogins &&
-      !this.data.milestonesUnlocked.includes(milestone.id)) {
+          !this.data.milestonesUnlocked.includes(milestone.id)) {
 
         // Grant milestone rewards
         this.currencyManager.earnStardust(milestone.stardust, `milestone_${milestone.id}`);
@@ -250,7 +250,7 @@ export class DailyRewardManager {
   /**
    * Get current streak info
    */
-  getStreakInfo(): {current: number;longest: number;totalLogins: number;} {
+  getStreakInfo(): { current: number; longest: number; totalLogins: number } {
     return {
       current: this.data.currentStreak,
       longest: this.data.longestStreak,
@@ -265,7 +265,7 @@ export class DailyRewardManager {
     const weekNumber = Math.floor(this.data.currentStreak / 7) + 1;
     const multiplier = this.getWeekMultiplier(weekNumber);
 
-    return this.baseRewards.map((reward) => ({
+    return this.baseRewards.map(reward => ({
       ...reward,
       stardust: reward.stardust ? Math.floor(reward.stardust * multiplier) : undefined,
       weekMultiplier: multiplier
@@ -275,8 +275,8 @@ export class DailyRewardManager {
   /**
    * Get all milestone rewards and their unlock status
    */
-  getMilestones(): Array<MilestoneReward & {unlocked: boolean;}> {
-    return this.milestones.map((milestone) => ({
+  getMilestones(): Array<MilestoneReward & { unlocked: boolean }> {
+    return this.milestones.map(milestone => ({
       ...milestone,
       unlocked: this.data.milestonesUnlocked.includes(milestone.id)
     }));
@@ -285,13 +285,13 @@ export class DailyRewardManager {
   /**
    * Get next milestone to unlock
    */
-  getNextMilestone(): (MilestoneReward & {progress: number;}) | null {
-    const next = this.milestones.find((m) => !this.data.milestonesUnlocked.includes(m.id));
+  getNextMilestone(): (MilestoneReward & { progress: number }) | null {
+    const next = this.milestones.find(m => !this.data.milestonesUnlocked.includes(m.id));
     if (!next) return null;
 
     return {
       ...next,
-      progress: Math.min(100, Math.floor(this.data.totalLogins / next.totalLogins * 100))
+      progress: Math.min(100, Math.floor((this.data.totalLogins / next.totalLogins) * 100))
     };
   }
 

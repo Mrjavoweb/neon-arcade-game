@@ -21,7 +21,8 @@ interface ShipSkin {
 export default function ShopPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { engine, setEngine } = useGameEngine();
+  const { engine: contextEngine, setEngine } = useGameEngine();
+  const [localEngine, setLocalEngine] = useState<GameEngine | null>(null);
   const [skins, setSkins] = useState<ShipSkin[]>([]);
   const [stardust, setStardust] = useState(0);
   const [activeSkinId, setActiveSkinId] = useState('default');
@@ -29,8 +30,11 @@ export default function ShopPage() {
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
   const [purchasedSkinName, setPurchasedSkinName] = useState('');
 
+  // Use context engine if available, otherwise local engine
+  const engine = contextEngine || localEngine;
+
   // Get return path from location state, default to /game
-  const returnPath = (location.state as {from?: string;})?.from || '/game';
+  const returnPath = (location.state as { from?: string })?.from || '/game';
 
   // Helper function for role badge styling
   const getRoleBadge = (role?: string) => {
@@ -50,14 +54,17 @@ export default function ShopPage() {
     }
   };
 
-  // Initialize engine if it doesn't exist
+  // Initialize local engine if context engine doesn't exist
   useEffect(() => {
-    if (!engine) {
+    if (!contextEngine && !localEngine) {
+      console.log('🛍️ ShopPage: Creating local engine instance');
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
+      setLocalEngine(newEngine);
+      // Also try to set it in context for persistence
       setEngine(newEngine);
     }
-  }, [engine, setEngine]);
+  }, [contextEngine, localEngine, setEngine]);
 
   useEffect(() => {
     if (engine) {
@@ -86,7 +93,7 @@ export default function ShopPage() {
 
   const handlePurchase = (skinId: string) => {
     if (engine) {
-      const skin = skins.find((s) => s.id === skinId);
+      const skin = skins.find(s => s.id === skinId);
       const result = engine.cosmeticManager.purchaseSkin(skinId);
 
       console.log('🛒 Purchase attempt:', { skinId, result }); // Debug log
@@ -97,7 +104,7 @@ export default function ShopPage() {
         setStardust(engine.currencyManager.getStardust());
 
         // Update the selected skin to show the new purchased state
-        const updatedSelectedSkin = updatedSkins.find((s) => s.id === skinId);
+        const updatedSelectedSkin = updatedSkins.find(s => s.id === skinId);
         if (updatedSelectedSkin) {
           setSelectedSkin(updatedSelectedSkin);
         }
@@ -130,8 +137,8 @@ export default function ShopPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0014] to-[#1a0a2e] flex items-center justify-center">
         <div className="text-white text-xl">Loading Shop...</div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -186,12 +193,12 @@ export default function ShopPage() {
               <motion.div
                 key={skin.id}
                 className={`bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-2 rounded-xl p-6 transition-all cursor-pointer ${
-                isActive ?
-                'border-cyan-400 shadow-lg shadow-cyan-400/50' :
-                selectedSkin?.id === skin.id ?
-                'border-purple-400 shadow-lg shadow-purple-400/30' :
-                'border-purple-400/30 hover:border-purple-400/60'}`
-                }
+                  isActive
+                    ? 'border-cyan-400 shadow-lg shadow-cyan-400/50'
+                    : selectedSkin?.id === skin.id
+                    ? 'border-purple-400 shadow-lg shadow-purple-400/30'
+                    : 'border-purple-400/30 hover:border-purple-400/60'
+                }`}
                 onClick={() => setSelectedSkin(skin)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}>
@@ -199,32 +206,32 @@ export default function ShopPage() {
                 {/* Badge Row */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {/* Active Badge */}
-                  {isActive &&
-                  <div className="inline-block px-3 py-1 bg-cyan-500 text-black text-xs font-bold rounded-full">
+                  {isActive && (
+                    <div className="inline-block px-3 py-1 bg-cyan-500 text-black text-xs font-bold rounded-full">
                       ✓ EQUIPPED
                     </div>
-                  }
+                  )}
 
                   {/* Owned Badge */}
-                  {!isActive && skin.unlocked && !isDefault &&
-                  <div className="inline-block px-3 py-1 bg-green-500/70 text-white text-xs font-bold rounded-full">
+                  {!isActive && skin.unlocked && !isDefault && (
+                    <div className="inline-block px-3 py-1 bg-green-500/70 text-white text-xs font-bold rounded-full">
                       ✓ OWNED
                     </div>
-                  }
+                  )}
 
                   {/* Default Badge */}
-                  {isDefault && !isActive &&
-                  <div className="inline-block px-3 py-1 bg-gray-500/50 text-white text-xs font-bold rounded-full">
+                  {isDefault && !isActive && (
+                    <div className="inline-block px-3 py-1 bg-gray-500/50 text-white text-xs font-bold rounded-full">
                       DEFAULT
                     </div>
-                  }
+                  )}
 
                   {/* Role Badge */}
-                  {roleBadge &&
-                  <div className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${roleBadge.color}`}>
+                  {roleBadge && (
+                    <div className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${roleBadge.color}`}>
                       {roleBadge.icon} {roleBadge.label}
                     </div>
-                  }
+                  )}
                 </div>
 
                 {/* Ship Preview */}
@@ -240,18 +247,18 @@ export default function ShopPage() {
 
                 {/* Price Display */}
                 <div className="mb-3 text-center">
-                  {isDefault ?
-                  <div className="text-sm text-gray-400 font-['Space_Grotesk']">Free - Default Ship</div> :
-                  skin.unlocked ?
-                  <div className="text-sm text-green-400 font-bold font-['Space_Grotesk']">✓ Owned</div> :
-
-                  <div className="flex items-center justify-center gap-2">
+                  {isDefault ? (
+                    <div className="text-sm text-gray-400 font-['Space_Grotesk']">Free - Default Ship</div>
+                  ) : skin.unlocked ? (
+                    <div className="text-sm text-green-400 font-bold font-['Space_Grotesk']">✓ Owned</div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-xl">💎</span>
                       <span className={`text-lg font-bold font-['Space_Grotesk'] ${canAfford ? 'text-purple-200' : 'text-gray-400'}`}>
                         {skin.price.toLocaleString()}
                       </span>
                     </div>
-                  }
+                  )}
                 </div>
 
                 {/* View Details Button */}
@@ -260,8 +267,8 @@ export default function ShopPage() {
                   className="w-full px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/90 hover:to-pink-500/90 border border-purple-400/40 text-white">
                   View Details & Superpowers
                 </button>
-              </motion.div>);
-
+              </motion.div>
+            );
           })}
         </div>
 
@@ -286,37 +293,37 @@ export default function ShopPage() {
       </div>
 
       {/* Shop Item Modal */}
-      {selectedSkin &&
-      <ShopItemModal
-        skin={{
-          ...selectedSkin,
-          isPurchased: selectedSkin.unlocked,
-          isDefault: selectedSkin.tier === 'default'
-        }}
-        onClose={() => setSelectedSkin(null)}
-        onPurchase={handlePurchase}
-        onEquip={handleEquip}
-        canAfford={stardust >= selectedSkin.price}
-        isActive={selectedSkin.id === activeSkinId} />
-
-      }
+      {selectedSkin && (
+        <ShopItemModal
+          skin={{
+            ...selectedSkin,
+            isPurchased: selectedSkin.unlocked,
+            isDefault: selectedSkin.tier === 'default'
+          }}
+          onClose={() => setSelectedSkin(null)}
+          onPurchase={handlePurchase}
+          onEquip={handleEquip}
+          canAfford={stardust >= selectedSkin.price}
+          isActive={selectedSkin.id === activeSkinId}
+        />
+      )}
 
       {/* Purchase Success Notification */}
       <AnimatePresence>
-        {showPurchaseSuccess &&
-        <motion.div
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-green-400 rounded-xl px-8 py-4 shadow-2xl shadow-green-500/50"
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}>
-
+        {showPurchaseSuccess && (
+          <motion.div
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-green-400 rounded-xl px-8 py-4 shadow-2xl shadow-green-500/50"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+          >
             <div className="text-white font-bold text-center">
               <div className="text-2xl mb-1">🎉 Purchase Successful!</div>
               <div className="text-lg font-['Space_Grotesk']">{purchasedSkinName} unlocked! Click "Equip Ship" if you want to use it now.</div>
             </div>
           </motion.div>
-        }
+        )}
       </AnimatePresence>
-    </div>);
-
+    </div>
+  );
 }

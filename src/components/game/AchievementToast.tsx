@@ -29,12 +29,12 @@ export default function AchievementToast({ achievement, onComplete }: Achievemen
   // Difficulty color mapping
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy':return 'from-green-500 to-emerald-600';
-      case 'medium':return 'from-blue-500 to-cyan-600';
-      case 'hard':return 'from-purple-500 to-pink-600';
-      case 'extreme':return 'from-orange-500 to-red-600';
-      case 'hidden':return 'from-yellow-500 via-amber-500 to-orange-500';
-      default:return 'from-gray-500 to-gray-600';
+      case 'easy': return 'from-green-500 to-emerald-600';
+      case 'medium': return 'from-blue-500 to-cyan-600';
+      case 'hard': return 'from-purple-500 to-pink-600';
+      case 'extreme': return 'from-orange-500 to-red-600';
+      case 'hidden': return 'from-yellow-500 via-amber-500 to-orange-500';
+      default: return 'from-gray-500 to-gray-600';
     }
   };
 
@@ -46,10 +46,10 @@ export default function AchievementToast({ achievement, onComplete }: Achievemen
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: -20, opacity: 0 }}
-      transition={{ duration: 0.3 }}>
-
+      transition={{ duration: 0.3 }}
+    >
       <div className={`bg-gradient-to-r ${difficultyColor} border border-white/30 rounded-md px-2 py-1 shadow-lg flex items-center gap-1.5`}
-      style={{ boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)' }}>
+           style={{ boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)' }}>
 
         {/* Icon */}
         <span className="text-lg flex-shrink-0">{achievement.icon}</span>
@@ -70,31 +70,31 @@ export default function AchievementToast({ achievement, onComplete }: Achievemen
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
-        transition={{ duration: 1, delay: 0.2 }}>
-
-        {Array.from({ length: 12 }).map((_, i) =>
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 rounded-full bg-yellow-300"
-          style={{
-            transformOrigin: 'center',
-            left: '50%',
-            top: '50%'
-          }}
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={{
-            scale: [0, 1, 0],
-            x: Math.cos(i / 12 * Math.PI * 2) * 80,
-            y: Math.sin(i / 12 * Math.PI * 2) * 80
-          }}
-          transition={{
-            duration: 0.8,
-            delay: i * 0.02,
-            ease: 'easeOut'
-          }} />
-
-        )}
+        transition={{ duration: 1, delay: 0.2 }}
+      >
+        {Array.from({ length: 12 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-yellow-300"
+            style={{
+              transformOrigin: 'center',
+              left: '50%',
+              top: '50%'
+            }}
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={{
+              scale: [0, 1, 0],
+              x: Math.cos((i / 12) * Math.PI * 2) * 80,
+              y: Math.sin((i / 12) * Math.PI * 2) * 80
+            }}
+            transition={{
+              duration: 0.8,
+              delay: i * 0.02,
+              ease: 'easeOut'
+            }}
+          />
+        ))}
       </motion.div>
-    </motion.div>);
-
+    </motion.div>
+  );
 }

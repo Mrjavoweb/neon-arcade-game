@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
@@ -45,7 +45,7 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     streak: number;
     comebackBonus?: ComebackBonus;
     milestonesUnlocked?: MilestoneReward[];
-    nextMilestone?: MilestoneReward & {progress: number;};
+    nextMilestone?: MilestoneReward & { progress: number };
   } | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [bossState, setBossState] = useState<BossState>({
@@ -60,6 +60,8 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     attackPattern: 'spread',
     teleportCooldown: 0
   });
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -131,7 +133,7 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       const handleAchievementUnlock = (event: Event) => {
         const customEvent = event as CustomEvent;
         if (customEvent.detail?.achievement) {
-          setAchievements((prev) => [...prev, customEvent.detail.achievement]);
+          setAchievements(prev => [...prev, customEvent.detail.achievement]);
         }
       };
       window.addEventListener('achievement-unlocked', handleAchievementUnlock);
@@ -160,10 +162,14 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
       console.log('🎮 GameCanvas: Initializing stardust from GameEngine:', initialStardust);
       setStardust(initialStardust);
 
-      // Check for daily reward AFTER event listener is set up
-      gameEngineRef.current.checkDailyReward();
+      // Load assets with progress tracking
+      await gameEngineRef.current.loadAssets((progress) => {
+        setLoadingProgress(progress);
+      });
 
-      await gameEngineRef.current.loadAssets();
+      setIsLoading(false);
+
+      // Daily reward is now handled on HomePage - no need to check here
 
       if (!mounted) return;
 
@@ -230,13 +236,13 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
     }
   };
 
-  const handleClaimDailyReward = () => {
+  const handleClaimDailyReward = useCallback(() => {
     if (gameEngineRef.current) {
       const result = gameEngineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
         // Update popup state with milestones if any were unlocked
         if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
-          setDailyReward((prev) => prev ? {
+          setDailyReward(prev => prev ? {
             ...prev,
             milestonesUnlocked: result.milestonesUnlocked
           } : null);
@@ -247,7 +253,12 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
         }
       }
     }
-  };
+  }, []);
+
+  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
+  const handleCloseDailyReward = useCallback(() => {
+    setDailyReward(null);
+  }, []);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0a0014]">
@@ -256,103 +267,143 @@ export default function GameCanvas({ isMobile }: GameCanvasProps) {
         className="block w-full h-full"
         style={{ touchAction: 'none' }} />
 
-      
-      <GameHUD stats={stats} stardust={stardust} />
-      
-      {/* Boss health bar */}
-      {bossState.bossActive &&
-      <BossHealthBar
-        health={bossState.bossHealth}
-        maxHealth={bossState.bossMaxHealth}
-        phase={bossState.bossPhase} />
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/95 to-pink-900/95 backdrop-blur-sm">
+          <div className="text-center">
+            <h2 className="text-4xl md:text-6xl font-black text-cyan-400 mb-8 font-['Sora'] animate-pulse"
+                style={{ textShadow: '0 0 30px rgba(34, 211, 238, 0.8)' }}>
+              ALIEN INVASION
+            </h2>
 
-      }
+            {/* Progress Bar */}
+            <div className="w-64 md:w-96 h-4 bg-black/50 rounded-full overflow-hidden border-2 border-cyan-400/50 mb-4">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300 ease-out"
+                style={{
+                  width: `${loadingProgress}%`,
+                  boxShadow: '0 0 20px rgba(34, 211, 238, 0.6)'
+                }}
+              />
+            </div>
 
-      {/* Boss intro */}
-      {gameState === 'bossIntro' &&
-      <BossIntro wave={stats.wave} onSkip={handleSkipBossIntro} />
-      }
-
-      {/* Level Up Celebration */}
-      <AnimatePresence>
-        {showLevelUp &&
-        <LevelUpCelebration
-          level={levelUpData.level}
-          upgrade={levelUpData.upgrade}
-          onComplete={() => setShowLevelUp(false)} />
-
-        }
-      </AnimatePresence>
-
-      {/* Achievement Toasts */}
-      <AnimatePresence>
-        {achievements.map((achievement, index) =>
-        <div key={achievement.id} style={{ top: `${5 + index * 11}rem` }} className="fixed right-0 z-50">
-            <AchievementToast
-            achievement={achievement}
-            onComplete={() => {
-              setAchievements((prev) => prev.filter((a) => a.id !== achievement.id));
-            }} />
-
+            <p className="text-cyan-300 font-['Space_Grotesk'] text-lg">
+              Loading Assets... {Math.floor(loadingProgress)}%
+            </p>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
-      {/* Daily Reward Popup */}
-      <AnimatePresence>
-        {dailyReward &&
-        <DailyRewardPopup
-          day={dailyReward.day}
-          reward={dailyReward.reward}
-          streak={dailyReward.streak}
-          onClaim={handleClaimDailyReward}
-          onClose={() => setDailyReward(null)}
-          comebackBonus={dailyReward.comebackBonus}
-          milestonesUnlocked={dailyReward.milestonesUnlocked}
-          nextMilestone={dailyReward.nextMilestone} />
+      {/* Only show game UI when not loading */}
+      {!isLoading && (
+        <>
+          <GameHUD stats={stats} stardust={stardust} />
 
-        }
-      </AnimatePresence>
+          {/* Boss health bar */}
+          {bossState.bossActive &&
+          <BossHealthBar
+            health={bossState.bossHealth}
+            maxHealth={bossState.bossMaxHealth}
+            phase={bossState.bossPhase} />
+
+          }
+        </>
+      )}
+
+      {/* Only show game overlays when not loading */}
+      {!isLoading && (
+        <>
+          {/* Boss intro */}
+          {gameState === 'bossIntro' &&
+          <BossIntro wave={stats.wave} onSkip={handleSkipBossIntro} />
+          }
+
+          {/* Level Up Celebration */}
+          <AnimatePresence>
+            {showLevelUp &&
+            <LevelUpCelebration
+              level={levelUpData.level}
+              upgrade={levelUpData.upgrade}
+              onComplete={() => setShowLevelUp(false)} />
+
+            }
+          </AnimatePresence>
+
+          {/* Achievement Toasts */}
+          <AnimatePresence>
+            {achievements.map((achievement, index) => (
+              <div key={achievement.id} style={{ top: `${5 + index * 11}rem` }} className="fixed right-0 z-50">
+                <AchievementToast
+                  achievement={achievement}
+                  onComplete={() => {
+                    setAchievements(prev => prev.filter(a => a.id !== achievement.id));
+                  }}
+                />
+              </div>
+            ))}
+          </AnimatePresence>
+
+          {/* Daily Reward Popup */}
+          <AnimatePresence>
+            {dailyReward && (
+              <DailyRewardPopup
+                day={dailyReward.day}
+                reward={dailyReward.reward}
+                streak={dailyReward.streak}
+                onClaim={handleClaimDailyReward}
+                onClose={handleCloseDailyReward}
+                comebackBonus={dailyReward.comebackBonus}
+                milestonesUnlocked={dailyReward.milestonesUnlocked}
+                nextMilestone={dailyReward.nextMilestone}
+              />
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
       {/* Shop Modal */}
-      {gameEngineRef.current &&
-      <ShopModal
-        isOpen={showShop}
-        onClose={() => setShowShop(false)}
-        skins={gameEngineRef.current.cosmeticManager.getAllSkins()}
-        currentBalance={stardust}
-        activeSkinId={gameEngineRef.current.cosmeticManager.getActiveSkin().id}
-        onPurchase={(skinId) => gameEngineRef.current!.cosmeticManager.purchaseSkin(skinId)}
-        onEquip={(skinId) => gameEngineRef.current!.cosmeticManager.equipSkin(skinId)} />
+      {gameEngineRef.current && (
+        <ShopModal
+          isOpen={showShop}
+          onClose={() => setShowShop(false)}
+          skins={gameEngineRef.current.cosmeticManager.getAllSkins()}
+          currentBalance={stardust}
+          activeSkinId={gameEngineRef.current.cosmeticManager.getActiveSkin().id}
+          onPurchase={(skinId) => gameEngineRef.current!.cosmeticManager.purchaseSkin(skinId)}
+          onEquip={(skinId) => gameEngineRef.current!.cosmeticManager.equipSkin(skinId)}
+        />
+      )}
 
-      }
+      {!isLoading && (
+        <>
+          <GameOverlay
+            state={gameState}
+            stats={stats}
+            onResume={handleResume}
+            onRestart={handleRestart}
+            onMainMenu={handleMainMenu}
+            onShop={() => setShowShop(true)} />
 
-      <GameOverlay
-        state={gameState}
-        stats={stats}
-        onResume={handleResume}
-        onRestart={handleRestart}
-        onMainMenu={handleMainMenu}
-        onShop={() => setShowShop(true)} />
 
-
-      {/* Mobile pause button */}
-      {isMobile && gameState === 'playing' &&
-      <button
-        onClick={handlePause}
-        className="absolute top-4 right-4 z-10 px-4 py-2 bg-cyan-500/30 border border-cyan-500 rounded-lg text-cyan-300 font-['Space_Grotesk'] font-bold"
+          {/* Mobile pause button */}
+          {isMobile && gameState === 'playing' &&
+          <button
+            onClick={handlePause}
+            className="absolute top-4 right-4 z-10 px-4 py-2 bg-cyan-500/30 border border-cyan-500 rounded-lg text-cyan-300 font-['Space_Grotesk'] font-bold"
         style={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.4)' }}>
 
           PAUSE
         </button>
-      }
+          }
 
-      {/* Desktop controls hint */}
-      {!isMobile && gameState === 'playing' &&
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-center text-sm text-blue-300/60 font-['Space_Grotesk']">
-          <div>← → Move | SPACE Fire | P Pause</div>
-        </div>
-      }
+          {/* Desktop controls hint */}
+          {!isMobile && gameState === 'playing' &&
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-center text-sm text-blue-300/60 font-['Space_Grotesk']">
+              <div>← → Move | SPACE Fire | P Pause</div>
+            </div>
+          }
+        </>
+      )}
     </div>);
 
 }

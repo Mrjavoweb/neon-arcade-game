@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 interface LandscapePromptProps {
   isVisible: boolean;
   onLandscapeReady?: () => void;
+  onDismiss?: () => void;
 }
 
-export default function LandscapePrompt({ isVisible, onLandscapeReady }: LandscapePromptProps) {
+export default function LandscapePrompt({ isVisible, onLandscapeReady, onDismiss }: LandscapePromptProps) {
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
   const [hasRequestedOrientation, setHasRequestedOrientation] = useState(false);
@@ -118,8 +119,8 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
         className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}>
-
+        exit={{ opacity: 0 }}
+      >
         {/* Fullscreen Icon */}
         <motion.div
           animate={{
@@ -130,12 +131,12 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="mb-8">
-
+          className="mb-8"
+        >
           <Maximize2
             className="w-24 h-24 sm:w-32 sm:h-32 text-cyan-400"
-            style={{ filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.8))' }} />
-
+            style={{ filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.8))' }}
+          />
         </motion.div>
 
         {/* Title */}
@@ -149,8 +150,8 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
             backgroundClip: 'text',
             textShadow: '0 0 40px rgba(34, 211, 238, 0.5)',
             filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))'
-          }}>
-
+          }}
+        >
           Fullscreen Mode
         </motion.h1>
 
@@ -160,12 +161,12 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           style={{
             fontFamily: "'Space Grotesk', sans-serif",
             textShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
-          }}>
-
+          }}
+        >
           This game is best played in fullscreen
         </p>
 
-        {/* Single Button */}
+        {/* Fullscreen Button */}
         <motion.button
           onClick={enterFullscreen}
           className="px-12 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xl font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
@@ -174,24 +175,37 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
             boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
           }}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}>
-
+          whileTap={{ scale: 0.95 }}
+        >
           <Maximize2 className="w-8 h-8" />
           <span>Click for Fullscreen</span>
         </motion.button>
 
-        {/* Error Message */}
-        {fullscreenError &&
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm">
+        {/* Dismiss Button */}
+        {onDismiss && (
+          <motion.button
+            onClick={() => onDismiss?.()}
+            className="mt-4 px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold rounded-lg transition-all"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Continue Without Fullscreen
+          </motion.button>
+        )}
 
+        {/* Error Message */}
+        {fullscreenError && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm"
+          >
             {fullscreenError}
           </motion.div>
-        }
-      </motion.div>);
-
+        )}
+      </motion.div>
+    );
   }
 
   // Portrait mode - need to rotate to landscape AND fullscreen
@@ -200,8 +214,8 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
       className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}>
-
+      exit={{ opacity: 0 }}
+    >
       {/* Animated rotate icon */}
       <motion.div
         animate={{
@@ -213,12 +227,12 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className="mb-8">
-
+        className="mb-8"
+      >
         <RotateCw
           className="w-24 h-24 sm:w-32 sm:h-32 text-cyan-400"
-          style={{ filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.8))' }} />
-
+          style={{ filter: 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.8))' }}
+        />
       </motion.div>
 
       {/* Title */}
@@ -235,23 +249,23 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
         }}
         animate={{
           filter: [
-          'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))',
-          'drop-shadow(0 0 30px rgba(34, 211, 238, 0.9))',
-          'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))']
-
+            'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))',
+            'drop-shadow(0 0 30px rgba(34, 211, 238, 0.9))',
+            'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))'
+          ]
         }}
         transition={{
           duration: 2,
           repeat: Infinity,
           ease: 'easeInOut'
-        }}>
-
+        }}
+      >
         This game is best played in
         <br />
         Landscape Fullscreen view
       </motion.h1>
 
-      {/* Button to switch to landscape and fullscreen */}
+      {/* Landscape Button */}
       <motion.button
         onClick={switchToLandscapeAndFullscreen}
         className="px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-lg transition-all flex items-center gap-3 shadow-lg"
@@ -260,32 +274,45 @@ export default function LandscapePrompt({ isVisible, onLandscapeReady }: Landsca
           boxShadow: '0 0 30px rgba(34, 211, 238, 0.5)'
         }}
         whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}>
-
+        whileTap={{ scale: 0.95 }}
+      >
         <RotateCw className="w-7 h-7" />
         <span>Click here for Landscape View</span>
       </motion.button>
 
-      {/* Error Message */}
-      {fullscreenError &&
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm">
+      {/* Dismiss Button */}
+      {onDismiss && (
+        <motion.button
+          onClick={() => onDismiss?.()}
+          className="mt-4 px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold rounded-lg transition-all"
+          style={{ fontFamily: "'Sora', sans-serif" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Continue in Portrait Mode
+        </motion.button>
+      )}
 
+      {/* Error Message */}
+      {fullscreenError && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 px-4 py-2 bg-red-500/20 border border-red-400 rounded-lg text-red-300 text-sm"
+        >
           {fullscreenError}
         </motion.div>
-      }
+      )}
 
       {/* Pulsing hint */}
       <motion.p
         className="text-sm text-gray-400 text-center mt-6"
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 2, repeat: Infinity }}>
-
+        transition={{ duration: 2, repeat: Infinity }}
+      >
         {hasRequestedOrientation ? 'Please rotate your device now' : 'Tap the button to continue'}
       </motion.p>
-    </motion.div>);
-
+    </motion.div>
+  );
 }

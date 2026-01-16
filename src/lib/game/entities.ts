@@ -473,11 +473,11 @@ export class Boss {
     this.image = img;
   }
 
-  update(canvasWidth: number, isFrozen: boolean = false) {
+  update(canvasWidth: number, isFrozen: boolean = false, deltaTime: number = 1) {
     // Don't move or change direction when frozen
     if (!isFrozen) {
-      // Smooth horizontal movement with lerp
-      this.targetX += this.moveSpeed * this.moveDirection;
+      // Smooth horizontal movement with lerp (scaled by deltaTime for slow-mo support)
+      this.targetX += this.moveSpeed * this.moveDirection * deltaTime;
 
       // Bounce at edges
       if (this.targetX <= 0 || this.targetX + this.size.width >= canvasWidth) {
@@ -486,9 +486,9 @@ export class Boss {
       }
 
       // Smooth interpolation to target
-      this.position.x += (this.targetX - this.position.x) * this.smoothing;
+      this.position.x += (this.targetX - this.position.x) * this.smoothing * deltaTime;
 
-      this.wobbleOffset += this.wobbleSpeed;
+      this.wobbleOffset += this.wobbleSpeed * deltaTime;
     }
 
     if (this.flashTimer > 0) {
@@ -763,14 +763,14 @@ export class Projectile {
     // Homing missile tracking
     if (this.homing && this.target && this.target.isAlive) {
       // Calculate direction to target
-      const dx = this.target.position.x + this.target.size.width / 2 - this.position.x;
-      const dy = this.target.position.y + this.target.size.height / 2 - this.position.y;
+      const dx = (this.target.position.x + this.target.size.width / 2) - this.position.x;
+      const dy = (this.target.position.y + this.target.size.height / 2) - this.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx);
 
       // Stronger homing for distant targets (especially bosses)
       // Closer = weaker homing (0.5), Farther = stronger homing (1.2)
-      const homingStrength = Math.min(1.2, 0.5 + distance / 300);
+      const homingStrength = Math.min(1.2, 0.5 + (distance / 300));
 
       // Adjust velocity toward target
       const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
@@ -779,8 +779,8 @@ export class Projectile {
 
       // Normalize to maintain speed
       const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-      this.velocity.x = this.velocity.x / currentSpeed * speed;
-      this.velocity.y = this.velocity.y / currentSpeed * speed;
+      this.velocity.x = (this.velocity.x / currentSpeed) * speed;
+      this.velocity.y = (this.velocity.y / currentSpeed) * speed;
     }
 
     this.position.x += this.velocity.x;
@@ -1009,21 +1009,21 @@ export class PowerUpEntity implements PowerUp {
     const glowPulse = 30 + Math.sin(this.pulseOffset * 2) * 10;
     const colors: Record<PowerUpType, string> = {
       // Original powerups
-      plasma: '#a855f7', // Purple
-      rapid: '#22d3ee', // Cyan
-      shield: '#10b981', // Green
-      slowmo: '#f59e0b', // Orange
+      plasma: '#a855f7',      // Purple
+      rapid: '#22d3ee',       // Cyan
+      shield: '#10b981',      // Green
+      slowmo: '#f59e0b',      // Orange
       // New offensive powerups
-      homing: '#ec4899', // Pink (homing missiles)
-      laser: '#ef4444', // Red (laser beam)
-      nuke: '#dc2626', // Dark Red (nuclear bomb)
+      homing: '#ec4899',      // Pink (homing missiles)
+      laser: '#ef4444',       // Red (laser beam)
+      nuke: '#dc2626',        // Dark Red (nuclear bomb)
       // New defensive powerups
       invincibility: '#fbbf24', // Gold (invincibility star)
-      freeze: '#60a5fa', // Blue (freeze ray)
+      freeze: '#60a5fa',      // Blue (freeze ray)
       // New utility powerups
-      extralife: '#f87171', // Light Red (heart/life)
-      multiplier: '#a78bfa', // Violet (score multiplier)
-      magnet: '#34d399' // Teal (magnet)
+      extralife: '#f87171',   // Light Red (heart/life)
+      multiplier: '#a78bfa',  // Violet (score multiplier)
+      magnet: '#34d399'       // Teal (magnet)
     };
 
     ctx.save();

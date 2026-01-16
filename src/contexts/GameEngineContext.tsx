@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 
 interface GameEngineContextType {
@@ -8,13 +8,19 @@ interface GameEngineContextType {
 
 const GameEngineContext = createContext<GameEngineContextType | undefined>(undefined);
 
+// Stable default object to prevent re-renders when context is not found
+const defaultContextValue: GameEngineContextType = {
+  engine: null,
+  setEngine: () => {}
+};
+
 export function useGameEngine() {
   const context = useContext(GameEngineContext);
   if (!context) {
     // During development with HMR, context might temporarily be undefined
-    // Return a safe default instead of throwing
+    // Return a stable default to prevent infinite re-renders
     console.warn('useGameEngine: Context not found, returning default values');
-    return { engine: null, setEngine: () => {} };
+    return defaultContextValue;
   }
   return context;
 }
@@ -26,9 +32,12 @@ interface GameEngineProviderProps {
 }
 
 export function GameEngineProvider({ children, engine, setEngine }: GameEngineProviderProps) {
-  return (
-    <GameEngineContext.Provider value={{ engine, setEngine }}>
-      {children}
-    </GameEngineContext.Provider>);
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({ engine, setEngine }), [engine, setEngine]);
 
+  return (
+    <GameEngineContext.Provider value={value}>
+      {children}
+    </GameEngineContext.Provider>
+  );
 }

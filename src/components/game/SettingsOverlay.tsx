@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { X, Volume2, VolumeX, Music, Zap, Smartphone, Eye, Lightbulb, RotateCcw } from 'lucide-react';
+import { X, Volume2, VolumeX, Music, Zap, Smartphone, Eye, Lightbulb, RotateCcw, Target } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getSettingsManager } from '@/lib/game/settings/SettingsManager';
-import { GameSettings, ParticleQuality, ControlSensitivity } from '@/lib/game/settings/SettingsTypes';
+import { GameSettings, ParticleQuality, ControlSensitivity, DifficultyLevel, DIFFICULTY_CONFIGS } from '@/lib/game/settings/SettingsTypes';
 
 interface SettingsOverlayProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
     }
   }, [isOpen]);
 
-  const updateSetting = <K extends keyof GameSettings,>(key: K, value: GameSettings[K]) => {
+  const updateSetting = <K extends keyof GameSettings>(key: K, value: GameSettings[K]) => {
     settingsManager.updateSetting(key, value);
     setSettings(settingsManager.getSettings());
   };
@@ -78,8 +78,8 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             label="Screen Shake"
             description="Camera shake on impacts and explosions"
             value={settings.screenShake}
-            onChange={(value) => updateSetting('screenShake', value)} />
-
+            onChange={(value) => updateSetting('screenShake', value)}
+          />
 
           {/* Particle Quality */}
           <SettingSelect
@@ -88,12 +88,12 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             description="Visual effect quality (affects performance)"
             value={settings.particleQuality}
             options={[
-            { value: 'low', label: 'Low (Best Performance)' },
-            { value: 'medium', label: 'Medium (Balanced)' },
-            { value: 'high', label: 'High (Max Quality)' }]
-            }
-            onChange={(value) => updateSetting('particleQuality', value as ParticleQuality)} />
-
+              { value: 'low', label: 'Low (Best Performance)' },
+              { value: 'medium', label: 'Medium (Balanced)' },
+              { value: 'high', label: 'High (Max Quality)' },
+            ]}
+            onChange={(value) => updateSetting('particleQuality', value as ParticleQuality)}
+          />
 
           {/* Show FPS */}
           <SettingToggle
@@ -101,8 +101,8 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             label="Show FPS Counter"
             description="Display frame rate in top-left corner"
             value={settings.showFPS}
-            onChange={(value) => updateSetting('showFPS', value)} />
-
+            onChange={(value) => updateSetting('showFPS', value)}
+          />
         </div>
 
         {/* Audio Settings */}
@@ -119,8 +119,7 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             description="Weapon fire, explosions, and game sounds"
             value={settings.soundEffects}
             onChange={(value) => updateSetting('soundEffects', value)}
-            badge="Coming Soon" />
-
+          />
 
           {/* Music */}
           <SettingToggle
@@ -129,13 +128,56 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             description="Epic space battle soundtrack"
             value={settings.music}
             onChange={(value) => updateSetting('music', value)}
-            badge="Coming Soon" />
+          />
+        </div>
 
+        {/* Difficulty Settings */}
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-pink-400 mb-3 font-['Space_Grotesk'] flex items-center gap-2">
+            <Target size={20} />
+            Difficulty
+          </h3>
+
+          {/* Difficulty Selector */}
+          <div className="p-4 bg-black/30 rounded-lg border border-cyan-400/20 hover:border-cyan-400/40 transition-all">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="text-cyan-400 mt-1"><Target size={18} /></div>
+              <div className="flex-1">
+                <div className="text-white font-bold font-['Space_Grotesk']">Game Difficulty</div>
+                <div className="text-sm text-cyan-200/70 font-['Space_Grotesk']">
+                  {DIFFICULTY_CONFIGS[settings.difficulty].description}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['easy', 'normal', 'hard'] as DifficultyLevel[]).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => updateSetting('difficulty', level)}
+                  className={`px-4 py-2 rounded-lg font-bold font-['Space_Grotesk'] text-sm transition-all ${
+                    settings.difficulty === level
+                      ? level === 'easy' ? 'bg-green-500 text-black border-2 border-green-400'
+                        : level === 'hard' ? 'bg-red-500 text-white border-2 border-red-400'
+                        : 'bg-cyan-500 text-black border-2 border-cyan-400'
+                      : 'bg-gray-700/50 text-white border-2 border-gray-600 hover:border-cyan-400/50'
+                  }`}
+                  style={{
+                    boxShadow: settings.difficulty === level
+                      ? level === 'easy' ? '0 0 10px rgba(34, 197, 94, 0.5)'
+                        : level === 'hard' ? '0 0 10px rgba(239, 68, 68, 0.5)'
+                        : '0 0 10px rgba(34, 211, 238, 0.5)'
+                      : 'none'
+                  }}>
+                  {DIFFICULTY_CONFIGS[level].label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Mobile-Only Settings */}
-        {isMobile &&
-        <div className="mb-6">
+        {isMobile && (
+          <div className="mb-6">
             <h3 className="text-xl font-bold text-pink-400 mb-3 font-['Space_Grotesk'] flex items-center gap-2">
               <Smartphone size={20} />
               Touch Controls
@@ -143,29 +185,28 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
 
             {/* Touch Sensitivity */}
             <SettingSelect
-            icon={<Smartphone size={18} />}
-            label="Control Sensitivity"
-            description="How responsive touch controls feel"
-            value={settings.touchSensitivity}
-            options={[
-            { value: 'low', label: 'Low (Slower)' },
-            { value: 'normal', label: 'Normal' },
-            { value: 'high', label: 'High (Faster)' }]
-            }
-            onChange={(value) => updateSetting('touchSensitivity', value as ControlSensitivity)} />
-
+              icon={<Smartphone size={18} />}
+              label="Control Sensitivity"
+              description="How responsive touch controls feel"
+              value={settings.touchSensitivity}
+              options={[
+                { value: 'low', label: 'Low (Slower)' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'high', label: 'High (Faster)' },
+              ]}
+              onChange={(value) => updateSetting('touchSensitivity', value as ControlSensitivity)}
+            />
 
             {/* Haptic Feedback */}
             <SettingToggle
-            icon={<Zap size={18} />}
-            label="Haptic Feedback"
-            description="Vibration on hits and damage"
-            value={settings.hapticFeedback}
-            onChange={(value) => updateSetting('hapticFeedback', value)}
-            badge="Coming Soon" />
-
+              icon={<Zap size={18} />}
+              label="Haptic Feedback"
+              description="Vibration on hits and damage"
+              value={settings.hapticFeedback}
+              onChange={(value) => updateSetting('hapticFeedback', value)}
+            />
           </div>
-        }
+        )}
 
         {/* UI Settings */}
         <div className="mb-6">
@@ -180,8 +221,8 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
             label="Tutorial Hints"
             description="Show helpful tips and tutorials"
             value={settings.showTutorialHints}
-            onChange={(value) => updateSetting('showTutorialHints', value)} />
-
+            onChange={(value) => updateSetting('showTutorialHints', value)}
+          />
         </div>
 
         {/* Reset Button */}
@@ -202,8 +243,8 @@ export default function SettingsOverlay({ isOpen, onClose, isMobile }: SettingsO
           Done
         </button>
       </motion.div>
-    </motion.div>);
-
+    </motion.div>
+  );
 }
 
 // Toggle Setting Component
@@ -225,11 +266,11 @@ function SettingToggle({ icon, label, description, value, onChange, badge }: Set
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <div className="text-white font-bold font-['Space_Grotesk']">{label}</div>
-              {badge &&
-              <span className="text-[0.65rem] px-2 py-0.5 bg-yellow-500/20 border border-yellow-400/50 rounded text-yellow-300 font-['Space_Grotesk']">
+              {badge && (
+                <span className="text-[0.65rem] px-2 py-0.5 bg-yellow-500/20 border border-yellow-400/50 rounded text-yellow-300 font-['Space_Grotesk']">
                   {badge}
                 </span>
-              }
+              )}
             </div>
             <div className="text-sm text-cyan-200/70 font-['Space_Grotesk']">{description}</div>
           </div>
@@ -237,20 +278,20 @@ function SettingToggle({ icon, label, description, value, onChange, badge }: Set
         <button
           onClick={() => onChange(!value)}
           className={`relative w-12 h-6 rounded-full transition-all ${
-          value ? 'bg-cyan-500' : 'bg-gray-600'}`
-          }
+            value ? 'bg-cyan-500' : 'bg-gray-600'
+          }`}
           style={{
             boxShadow: value ? '0 0 10px rgba(34, 211, 238, 0.5)' : 'none'
           }}>
           <div
             className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-            value ? 'translate-x-6' : 'translate-x-0.5'}`
-            } />
-
+              value ? 'translate-x-6' : 'translate-x-0.5'
+            }`}
+          />
         </button>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 // Select Setting Component
@@ -259,7 +300,7 @@ interface SettingSelectProps {
   label: string;
   description: string;
   value: string;
-  options: {value: string;label: string;}[];
+  options: { value: string; label: string }[];
   onChange: (value: string) => void;
 }
 
@@ -274,22 +315,22 @@ function SettingSelect({ icon, label, description, value, options, onChange }: S
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {options.map((option) =>
-        <button
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          className={`px-4 py-2 rounded-lg font-bold font-['Space_Grotesk'] text-sm transition-all ${
-          value === option.value ?
-          'bg-cyan-500 text-black border-2 border-cyan-400' :
-          'bg-gray-700/50 text-white border-2 border-gray-600 hover:border-cyan-400/50'}`
-          }
-          style={{
-            boxShadow: value === option.value ? '0 0 10px rgba(34, 211, 238, 0.5)' : 'none'
-          }}>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            className={`px-4 py-2 rounded-lg font-bold font-['Space_Grotesk'] text-sm transition-all ${
+              value === option.value
+                ? 'bg-cyan-500 text-black border-2 border-cyan-400'
+                : 'bg-gray-700/50 text-white border-2 border-gray-600 hover:border-cyan-400/50'
+            }`}
+            style={{
+              boxShadow: value === option.value ? '0 0 10px rgba(34, 211, 238, 0.5)' : 'none'
+            }}>
             {option.label}
           </button>
-        )}
+        ))}
       </div>
-    </div>);
-
+    </div>
+  );
 }

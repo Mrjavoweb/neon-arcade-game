@@ -1,8 +1,8 @@
 import {
   Achievement,
   AchievementProgress,
-  STORAGE_KEYS } from
-'./ProgressionTypes';
+  STORAGE_KEYS
+} from './ProgressionTypes';
 import { CurrencyManager } from './CurrencyManager';
 import { getAudioManager } from '../audio/AudioManager';
 
@@ -34,359 +34,359 @@ export class AchievementManager {
 
   private initializeAchievements(): void {
     this.achievements = [
-    // ========================================================================
-    // COMBAT ACHIEVEMENTS (8 total)
-    // ========================================================================
-    {
-      id: 'first_blood',
-      name: 'First Blood',
-      description: 'Kill 100 enemies',
-      icon: '⚔️',
-      requirement: { type: 'kills', target: 100 },
-      rewards: { stardust: 100 },
-      category: 'combat',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'centurion',
-      name: 'Centurion',
-      description: 'Kill 1,000 enemies',
-      icon: '🗡️',
-      requirement: { type: 'kills', target: 1000 },
-      rewards: { stardust: 200 },
-      category: 'combat',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'war_machine',
-      name: 'War Machine',
-      description: 'Kill 5,000 enemies',
-      icon: '⚔️',
-      requirement: { type: 'kills', target: 5000 },
-      rewards: { stardust: 500, maxHealth: 1 },
-      category: 'combat',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'annihilator',
-      name: 'Annihilator',
-      description: 'Kill 10,000 enemies',
-      icon: '💀',
-      requirement: { type: 'kills', target: 10000 },
-      rewards: { stardust: 1000 },
-      category: 'combat',
-      difficulty: 'extreme',
-      unlocked: false,
-      hidden: true
-    },
-    {
-      id: 'combo_novice',
-      name: 'Combo Novice',
-      description: 'Achieve a 10x combo',
-      icon: '🔥',
-      requirement: { type: 'combo', target: 10 },
-      rewards: { stardust: 50 },
-      category: 'combat',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'combo_master',
-      name: 'Combo Master',
-      description: 'Achieve a 30x combo',
-      icon: '🔥',
-      requirement: { type: 'combo', target: 30 },
-      rewards: { stardust: 250 },
-      category: 'combat',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'combo_legend',
-      name: 'Combo Legend',
-      description: 'Achieve a 50x combo',
-      icon: '🔥',
-      requirement: { type: 'combo', target: 50 },
-      rewards: { stardust: 500 },
-      category: 'combat',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'combo_god',
-      name: 'Combo God',
-      description: 'Achieve a 100x combo',
-      icon: '💥',
-      requirement: { type: 'combo', target: 100 },
-      rewards: { stardust: 1000 },
-      category: 'combat',
-      difficulty: 'extreme',
-      unlocked: false,
-      hidden: true
-    },
+      // ========================================================================
+      // COMBAT ACHIEVEMENTS (8 total)
+      // ========================================================================
+      {
+        id: 'first_blood',
+        name: 'First Blood',
+        description: 'Kill 100 enemies',
+        icon: '⚔️',
+        requirement: { type: 'kills', target: 100 },
+        rewards: { stardust: 100 },
+        category: 'combat',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'centurion',
+        name: 'Centurion',
+        description: 'Kill 1,000 enemies',
+        icon: '🗡️',
+        requirement: { type: 'kills', target: 1000 },
+        rewards: { stardust: 200 },
+        category: 'combat',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'war_machine',
+        name: 'War Machine',
+        description: 'Kill 5,000 enemies',
+        icon: '⚔️',
+        requirement: { type: 'kills', target: 5000 },
+        rewards: { stardust: 500, maxHealth: 1 },
+        category: 'combat',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'annihilator',
+        name: 'Annihilator',
+        description: 'Kill 10,000 enemies',
+        icon: '💀',
+        requirement: { type: 'kills', target: 10000 },
+        rewards: { stardust: 1000 },
+        category: 'combat',
+        difficulty: 'extreme',
+        unlocked: false,
+        hidden: true
+      },
+      {
+        id: 'combo_novice',
+        name: 'Combo Novice',
+        description: 'Achieve a 10x combo',
+        icon: '🔥',
+        requirement: { type: 'combo', target: 10 },
+        rewards: { stardust: 50 },
+        category: 'combat',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'combo_master',
+        name: 'Combo Master',
+        description: 'Achieve a 30x combo',
+        icon: '🔥',
+        requirement: { type: 'combo', target: 30 },
+        rewards: { stardust: 250 },
+        category: 'combat',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'combo_legend',
+        name: 'Combo Legend',
+        description: 'Achieve a 50x combo',
+        icon: '🔥',
+        requirement: { type: 'combo', target: 50 },
+        rewards: { stardust: 500 },
+        category: 'combat',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'combo_god',
+        name: 'Combo God',
+        description: 'Achieve a 100x combo',
+        icon: '💥',
+        requirement: { type: 'combo', target: 100 },
+        rewards: { stardust: 1000 },
+        category: 'combat',
+        difficulty: 'extreme',
+        unlocked: false,
+        hidden: true
+      },
 
-    // ========================================================================
-    // SURVIVAL ACHIEVEMENTS (8 total)
-    // ========================================================================
-    {
-      id: 'wave_warrior',
-      name: 'Wave Warrior',
-      description: 'Reach Wave 10',
-      icon: '🌊',
-      requirement: { type: 'waves', target: 10 },
-      rewards: { stardust: 100 },
-      category: 'survival',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'survivor',
-      name: 'Survivor',
-      description: 'Reach Wave 20',
-      icon: '🌊',
-      requirement: { type: 'waves', target: 20 },
-      rewards: { stardust: 200 },
-      category: 'survival',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'immortal',
-      name: 'Immortal',
-      description: 'Reach Wave 50',
-      icon: '👑',
-      requirement: { type: 'waves', target: 50 },
-      rewards: { stardust: 600 },
-      category: 'survival',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'secret_wave_66',
-      name: 'Hell Survivor',
-      description: 'Reach Wave 66',
-      icon: '😈',
-      requirement: { type: 'waves', target: 66 },
-      rewards: { stardust: 666 },
-      category: 'survival',
-      difficulty: 'extreme',
-      unlocked: false,
-      hidden: true
-    },
-    {
-      id: 'untouchable',
-      name: 'Untouchable',
-      description: 'Complete a wave without taking damage',
-      icon: '🛡️',
-      requirement: { type: 'perfect_waves', target: 1 },
-      rewards: { stardust: 150 },
-      category: 'survival',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'iron_will',
-      name: 'Iron Will',
-      description: 'Complete 10 waves without taking damage',
-      icon: '🛡️',
-      requirement: { type: 'perfect_waves', target: 10 },
-      rewards: { stardust: 300, maxHealth: 1 },
-      category: 'survival',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'clutch_master',
-      name: 'Clutch Master',
-      description: 'Win 5 waves with only 1 life remaining',
-      icon: '💪',
-      requirement: { type: 'custom', target: 5 },
-      rewards: { stardust: 250 },
-      category: 'survival',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'high_roller',
-      name: 'High Roller',
-      description: 'Score 100,000 points in one game',
-      icon: '💯',
-      requirement: { type: 'score', target: 100000 },
-      rewards: { stardust: 350 },
-      category: 'survival',
-      difficulty: 'hard',
-      unlocked: false
-    },
+      // ========================================================================
+      // SURVIVAL ACHIEVEMENTS (8 total)
+      // ========================================================================
+      {
+        id: 'wave_warrior',
+        name: 'Wave Warrior',
+        description: 'Reach Wave 10',
+        icon: '🌊',
+        requirement: { type: 'waves', target: 10 },
+        rewards: { stardust: 100 },
+        category: 'survival',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'survivor',
+        name: 'Survivor',
+        description: 'Reach Wave 20',
+        icon: '🌊',
+        requirement: { type: 'waves', target: 20 },
+        rewards: { stardust: 200 },
+        category: 'survival',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'immortal',
+        name: 'Immortal',
+        description: 'Reach Wave 50',
+        icon: '👑',
+        requirement: { type: 'waves', target: 50 },
+        rewards: { stardust: 600 },
+        category: 'survival',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'secret_wave_66',
+        name: 'Hell Survivor',
+        description: 'Reach Wave 66',
+        icon: '😈',
+        requirement: { type: 'waves', target: 66 },
+        rewards: { stardust: 666 },
+        category: 'survival',
+        difficulty: 'extreme',
+        unlocked: false,
+        hidden: true
+      },
+      {
+        id: 'untouchable',
+        name: 'Untouchable',
+        description: 'Complete a wave without taking damage',
+        icon: '🛡️',
+        requirement: { type: 'perfect_waves', target: 1 },
+        rewards: { stardust: 150 },
+        category: 'survival',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'iron_will',
+        name: 'Iron Will',
+        description: 'Complete 10 waves without taking damage',
+        icon: '🛡️',
+        requirement: { type: 'perfect_waves', target: 10 },
+        rewards: { stardust: 300, maxHealth: 1 },
+        category: 'survival',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'clutch_master',
+        name: 'Clutch Master',
+        description: 'Win 5 waves with only 1 life remaining',
+        icon: '💪',
+        requirement: { type: 'custom', target: 5 },
+        rewards: { stardust: 250 },
+        category: 'survival',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'high_roller',
+        name: 'High Roller',
+        description: 'Score 100,000 points in one game',
+        icon: '💯',
+        requirement: { type: 'score', target: 100000 },
+        rewards: { stardust: 350 },
+        category: 'survival',
+        difficulty: 'hard',
+        unlocked: false
+      },
 
-    // ========================================================================
-    // BOSS ACHIEVEMENTS (4 total)
-    // ========================================================================
-    {
-      id: 'boss_hunter',
-      name: 'Boss Hunter',
-      description: 'Defeat 5 bosses',
-      icon: '👾',
-      requirement: { type: 'bosses', target: 5 },
-      rewards: { stardust: 150 },
-      category: 'mastery',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'boss_slayer',
-      name: 'Boss Slayer',
-      description: 'Defeat 20 bosses',
-      icon: '👾',
-      requirement: { type: 'bosses', target: 20 },
-      rewards: { stardust: 400 },
-      category: 'mastery',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'perfect_boss',
-      name: 'Perfect Boss',
-      description: 'Defeat a boss without taking damage',
-      icon: '👑',
-      requirement: { type: 'custom', target: 1 },
-      rewards: { stardust: 300 },
-      category: 'mastery',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'speed_killer',
-      name: 'Speed Killer',
-      description: 'Defeat a boss in under 60 seconds',
-      icon: '⚡',
-      requirement: { type: 'custom', target: 1 },
-      rewards: { stardust: 250 },
-      category: 'mastery',
-      difficulty: 'medium',
-      unlocked: false
-    },
+      // ========================================================================
+      // BOSS ACHIEVEMENTS (4 total)
+      // ========================================================================
+      {
+        id: 'boss_hunter',
+        name: 'Boss Hunter',
+        description: 'Defeat 5 bosses',
+        icon: '👾',
+        requirement: { type: 'bosses', target: 5 },
+        rewards: { stardust: 150 },
+        category: 'mastery',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'boss_slayer',
+        name: 'Boss Slayer',
+        description: 'Defeat 20 bosses',
+        icon: '👾',
+        requirement: { type: 'bosses', target: 20 },
+        rewards: { stardust: 400 },
+        category: 'mastery',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'perfect_boss',
+        name: 'Perfect Boss',
+        description: 'Defeat a boss without taking damage',
+        icon: '👑',
+        requirement: { type: 'custom', target: 1 },
+        rewards: { stardust: 300 },
+        category: 'mastery',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'speed_killer',
+        name: 'Speed Killer',
+        description: 'Defeat a boss in under 60 seconds',
+        icon: '⚡',
+        requirement: { type: 'custom', target: 1 },
+        rewards: { stardust: 250 },
+        category: 'mastery',
+        difficulty: 'medium',
+        unlocked: false
+      },
 
-    // ========================================================================
-    // COLLECTION ACHIEVEMENTS (6 total)
-    // ========================================================================
-    {
-      id: 'power_collector',
-      name: 'Power Collector',
-      description: 'Collect 20 power-ups',
-      icon: '⚡',
-      requirement: { type: 'powerups', target: 20 },
-      rewards: { stardust: 100 },
-      category: 'collection',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'shield_master',
-      name: 'Shield Master',
-      description: 'Use Shield power-up 25 times',
-      icon: '🛡️',
-      requirement: { type: 'custom', target: 25 },
-      rewards: { stardust: 100 },
-      category: 'collection',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'plasma_expert',
-      name: 'Plasma Expert',
-      description: 'Use Plasma power-up 25 times',
-      icon: '⚡',
-      requirement: { type: 'custom', target: 25 },
-      rewards: { stardust: 100 },
-      category: 'collection',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'rapid_master',
-      name: 'Rapid Fire Master',
-      description: 'Use Rapid Fire power-up 25 times',
-      icon: '🔫',
-      requirement: { type: 'custom', target: 25 },
-      rewards: { stardust: 100 },
-      category: 'collection',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'slowmo_expert',
-      name: 'Slow-Mo Expert',
-      description: 'Use Slow-Mo power-up 25 times',
-      icon: '🕐',
-      requirement: { type: 'custom', target: 25 },
-      rewards: { stardust: 100 },
-      category: 'collection',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'power_addict',
-      name: 'Power Addict',
-      description: 'Collect 100 power-ups',
-      icon: '💊',
-      requirement: { type: 'powerups', target: 100 },
-      rewards: { stardust: 300 },
-      category: 'collection',
-      difficulty: 'medium',
-      unlocked: false
-    },
+      // ========================================================================
+      // COLLECTION ACHIEVEMENTS (6 total)
+      // ========================================================================
+      {
+        id: 'power_collector',
+        name: 'Power Collector',
+        description: 'Collect 20 power-ups',
+        icon: '⚡',
+        requirement: { type: 'powerups', target: 20 },
+        rewards: { stardust: 100 },
+        category: 'collection',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'shield_master',
+        name: 'Shield Master',
+        description: 'Use Shield power-up 25 times',
+        icon: '🛡️',
+        requirement: { type: 'custom', target: 25 },
+        rewards: { stardust: 100 },
+        category: 'collection',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'plasma_expert',
+        name: 'Plasma Expert',
+        description: 'Use Plasma power-up 25 times',
+        icon: '⚡',
+        requirement: { type: 'custom', target: 25 },
+        rewards: { stardust: 100 },
+        category: 'collection',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'rapid_master',
+        name: 'Rapid Fire Master',
+        description: 'Use Rapid Fire power-up 25 times',
+        icon: '🔫',
+        requirement: { type: 'custom', target: 25 },
+        rewards: { stardust: 100 },
+        category: 'collection',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'slowmo_expert',
+        name: 'Slow-Mo Expert',
+        description: 'Use Slow-Mo power-up 25 times',
+        icon: '🕐',
+        requirement: { type: 'custom', target: 25 },
+        rewards: { stardust: 100 },
+        category: 'collection',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'power_addict',
+        name: 'Power Addict',
+        description: 'Collect 100 power-ups',
+        icon: '💊',
+        requirement: { type: 'powerups', target: 100 },
+        rewards: { stardust: 300 },
+        category: 'collection',
+        difficulty: 'medium',
+        unlocked: false
+      },
 
-    // ========================================================================
-    // MASTERY ACHIEVEMENTS (4 total)
-    // ========================================================================
-    {
-      id: 'rising_star',
-      name: 'Rising Star',
-      description: 'Reach Level 10',
-      icon: '⭐',
-      requirement: { type: 'level', target: 10 },
-      rewards: { stardust: 200 },
-      category: 'mastery',
-      difficulty: 'easy',
-      unlocked: false
-    },
-    {
-      id: 'veteran',
-      name: 'Veteran',
-      description: 'Reach Level 25',
-      icon: '⭐',
-      requirement: { type: 'level', target: 25 },
-      rewards: { stardust: 500, maxHealth: 1 },
-      category: 'mastery',
-      difficulty: 'hard',
-      unlocked: false
-    },
-    {
-      id: 'grinder',
-      name: 'Grinder',
-      description: 'Play 50 games',
-      icon: '🎮',
-      requirement: { type: 'games', target: 50 },
-      rewards: { stardust: 500 },
-      category: 'mastery',
-      difficulty: 'medium',
-      unlocked: false
-    },
-    {
-      id: 'marathon',
-      name: 'Marathon',
-      description: 'Play 100 games',
-      icon: '🏃',
-      requirement: { type: 'games', target: 100 },
-      rewards: { stardust: 750 },
-      category: 'mastery',
-      difficulty: 'hard',
-      unlocked: false
-    }];
-
+      // ========================================================================
+      // MASTERY ACHIEVEMENTS (4 total)
+      // ========================================================================
+      {
+        id: 'rising_star',
+        name: 'Rising Star',
+        description: 'Reach Level 10',
+        icon: '⭐',
+        requirement: { type: 'level', target: 10 },
+        rewards: { stardust: 200 },
+        category: 'mastery',
+        difficulty: 'easy',
+        unlocked: false
+      },
+      {
+        id: 'veteran',
+        name: 'Veteran',
+        description: 'Reach Level 25',
+        icon: '⭐',
+        requirement: { type: 'level', target: 25 },
+        rewards: { stardust: 500, maxHealth: 1 },
+        category: 'mastery',
+        difficulty: 'hard',
+        unlocked: false
+      },
+      {
+        id: 'grinder',
+        name: 'Grinder',
+        description: 'Play 50 games',
+        icon: '🎮',
+        requirement: { type: 'games', target: 50 },
+        rewards: { stardust: 500 },
+        category: 'mastery',
+        difficulty: 'medium',
+        unlocked: false
+      },
+      {
+        id: 'marathon',
+        name: 'Marathon',
+        description: 'Play 100 games',
+        icon: '🏃',
+        requirement: { type: 'games', target: 100 },
+        rewards: { stardust: 750 },
+        category: 'mastery',
+        difficulty: 'hard',
+        unlocked: false
+      }
+    ];
   }
 
   // ============================================================================
@@ -472,7 +472,7 @@ export class AchievementManager {
   // ============================================================================
 
   getAllAchievements(): any[] {
-    return this.achievements.map((a) => {
+    return this.achievements.map(a => {
       // Hide hidden achievements that aren't unlocked
       if (a.hidden && !a.unlocked) {
         return {
@@ -510,21 +510,21 @@ export class AchievementManager {
   }
 
   getUnlockedAchievements(): Achievement[] {
-    return this.achievements.filter((a) => a.unlocked);
+    return this.achievements.filter(a => a.unlocked);
   }
 
   getAchievementById(id: string): Achievement | undefined {
-    return this.achievements.find((a) => a.id === id);
+    return this.achievements.find(a => a.id === id);
   }
 
   getProgress(): any {
-    const unlocked = this.achievements.filter((a) => a.unlocked).length;
+    const unlocked = this.achievements.filter(a => a.unlocked).length;
     const total = this.achievements.length;
     const totalStardust = this.getTotalStardustFromAchievements();
 
     // Calculate category breakdown
-    const categories: Record<string, {total: number;unlocked: number;}> = {};
-    this.achievements.forEach((a) => {
+    const categories: Record<string, { total: number; unlocked: number }> = {};
+    this.achievements.forEach(a => {
       if (!categories[a.category]) {
         categories[a.category] = { total: 0, unlocked: 0 };
       }
@@ -544,14 +544,14 @@ export class AchievementManager {
   }
 
   getCompletionPercentage(): number {
-    const unlocked = this.achievements.filter((a) => a.unlocked).length;
-    return Math.round(unlocked / this.achievements.length * 100);
+    const unlocked = this.achievements.filter(a => a.unlocked).length;
+    return Math.round((unlocked / this.achievements.length) * 100);
   }
 
   getTotalStardustFromAchievements(): number {
-    return this.achievements.
-    filter((a) => a.unlocked).
-    reduce((sum, a) => sum + (a.rewards.stardust || 0), 0);
+    return this.achievements
+      .filter(a => a.unlocked)
+      .reduce((sum, a) => sum + (a.rewards.stardust || 0), 0);
   }
 
   // ============================================================================
@@ -559,7 +559,7 @@ export class AchievementManager {
   // ============================================================================
 
   private checkAchievements(): void {
-    this.achievements.forEach((achievement) => {
+    this.achievements.forEach(achievement => {
       if (achievement.unlocked) return;
 
       const req = achievement.requirement;
@@ -727,7 +727,7 @@ export class AchievementManager {
 
   private saveAchievements(): void {
     try {
-      const saveData = this.achievements.map((a) => ({
+      const saveData = this.achievements.map(a => ({
         id: a.id,
         unlocked: a.unlocked,
         unlockedDate: a.unlockedDate
@@ -744,7 +744,7 @@ export class AchievementManager {
       if (saved) {
         const saveData = JSON.parse(saved);
         saveData.forEach((saved: any) => {
-          const achievement = this.achievements.find((a) => a.id === saved.id);
+          const achievement = this.achievements.find(a => a.id === saved.id);
           if (achievement) {
             achievement.unlocked = saved.unlocked;
             achievement.unlockedDate = saved.unlockedDate;
@@ -762,7 +762,7 @@ export class AchievementManager {
 
   debugUnlockAll(): void {
     if (import.meta.env.DEV) {
-      this.achievements.forEach((a) => {
+      this.achievements.forEach(a => {
         if (!a.unlocked) {
           this.unlockAchievement(a);
         }
@@ -773,7 +773,7 @@ export class AchievementManager {
 
   debugResetAchievements(): void {
     if (import.meta.env.DEV) {
-      this.achievements.forEach((a) => {
+      this.achievements.forEach(a => {
         a.unlocked = false;
         a.unlockedDate = undefined;
       });
@@ -791,19 +791,19 @@ export class AchievementManager {
       unlocked: `${unlocked}/${total} (${this.getCompletionPercentage()}%)`,
       totalStardust: `${stardust} 💎`,
       progress: this.progress,
-      closeToUnlocking: this.achievements.
-      filter((a) => !a.unlocked && a.requirement.current).
-      map((a) => ({
-        name: a.name,
-        progress: `${a.requirement.current}/${a.requirement.target}`,
-        percentage: Math.round(a.requirement.current! / a.requirement.target * 100) + '%'
-      })).
-      sort((a, b) => {
-        const aPercent = parseInt(a.percentage);
-        const bPercent = parseInt(b.percentage);
-        return bPercent - aPercent;
-      }).
-      slice(0, 5)
+      closeToUnlocking: this.achievements
+        .filter(a => !a.unlocked && a.requirement.current)
+        .map(a => ({
+          name: a.name,
+          progress: `${a.requirement.current}/${a.requirement.target}`,
+          percentage: Math.round((a.requirement.current! / a.requirement.target) * 100) + '%'
+        }))
+        .sort((a, b) => {
+          const aPercent = parseInt(a.percentage);
+          const bPercent = parseInt(b.percentage);
+          return bPercent - aPercent;
+        })
+        .slice(0, 5)
     });
   }
 }

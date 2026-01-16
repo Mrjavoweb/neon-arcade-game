@@ -7,7 +7,7 @@ export default function GuidePage() {
   const location = useLocation();
 
   // Get return path from location state, default to home
-  const returnPath = (location.state as {from?: string;})?.from || '/';
+  const returnPath = (location.state as { from?: string })?.from || '/';
 
   const handleBack = () => {
     navigate(returnPath, { state: { returnedFrom: 'guide' } });
@@ -235,8 +235,8 @@ export default function GuidePage() {
                     src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/95d93858-1da2-4410-bc6d-7c97a81a2690.webp"
                     alt="Basic Alien"
                     className="w-12 h-12 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #ec4899)' }} />
-
+                    style={{ filter: 'drop-shadow(0 0 8px #ec4899)' }}
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-red-300 font-['Space_Grotesk'] mb-1">Basic Aliens</h3>
@@ -251,8 +251,8 @@ export default function GuidePage() {
                     src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/b6b8921b-cb05-4c7c-9637-17e8f8199206.webp"
                     alt="Heavy Alien"
                     className="w-12 h-12 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #f97316)' }} />
-
+                    style={{ filter: 'drop-shadow(0 0 8px #f97316)' }}
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-orange-300 font-['Space_Grotesk'] mb-1">Heavy Aliens</h3>
@@ -267,8 +267,8 @@ export default function GuidePage() {
                     src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/0ee5fdad-b7fc-40b7-b71b-5785189cd229.webp"
                     alt="Fast Alien"
                     className="w-12 h-12 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 8px #eab308)' }} />
-
+                    style={{ filter: 'drop-shadow(0 0 8px #eab308)' }}
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-yellow-300 font-['Space_Grotesk'] mb-1">Fast Aliens</h3>
@@ -283,8 +283,8 @@ export default function GuidePage() {
                     src="https://newoaks.s3.us-west-1.amazonaws.com/AutoDev/30807/63f19d5b-0342-487b-8747-2fc17cb64440.webp"
                     alt="Boss Alien"
                     className="w-12 h-12 object-contain"
-                    style={{ filter: 'drop-shadow(0 0 10px #dc2626)' }} />
-
+                    style={{ filter: 'drop-shadow(0 0 10px #dc2626)' }}
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-red-400 font-['Space_Grotesk'] mb-1">Boss Aliens</h3>
@@ -408,19 +408,19 @@ export default function GuidePage() {
             <div className="bg-black/30 rounded-lg p-4 border border-yellow-400/20">
               <h3 className="text-lg font-bold text-yellow-300 mb-2 font-['Space_Grotesk']">🔊 Audio Controls</h3>
               <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
-                Sound effects and background music toggles are coming soon! When implemented, you'll be able to:
+                Control your audio experience with full sound and music settings:
               </p>
-              <ul className="mt-2 space-y-1 text-cyan-200/70 font-['Space_Grotesk'] text-sm ml-4">
-                <li>• Control sound effects volume</li>
-                <li>• Toggle background music on/off</li>
-                <li>• Adjust individual audio elements</li>
+              <ul className="mt-2 space-y-1 text-cyan-200 font-['Space_Grotesk'] text-sm ml-4">
+                <li><strong className="text-white">• Sound Effects:</strong> Weapon fire, explosions, power-up sounds</li>
+                <li><strong className="text-white">• Background Music:</strong> Epic space battle soundtrack</li>
+                <li><strong className="text-white">• Quick Toggle:</strong> Use the speaker icon in the top corner</li>
               </ul>
             </div>
             <div className="bg-black/30 rounded-lg p-4 border border-blue-400/20">
               <h3 className="text-lg font-bold text-blue-300 mb-2 font-['Space_Grotesk']">📱 Mobile Settings</h3>
               <p className="text-cyan-200 font-['Space_Grotesk'] text-sm">
                 On mobile devices, you can also adjust touch control sensitivity (Low/Normal/High) to match
-                your playing style. Haptic feedback toggle coming soon!
+                your playing style.
               </p>
             </div>
           </div>
@@ -479,6 +479,6 @@ export default function GuidePage() {
           </button>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

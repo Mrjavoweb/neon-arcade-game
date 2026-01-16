@@ -11,7 +11,7 @@ import DailyRewardPopup from '@/components/game/DailyRewardPopup';
 import LandscapePrompt from '@/components/LandscapePrompt';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { GameState, GameStats, BossState } from '@/lib/game/types';
 import { Achievement, DailyReward, MilestoneReward, ComebackBonus } from '@/lib/game/progression/ProgressionTypes';
@@ -79,7 +79,7 @@ export default function GamePage() {
     streak: number;
     comebackBonus?: ComebackBonus;
     milestonesUnlocked?: MilestoneReward[];
-    nextMilestone?: MilestoneReward & {progress: number;};
+    nextMilestone?: MilestoneReward & { progress: number };
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const dailyRewardClaimedRef = useRef(false);
@@ -122,7 +122,7 @@ export default function GamePage() {
       console.log('🎮 GamePage: achievement-unlocked event received:', customEvent.detail);
       if (customEvent.detail?.achievement) {
         console.log('🎮 GamePage: Adding achievement to toast queue:', customEvent.detail.achievement);
-        setAchievements((prev) => [...prev, customEvent.detail.achievement]);
+        setAchievements(prev => [...prev, customEvent.detail.achievement]);
       } else {
         console.warn('🎮 GamePage: achievement-unlocked event has no achievement in detail:', customEvent.detail);
       }
@@ -271,7 +271,7 @@ export default function GamePage() {
 
   // Keep game paused when returning from shop/achievements/guide/leaderboard
   useEffect(() => {
-    const returnedFrom = (location.state as {returnedFrom?: string;})?.returnedFrom;
+    const returnedFrom = (location.state as { returnedFrom?: string })?.returnedFrom;
     if (returnedFrom && (returnedFrom === 'shop' || returnedFrom === 'achievements' || returnedFrom === 'guide' || returnedFrom === 'leaderboard')) {
       // Ensure game stays paused when returning
       if (engineRef.current && engineRef.current.state !== 'paused') {
@@ -308,7 +308,7 @@ export default function GamePage() {
     }
   };
 
-  const handleClaimDailyReward = () => {
+  const handleClaimDailyReward = useCallback(() => {
     if (engineRef.current) {
       const result = engineRef.current.dailyRewardManager.claimReward();
       if (result.success && result.reward) {
@@ -318,7 +318,7 @@ export default function GamePage() {
 
         // Update popup state with milestones if any were unlocked
         if (result.milestonesUnlocked && result.milestonesUnlocked.length > 0) {
-          setDailyReward((prev) => prev ? {
+          setDailyReward(prev => prev ? {
             ...prev,
             milestonesUnlocked: result.milestonesUnlocked
           } : null);
@@ -329,9 +329,10 @@ export default function GamePage() {
         }
       }
     }
-  };
+  }, []);
 
-  const handleCloseDailyReward = () => {
+  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
+  const handleCloseDailyReward = useCallback(() => {
     console.log('🎁 Daily reward popup closing, claimed flag:', dailyRewardClaimedRef.current);
     setDailyReward(null);
 
@@ -365,7 +366,7 @@ export default function GamePage() {
         console.log('🎁 Game resumed after daily reward popup closed');
       }
     }
-  };
+  }, []);
 
   const handleShop = () => {
     // Pause the game before navigating
@@ -410,8 +411,8 @@ export default function GamePage() {
   return (
     <div className="relative w-full h-screen bg-[#0a0014] overflow-hidden touch-none">
         <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full" />
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full" />
 
 
         <GameHUD stats={gameState.stats} stardust={stardust} activePowerUps={gameState.activePowerUps} />
@@ -420,86 +421,86 @@ export default function GamePage() {
         <PauseButton onPause={handlePause} />
 
         <BossHealthBar
-        show={gameState.bossState.bossActive}
-        health={gameState.bossState.bossHealth}
-        maxHealth={gameState.bossState.bossMaxHealth}
-        phase={gameState.bossState.bossPhase} />
+          show={gameState.bossState.bossActive}
+          health={gameState.bossState.bossHealth}
+          maxHealth={gameState.bossState.bossMaxHealth}
+          phase={gameState.bossState.bossPhase} />
 
 
         {/* <BossIntro show={gameState.bossState.bossIntroTimer > 0} wave={gameState.stats.wave} /> */}
 
         <GameOverlay
-        state={gameState.state}
-        stats={gameState.stats}
-        onResume={handleResume}
-        onRestart={handleRestart}
-        onRestartFromWave1={handleRestartFromWave1}
-        onMainMenu={handleMainMenu}
-        onGuide={handleGuide}
-        onShop={handleShop}
-        onAchievements={handleAchievements}
-        onSettings={handleSettings}
-        onLeaderboard={handleLeaderboard}
-        lastCheckpoint={engineRef.current?.lastCheckpoint} />
+          state={gameState.state}
+          stats={gameState.stats}
+          onResume={handleResume}
+          onRestart={handleRestart}
+          onRestartFromWave1={handleRestartFromWave1}
+          onMainMenu={handleMainMenu}
+          onGuide={handleGuide}
+          onShop={handleShop}
+          onAchievements={handleAchievements}
+          onSettings={handleSettings}
+          onLeaderboard={handleLeaderboard}
+          lastCheckpoint={engineRef.current?.lastCheckpoint} />
 
         {/* Settings Overlay */}
         <SettingsOverlay
-        isOpen={showSettings}
-        onClose={handleCloseSettings}
-        isMobile={isMobile} />
+          isOpen={showSettings}
+          onClose={handleCloseSettings}
+          isMobile={isMobile} />
 
       {/* Boss intro */}
-      {gameState.state === 'bossIntro' &&
-      <BossIntro wave={gameState.stats.wave} onSkip={handleSkipBossIntro} />
-      }
+      {gameState.state === 'bossIntro' && (
+        <BossIntro wave={gameState.stats.wave} onSkip={handleSkipBossIntro} />
+      )}
 
       {/* Level Up Celebration */}
       <AnimatePresence>
-        {showLevelUp &&
-        <LevelUpCelebration
-          level={levelUpData.level}
-          upgrade={levelUpData.upgrade}
-          onComplete={() => setShowLevelUp(false)} />
-
-        }
+        {showLevelUp && (
+          <LevelUpCelebration
+            level={levelUpData.level}
+            upgrade={levelUpData.upgrade}
+            onComplete={() => setShowLevelUp(false)}
+          />
+        )}
       </AnimatePresence>
 
       {/* Achievement Toasts - Single row above combo scores */}
       <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 flex gap-2">
         <AnimatePresence mode="popLayout">
-          {achievements.slice(0, 3).map((achievement) =>
-          <AchievementToast
-            key={achievement.id}
-            achievement={achievement}
-            onComplete={() => {
-              setAchievements((prev) => prev.filter((a) => a.id !== achievement.id));
-            }} />
-
-          )}
+          {achievements.slice(0, 3).map((achievement) => (
+            <AchievementToast
+              key={achievement.id}
+              achievement={achievement}
+              onComplete={() => {
+                setAchievements(prev => prev.filter(a => a.id !== achievement.id));
+              }}
+            />
+          ))}
         </AnimatePresence>
       </div>
 
       {/* Daily Reward Popup */}
       <AnimatePresence>
-        {dailyReward &&
-        <DailyRewardPopup
-          day={dailyReward.day}
-          reward={dailyReward.reward}
-          streak={dailyReward.streak}
-          onClaim={handleClaimDailyReward}
-          onClose={handleCloseDailyReward}
-          comebackBonus={dailyReward.comebackBonus}
-          milestonesUnlocked={dailyReward.milestonesUnlocked}
-          nextMilestone={dailyReward.nextMilestone} />
-
-        }
+        {dailyReward && (
+          <DailyRewardPopup
+            day={dailyReward.day}
+            reward={dailyReward.reward}
+            streak={dailyReward.streak}
+            onClaim={handleClaimDailyReward}
+            onClose={handleCloseDailyReward}
+            comebackBonus={dailyReward.comebackBonus}
+            milestonesUnlocked={dailyReward.milestonesUnlocked}
+            nextMilestone={dailyReward.nextMilestone}
+          />
+        )}
       </AnimatePresence>
 
       {/* Landscape Orientation Enforcement (Mobile Only) */}
       <LandscapePrompt
         isVisible={shouldShowPrompt}
-        onLandscapeReady={() => navigate('/')} />
-
+        onLandscapeReady={() => navigate('/')}
+      />
 
     </div>);
 

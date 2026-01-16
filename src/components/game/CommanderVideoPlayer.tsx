@@ -41,24 +41,24 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
       const playPromise = video.play();
 
       if (playPromise !== undefined) {
-        playPromise.
-        then(() => {
-          console.log('🎬 Video playback started successfully');
-          setIsPlaying(true);
-          // Try to unmute after playback starts
-          setTimeout(() => {
-            if (video && !video.paused) {
-              video.muted = false;
-              setIsMuted(false);
-              console.log('🎬 Video unmuted');
-            }
-          }, 100);
-        }).
-        catch((err) => {
-          console.error('🎬 Video autoplay failed:', err.name, err.message);
-          setIsPlaying(false);
-          // Don't set error, just show play button
-        });
+        playPromise
+          .then(() => {
+            console.log('🎬 Video playback started successfully');
+            setIsPlaying(true);
+            // Try to unmute after playback starts
+            setTimeout(() => {
+              if (video && !video.paused) {
+                video.muted = false;
+                setIsMuted(false);
+                console.log('🎬 Video unmuted');
+              }
+            }, 100);
+          })
+          .catch(err => {
+            console.error('🎬 Video autoplay failed:', err.name, err.message);
+            setIsPlaying(false);
+            // Don't set error, just show play button
+          });
       }
     };
 
@@ -127,8 +127,8 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
         className="fixed inset-0 bg-black z-[200]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }} />
-
+        exit={{ opacity: 0 }}
+      />
 
       {/* Video Container */}
       <motion.div
@@ -137,8 +137,8 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3 }}>
-
+        transition={{ duration: 0.3 }}
+      >
         {/* Video Element */}
         <video
           ref={videoRef}
@@ -163,71 +163,71 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
                 setIsMuted(videoRef.current.muted);
               }
             }
-          }}>
-
+          }}
+        >
           <source src="/video/Commander-Start-Video.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' />
           <source src="/video/Commander-Start-Video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 
         {/* Error/Loading Message */}
-        {error &&
-        <div className="absolute inset-0 flex items-center justify-center">
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="bg-black/80 border-2 border-red-400 rounded-lg px-6 py-4 text-white text-center">
               <p className="text-lg font-bold mb-2">{error}</p>
               <p className="text-sm">Click anywhere to continue</p>
             </div>
           </div>
-        }
+        )}
 
-        {!isLoaded && !error &&
-        <div className="absolute inset-0 flex items-center justify-center">
+        {!isLoaded && !error && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-white text-xl font-bold">Loading video...</div>
           </div>
-        }
+        )}
 
         {/* Manual Play Button - Show if loaded but not playing */}
-        {isLoaded && !isPlaying && !error &&
-        <div className="absolute inset-0 flex items-center justify-center">
+        {isLoaded && !isPlaying && !error && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <button
-            onClick={() => {
-              console.log('🎬 Manual play button clicked');
-              if (videoRef.current) {
-                videoRef.current.play();
-              }
-            }}
-            className="px-12 py-6 bg-green-600 hover:bg-green-500 border-4 border-green-400 rounded-2xl text-white font-bold text-2xl shadow-2xl cursor-pointer"
-            style={{
-              pointerEvents: 'auto',
-              zIndex: 9999
-            }}>
-
+              onClick={() => {
+                console.log('🎬 Manual play button clicked');
+                if (videoRef.current) {
+                  videoRef.current.play();
+                }
+              }}
+              className="px-12 py-6 bg-green-600 hover:bg-green-500 border-4 border-green-400 rounded-2xl text-white font-bold text-2xl shadow-2xl cursor-pointer"
+              style={{
+                pointerEvents: 'auto',
+                zIndex: 9999
+              }}
+            >
               ▶ PLAY VIDEO
             </button>
           </div>
-        }
+        )}
 
         {/* Sound Toggle Button */}
-        {isLoaded &&
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (videoRef.current) {
-              videoRef.current.muted = !videoRef.current.muted;
-              setIsMuted(videoRef.current.muted);
-              console.log('🎬 Sound toggled:', videoRef.current.muted ? 'muted' : 'unmuted');
-            }
-          }}
-          className="absolute top-4 left-4 px-4 py-3 bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg text-white font-bold text-2xl shadow-lg cursor-pointer"
-          style={{
-            pointerEvents: 'auto',
-            zIndex: 9999
-          }}
-          title={isMuted ? 'Unmute' : 'Mute'}>
-
+        {isLoaded && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(videoRef.current.muted);
+                console.log('🎬 Sound toggled:', videoRef.current.muted ? 'muted' : 'unmuted');
+              }
+            }}
+            className="absolute top-4 left-4 px-4 py-3 bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg text-white font-bold text-2xl shadow-lg cursor-pointer"
+            style={{
+              pointerEvents: 'auto',
+              zIndex: 9999
+            }}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
             {isMuted ? '🔇' : '🔊'}
           </button>
-        }
+        )}
 
         {/* Skip Button */}
         <button
@@ -243,11 +243,11 @@ export default function CommanderVideoPlayer({ onEnded, onSkip }: CommanderVideo
             boxShadow: '0 0 20px rgba(34, 211, 238, 0.5)',
             pointerEvents: 'auto',
             zIndex: 9999
-          }}>
-
+          }}
+        >
           SKIP ⏭
         </button>
       </motion.div>
-    </>);
-
+    </>
+  );
 }
