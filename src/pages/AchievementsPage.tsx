@@ -29,14 +29,13 @@ interface AchievementProgress {
   totalAchievements: number;
   unlockedAchievements: number;
   totalStardust: number;
-  categories: Record<string, { total: number; unlocked: number }>;
+  categories: Record<string, {total: number;unlocked: number;}>;
 }
 
 export default function AchievementsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { engine: contextEngine, setEngine } = useGameEngine();
-  const [localEngine, setLocalEngine] = useState<GameEngine | null>(null);
+  const { engine, setEngine } = useGameEngine();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [progress, setProgress] = useState<AchievementProgress>({
     totalAchievements: 0,
@@ -47,23 +46,17 @@ export default function AchievementsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'unlocked' | 'locked'>('all');
   const [filterCategory, setFilterCategory] = useState<'all' | 'combat' | 'survival' | 'mastery' | 'collection' | 'special'>('all');
 
-  // Use context engine if available, otherwise local engine
-  const engine = contextEngine || localEngine;
-
   // Get return path from location state, default to /game
-  const returnPath = (location.state as { from?: string })?.from || '/game';
+  const returnPath = (location.state as {from?: string;})?.from || '/game';
 
-  // Initialize local engine if context engine doesn't exist
+  // Initialize engine if it doesn't exist
   useEffect(() => {
-    if (!contextEngine && !localEngine) {
-      console.log('🏆 AchievementsPage: Creating local engine instance');
+    if (!engine) {
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
-      setLocalEngine(newEngine);
-      // Also try to set it in context for persistence
       setEngine(newEngine);
     }
-  }, [contextEngine, localEngine, setEngine]);
+  }, [engine, setEngine]);
 
   useEffect(() => {
     if (engine) {
@@ -88,16 +81,16 @@ export default function AchievementsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0014] to-[#1a0a2e] flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+      </div>);
+
   }
 
   // Filter achievements
   const filteredAchievements = achievements.filter((achievement) => {
     const statusMatch =
-      filterStatus === 'all' ||
-      (filterStatus === 'unlocked' && achievement.isUnlocked) ||
-      (filterStatus === 'locked' && !achievement.isUnlocked);
+    filterStatus === 'all' ||
+    filterStatus === 'unlocked' && achievement.isUnlocked ||
+    filterStatus === 'locked' && !achievement.isUnlocked;
 
     const categoryMatch = filterCategory === 'all' || achievement.category === filterCategory;
 
@@ -138,9 +131,9 @@ export default function AchievementsPage() {
     }
   };
 
-  const completionPercent = progress.totalAchievements > 0
-    ? Math.round((progress.unlockedAchievements / progress.totalAchievements) * 100)
-    : 0;
+  const completionPercent = progress.totalAchievements > 0 ?
+  Math.round(progress.unlockedAchievements / progress.totalAchievements * 100) :
+  0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0014] to-[#1a0a2e] text-white overflow-y-auto">
@@ -192,8 +185,8 @@ export default function AchievementsPage() {
                 style={{ width: `${completionPercent}%` }}
                 initial={{ width: 0 }}
                 animate={{ width: `${completionPercent}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
+                transition={{ duration: 1, ease: 'easeOut' }} />
+
             </div>
           </div>
 
@@ -227,45 +220,45 @@ export default function AchievementsPage() {
             <button
               onClick={() => setFilterStatus('all')}
               className={`px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                filterStatus === 'all'
-                  ? 'bg-yellow-500 text-black'
-                  : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
-              }`}>
+              filterStatus === 'all' ?
+              'bg-yellow-500 text-black' :
+              'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'}`
+              }>
               All
             </button>
             <button
               onClick={() => setFilterStatus('unlocked')}
               className={`px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                filterStatus === 'unlocked'
-                  ? 'bg-green-500 text-black'
-                  : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
-              }`}>
+              filterStatus === 'unlocked' ?
+              'bg-green-500 text-black' :
+              'bg-green-500/20 text-green-300 hover:bg-green-500/30'}`
+              }>
               Unlocked
             </button>
             <button
               onClick={() => setFilterStatus('locked')}
               className={`px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                filterStatus === 'locked'
-                  ? 'bg-gray-500 text-black'
-                  : 'bg-gray-500/20 text-gray-300 hover:bg-gray-500/30'
-              }`}>
+              filterStatus === 'locked' ?
+              'bg-gray-500 text-black' :
+              'bg-gray-500/20 text-gray-300 hover:bg-gray-500/30'}`
+              }>
               Locked
             </button>
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {['all', 'combat', 'survival', 'mastery', 'collection', 'special'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat as typeof filterCategory)}
-                className={`px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
-                  filterCategory === cat
-                    ? 'bg-cyan-500 text-black'
-                    : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30'
-                }`}>
+            {['all', 'combat', 'survival', 'mastery', 'collection', 'special'].map((cat) =>
+            <button
+              key={cat}
+              onClick={() => setFilterCategory(cat as typeof filterCategory)}
+              className={`px-4 py-2 rounded-lg font-bold transition-all font-['Space_Grotesk'] ${
+              filterCategory === cat ?
+              'bg-cyan-500 text-black' :
+              'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30'}`
+              }>
                 {cat === 'all' ? 'All' : getCategoryIcon(cat) + ' ' + cat.charAt(0).toUpperCase() + cat.slice(1)}
               </button>
-            ))}
+            )}
           </div>
         </div>
 
@@ -278,10 +271,10 @@ export default function AchievementsPage() {
               <motion.div
                 key={achievement.id}
                 className={`bg-gradient-to-br rounded-xl p-5 border-2 transition-all ${
-                  achievement.isUnlocked
-                    ? 'from-yellow-900/40 to-orange-900/40 border-yellow-400/60'
-                    : 'from-gray-900/40 to-gray-800/40 border-gray-600/40'
-                }`}
+                achievement.isUnlocked ?
+                'from-yellow-900/40 to-orange-900/40 border-yellow-400/60' :
+                'from-gray-900/40 to-gray-800/40 border-gray-600/40'}`
+                }
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}>
@@ -297,8 +290,8 @@ export default function AchievementsPage() {
                   <div className="flex-1">
                     <h3
                       className={`text-lg font-bold mb-1 font-['Sora'] ${
-                        achievement.isUnlocked ? 'text-yellow-300' : 'text-gray-400'
-                      }`}>
+                      achievement.isUnlocked ? 'text-yellow-300' : 'text-gray-400'}`
+                      }>
                       {achievement.name}
                     </h3>
                     <div
@@ -311,14 +304,14 @@ export default function AchievementsPage() {
                 {/* Description */}
                 <p
                   className={`text-sm mb-3 font-['Space_Grotesk'] ${
-                    achievement.isUnlocked ? 'text-cyan-200' : 'text-gray-500'
-                  }`}>
+                  achievement.isUnlocked ? 'text-cyan-200' : 'text-gray-500'}`
+                  }>
                   {achievement.description}
                 </p>
 
                 {/* Progress Bar (for locked achievements) */}
-                {!achievement.isUnlocked && achievement.progress && (
-                  <div className="mb-3">
+                {!achievement.isUnlocked && achievement.progress &&
+                <div className="mb-3">
                     <div className="flex justify-between text-xs text-gray-400 mb-1">
                       <span>Progress</span>
                       <span>
@@ -327,66 +320,66 @@ export default function AchievementsPage() {
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                        style={{
-                          width: `${Math.min((achievement.progress.current / achievement.progress.target) * 100, 100)}%`
-                        }}
-                      />
+                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                      style={{
+                        width: `${Math.min(achievement.progress.current / achievement.progress.target * 100, 100)}%`
+                      }} />
+
                     </div>
                   </div>
-                )}
+                }
 
                 {/* Rewards */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  {achievement.rewards.stardust && (
-                    <div
-                      className={`flex items-center gap-1 px-2 py-1 rounded ${
-                        achievement.isUnlocked ? 'bg-purple-500/30' : 'bg-gray-700/50'
-                      }`}>
+                  {achievement.rewards.stardust &&
+                  <div
+                    className={`flex items-center gap-1 px-2 py-1 rounded ${
+                    achievement.isUnlocked ? 'bg-purple-500/30' : 'bg-gray-700/50'}`
+                    }>
                       <span>💎</span>
                       <span className="text-sm font-bold">+{achievement.rewards.stardust}</span>
                     </div>
-                  )}
-                  {achievement.rewards.lives && (
-                    <div
-                      className={`flex items-center gap-1 px-2 py-1 rounded ${
-                        achievement.isUnlocked ? 'bg-red-500/30' : 'bg-gray-700/50'
-                      }`}>
+                  }
+                  {achievement.rewards.lives &&
+                  <div
+                    className={`flex items-center gap-1 px-2 py-1 rounded ${
+                    achievement.isUnlocked ? 'bg-red-500/30' : 'bg-gray-700/50'}`
+                    }>
                       <span>❤️</span>
                       <span className="text-sm font-bold">+{achievement.rewards.lives}</span>
                     </div>
-                  )}
-                  {achievement.rewards.maxHealth && (
-                    <div
-                      className={`flex items-center gap-1 px-2 py-1 rounded ${
-                        achievement.isUnlocked ? 'bg-yellow-500/30' : 'bg-gray-700/50'
-                      }`}>
+                  }
+                  {achievement.rewards.maxHealth &&
+                  <div
+                    className={`flex items-center gap-1 px-2 py-1 rounded ${
+                    achievement.isUnlocked ? 'bg-yellow-500/30' : 'bg-gray-700/50'}`
+                    }>
                       <span>💪</span>
                       <span className="text-sm font-bold">+{achievement.rewards.maxHealth}</span>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Unlock date */}
-                {achievement.isUnlocked && achievement.unlockedAt && (
-                  <div className="mt-3 pt-3 border-t border-yellow-400/20">
+                {achievement.isUnlocked && achievement.unlockedAt &&
+                <div className="mt-3 pt-3 border-t border-yellow-400/20">
                     <p className="text-xs text-yellow-300/60 font-['Space_Grotesk']">
                       Unlocked: {new Date(achievement.unlockedAt).toLocaleDateString()}
                     </p>
                   </div>
-                )}
-              </motion.div>
-            );
+                }
+              </motion.div>);
+
           })}
         </div>
 
         {/* Empty State */}
-        {filteredAchievements.length === 0 && (
-          <div className="text-center py-12">
+        {filteredAchievements.length === 0 &&
+        <div className="text-center py-12">
             <div className="text-6xl mb-4">🔍</div>
             <p className="text-xl text-gray-400 font-['Space_Grotesk']">No achievements found with current filters</p>
           </div>
-        )}
+        }
 
         {/* Bottom Back Button */}
         <div className="mt-8 mb-8 text-center">
@@ -398,6 +391,6 @@ export default function AchievementsPage() {
           </button>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }

@@ -1,6 +1,6 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import StarfieldBackground from '@/components/StarfieldBackground';
 import NeonButton from '@/components/NeonButton';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -8,12 +8,10 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 import SettingsOverlay from '@/components/game/SettingsOverlay';
 import SoundToggleButton from '@/components/game/SoundToggleButton';
 import LandscapePrompt from '@/components/LandscapePrompt';
-import DailyRewardPopup from '@/components/game/DailyRewardPopup';
 import { useGameEngine } from '@/contexts/GameEngineContext';
 import { GameEngine } from '@/lib/game/GameEngine';
 import { getAudioManager } from '@/lib/game/audio/AudioManager';
 import { useOrientationLock } from '@/hooks/useOrientationLock';
-import { DailyReward, ComebackBonus, MilestoneReward } from '@/lib/game/progression/ProgressionTypes';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -23,36 +21,15 @@ export default function HomePage() {
   const [isMobile] = useState(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth <= window.innerHeight);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [promptDismissed, setPromptDismissed] = useState(false);
-  const [dailyReward, setDailyReward] = useState<{
-    day: number;
-    reward: DailyReward;
-    streak: number;
-    comebackBonus?: ComebackBonus;
-    milestonesUnlocked?: MilestoneReward[];
-    nextMilestone?: MilestoneReward & { progress: number };
-  } | null>(null);
 
   // Check orientation and fullscreen status
   useEffect(() => {
     const checkOrientation = () => {
-      const newIsPortrait = window.innerWidth <= window.innerHeight;
-      setIsPortrait(newIsPortrait);
-
-      // Reset prompt dismissed state when rotating to landscape
-      if (!newIsPortrait && promptDismissed) {
-        setPromptDismissed(false);
-      }
+      setIsPortrait(window.innerWidth <= window.innerHeight);
     };
 
     const checkFullscreen = () => {
-      const newIsFullscreen = !!document.fullscreenElement;
-      setIsFullscreen(newIsFullscreen);
-
-      // Reset prompt dismissed state when entering fullscreen
-      if (newIsFullscreen && promptDismissed) {
-        setPromptDismissed(false);
-      }
+      setIsFullscreen(!!document.fullscreenElement);
     };
 
     checkOrientation();
@@ -67,48 +44,18 @@ export default function HomePage() {
       window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', checkFullscreen);
     };
-  }, [promptDismissed]);
+  }, []);
 
   // Initialize game engine for persistence
   useEffect(() => {
-    let currentEngine = engine;
-
     if (!engine) {
       // Create a temporary canvas for game engine initialization
       const tempCanvas = document.createElement('canvas');
       const newEngine = new GameEngine(tempCanvas, false);
       setEngine(newEngine);
       setStardust(newEngine.currencyManager.getStardust());
-      currentEngine = newEngine;
-
-      // Preload assets in background so they're ready when user clicks Play
-      newEngine.loadAssets().catch(err => console.warn('Background asset preload:', err));
-
-      // Check for daily reward on homepage
-      const rewardCheck = newEngine.dailyRewardManager.checkReward();
-      if (rewardCheck.available && rewardCheck.reward) {
-        setDailyReward({
-          day: rewardCheck.day,
-          reward: rewardCheck.reward,
-          streak: rewardCheck.streak,
-          comebackBonus: rewardCheck.comebackBonus,
-          nextMilestone: newEngine.dailyRewardManager.getNextMilestone()
-        });
-      }
     } else {
       setStardust(engine.currencyManager.getStardust());
-
-      // Check for daily reward if engine already exists
-      const rewardCheck = engine.dailyRewardManager.checkReward();
-      if (rewardCheck.available && rewardCheck.reward) {
-        setDailyReward({
-          day: rewardCheck.day,
-          reward: rewardCheck.reward,
-          streak: rewardCheck.streak,
-          comebackBonus: rewardCheck.comebackBonus,
-          nextMilestone: engine.dailyRewardManager.getNextMilestone()
-        });
-      }
     }
 
     // Start menu music
@@ -129,31 +76,13 @@ export default function HomePage() {
     };
   }, [engine, setEngine]);
 
-  // Handle daily reward claim
-  const handleClaimDailyReward = useCallback(() => {
-    const currentEngine = engine;
-    if (currentEngine) {
-      const result = currentEngine.dailyRewardManager.claimReward();
-      if (result.success) {
-        setStardust(currentEngine.currencyManager.getStardust());
-        // Don't update dailyReward state here - let DailyRewardPopup handle closing via its internal setTimeout
-        // Updating state here causes re-render which can reset the popup's internal "claimed" state
-      }
-    }
-  }, [engine]);
-
-  // Stable callback for closing daily reward popup - prevents useEffect re-triggers
-  const handleCloseDailyReward = useCallback(() => {
-    setDailyReward(null);
-  }, []);
-
   return (
     <div className="relative h-screen w-full overflow-hidden">
       {/* Animated starfield background */}
       <StarfieldBackground />
 
-      {/* PWA Install Prompt - hide when daily reward is showing to avoid z-index conflicts */}
-      {!dailyReward && <PWAInstallPrompt />}
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
 
       {/* Sound Toggle Button */}
       <SoundToggleButton variant="homepage" />
@@ -211,20 +140,20 @@ export default function HomePage() {
         </motion.div>
 
         {/* Best Experience Notice - Mobile/Portrait Only */}
-        {isMobile && isPortrait && (
-          <motion.div
-            className="mb-2 px-3 py-1.5 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}
-          >
+        {isMobile && isPortrait &&
+        <motion.div
+          className="mb-2 px-3 py-1.5 bg-yellow-500/20 border-2 border-yellow-400/60 rounded-lg max-w-md mx-auto"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          style={{ boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }}>
+
             <p className="text-yellow-300 font-bold text-xs font-['Space_Grotesk'] text-center"
-               style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
+          style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.6)' }}>
               💡 Best experience on desktop or landscape view
             </p>
           </motion.div>
-        )}
+        }
 
         {/* Buttons - Two Row Layout */}
         <motion.div
@@ -276,10 +205,10 @@ export default function HomePage() {
           className="mt-2 sm:mt-3 px-4 py-1.5 bg-purple-900/50 border-2 border-purple-400 rounded-xl"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
+          transition={{ delay: 0.8 }}>
+
           <div className="text-purple-300 font-bold flex items-center gap-2 text-sm sm:text-base"
-               style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
+          style={{ textShadow: '0 0 10px rgba(192, 132, 252, 0.8)' }}>
             <span>💎</span>
             <span>{stardust.toLocaleString()} Stardust</span>
           </div>
@@ -325,28 +254,7 @@ export default function HomePage() {
       </div>
 
       {/* Landscape/Fullscreen Prompt for Mobile */}
-      {isMobile && (
-        <LandscapePrompt
-          isVisible={(isPortrait || !isFullscreen) && !promptDismissed}
-          onDismiss={() => setPromptDismissed(true)}
-        />
-      )}
-
-      {/* Daily Reward Popup */}
-      <AnimatePresence>
-        {dailyReward && (
-          <DailyRewardPopup
-            day={dailyReward.day}
-            reward={dailyReward.reward}
-            streak={dailyReward.streak}
-            onClaim={handleClaimDailyReward}
-            onClose={handleCloseDailyReward}
-            comebackBonus={dailyReward.comebackBonus}
-            milestonesUnlocked={dailyReward.milestonesUnlocked}
-            nextMilestone={dailyReward.nextMilestone}
-          />
-        )}
-      </AnimatePresence>
+      {isMobile && <LandscapePrompt isVisible={isPortrait || !isFullscreen} />}
     </div>);
 
 }

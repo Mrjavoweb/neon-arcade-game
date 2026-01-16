@@ -55,8 +55,8 @@ const App = () => {
           </TooltipProvider>
         </QueryClientProvider>
       </HelmetProvider>
-    </ErrorBoundary>
-  );
+    </ErrorBoundary>);
+
 };
 
 

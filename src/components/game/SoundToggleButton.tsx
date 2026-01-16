@@ -40,9 +40,9 @@ export default function SoundToggleButton({ variant = 'game' }: SoundToggleButto
       return 'top-4 right-4 sm:top-6 sm:right-6';
     }
     // Game variant - original positioning
-    return isMobile && isLandscape
-      ? 'top-1 right-[30%]'
-      : 'top-2 right-[28%] sm:top-4 sm:right-[26%]';
+    return isMobile && isLandscape ?
+    'top-1 right-[30%]' :
+    'top-2 right-[28%] sm:top-4 sm:right-[26%]';
   };
 
   const getPaddingClass = () => {
@@ -71,29 +71,29 @@ export default function SoundToggleButton({ variant = 'game' }: SoundToggleButto
 
       <div
         className={`bg-black/60 backdrop-blur-sm border-2 transition-all hover:scale-110 ${
-          isEnabled
-            ? 'border-cyan-400/60 hover:bg-black/80 hover:border-cyan-400'
-            : 'border-red-400/60 hover:bg-black/80 hover:border-red-400'
-        } rounded-lg ${getPaddingClass()}`}
+        isEnabled ?
+        'border-cyan-400/60 hover:bg-black/80 hover:border-cyan-400' :
+        'border-red-400/60 hover:bg-black/80 hover:border-red-400'} rounded-lg ${
+        getPaddingClass()}`}
         style={{
-          boxShadow: isEnabled
-            ? '0 0 20px rgba(34, 211, 238, 0.5)'
-            : '0 0 20px rgba(239, 68, 68, 0.5)'
+          boxShadow: isEnabled ?
+          '0 0 20px rgba(34, 211, 238, 0.5)' :
+          '0 0 20px rgba(239, 68, 68, 0.5)'
         }}>
 
         {/* Sound icon */}
-        {isEnabled ? (
-          <Volume2
-            className={`${getIconSizeClass()} text-cyan-400`}
-            style={{ filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))' }}
-          />
-        ) : (
-          <VolumeX
-            className={`${getIconSizeClass()} text-red-400`}
-            style={{ filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))' }}
-          />
-        )}
+        {isEnabled ?
+        <Volume2
+          className={`${getIconSizeClass()} text-cyan-400`}
+          style={{ filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))' }} /> :
+
+
+        <VolumeX
+          className={`${getIconSizeClass()} text-red-400`}
+          style={{ filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))' }} />
+
+        }
       </div>
-    </button>
-  );
+    </button>);
+
 }

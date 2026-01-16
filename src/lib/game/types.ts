@@ -26,15 +26,8 @@ export interface BossState {
   bossIntroTimer: number;
   bossVictoryTimer: number;
   lastAttackTime: number;
-  attackPattern: 'spread' | 'laser' | 'teleport' | 'summon' | 'minions' | 'charge' | 'bombs';
+  attackPattern: 'spread' | 'laser' | 'teleport' | 'summon';
   teleportCooldown: number;
-  // Charge attack state
-  chargeActive: boolean;
-  chargeTelegraphTimer: number;
-  chargeDirection: number; // 1 = right, -1 = left
-  chargeStartX: number;
-  // Bomb attack state
-  bombsActive: { x: number; y: number; timer: number }[];
 }
 
 export interface GameStats {
@@ -89,22 +82,22 @@ export interface WaveTransition {
 }
 
 export type PowerUpType =
-  // Original powerups
-  | 'plasma'
-  | 'rapid'
-  | 'shield'
-  | 'slowmo'
-  // New offensive powerups
-  | 'homing'
-  | 'laser'
-  | 'nuke'
-  | 'piercing'
-  // New defensive powerups
-  | 'invincibility'
-  | 'freeze'
-  // New utility powerups
-  | 'extralife'
-  | 'multiplier';
+// Original powerups
+'plasma' |
+'rapid' |
+'shield' |
+'slowmo'
+// New offensive powerups
+| 'homing' |
+'laser' |
+'nuke' |
+'piercing'
+// New defensive powerups
+| 'invincibility' |
+'freeze'
+// New utility powerups
+| 'extralife' |
+'multiplier';
 
 export interface PowerUp {
   position: Position;

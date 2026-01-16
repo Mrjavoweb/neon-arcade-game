@@ -29,7 +29,7 @@ export interface CurrencyTransaction {
 export type AchievementCategory = 'combat' | 'survival' | 'mastery' | 'collection' | 'hidden';
 export type AchievementDifficulty = 'easy' | 'medium' | 'hard' | 'extreme';
 export type AchievementRequirementType = 'kills' | 'waves' | 'bosses' | 'combo' | 'score' |
-  'powerups' | 'lives' | 'level' | 'games' | 'perfect_waves' | 'custom';
+'powerups' | 'lives' | 'level' | 'games' | 'perfect_waves' | 'custom';
 
 export interface Achievement {
   id: string;
@@ -154,30 +154,30 @@ export interface ComebackBonus {
 // ============================================================================
 
 export type ShipSkinId =
-  | 'default'
-  | 'red_phoenix'
-  | 'green_viper'
-  | 'gold_elite'
-  | 'purple_shadow'
-  | 'cyan_frost'
-  | 'rainbow_streak'
-  | 'dark_matter'
-  | 'solar_flare'
-  | 'cosmic_void'
-  | 'diamond_elite';
+'default' |
+'red_phoenix' |
+'green_viper' |
+'gold_elite' |
+'purple_shadow' |
+'cyan_frost' |
+'rainbow_streak' |
+'dark_matter' |
+'solar_flare' |
+'cosmic_void' |
+'diamond_elite';
 
 export type ShipSuperpowerType =
-  | 'none'
-  | 'fire_rate_boost'
-  | 'movement_speed_boost'
-  | 'shield_duration_boost'
-  | 'dual_guns'
-  | 'piercing_shots'
-  | 'triple_shot'
-  | 'lifesteal'
-  | 'explosive_rounds'
-  | 'gravity_bullets'
-  | 'auto_shield';
+'none' |
+'fire_rate_boost' |
+'movement_speed_boost' |
+'shield_duration_boost' |
+'dual_guns' |
+'piercing_shots' |
+'triple_shot' |
+'lifesteal' |
+'explosive_rounds' |
+'gravity_bullets' |
+'auto_shield';
 
 export type ShipRole = 'balanced' | 'offensive' | 'mobility' | 'defensive' | 'utility';
 
@@ -239,7 +239,7 @@ export const STORAGE_KEYS = {
 
 export interface GameEvent {
   type: 'currency_earned' | 'achievement_unlocked' | 'daily_reward_available' |
-        'skin_purchased' | 'milestone_reached';
+  'skin_purchased' | 'milestone_reached';
   data: any;
   timestamp: number;
 }

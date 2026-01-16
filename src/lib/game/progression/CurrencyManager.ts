@@ -109,11 +109,11 @@ export class CurrencyManager {
   // ============================================================================
 
   private logTransaction(
-    type: 'earn' | 'spend',
-    currency: 'stardust' | 'gems' | 'coins',
-    amount: number,
-    source: string
-  ): void {
+  type: 'earn' | 'spend',
+  currency: 'stardust' | 'gems' | 'coins',
+  amount: number,
+  source: string)
+  : void {
     const transaction: CurrencyTransaction = {
       type,
       currency,

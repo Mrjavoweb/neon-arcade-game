@@ -3,8 +3,8 @@ import {
   LeaderboardData,
   LeaderboardCategory,
   STORAGE_KEY_LEADERBOARD,
-  MAX_LEADERBOARD_ENTRIES
-} from './LeaderboardTypes';
+  MAX_LEADERBOARD_ENTRIES } from
+'./LeaderboardTypes';
 import { GameStats } from '../types';
 
 /**
@@ -125,14 +125,14 @@ export class LeaderboardManager {
    * Returns the rank (0-based) if added, -1 if not added
    */
   private addToCategory(
-    category: LeaderboardCategory,
-    entry: LeaderboardEntry,
-    sortKey: keyof LeaderboardEntry
-  ): number {
+  category: LeaderboardCategory,
+  entry: LeaderboardEntry,
+  sortKey: keyof LeaderboardEntry)
+  : number {
     const list = this.data[category];
 
     // Find insertion position
-    let insertIndex = list.findIndex(e => (entry[sortKey] as number) > (e[sortKey] as number));
+    let insertIndex = list.findIndex((e) => entry[sortKey] as number > (e[sortKey] as number));
 
     // If not found and list is full, entry doesn't make the cut
     if (insertIndex === -1 && list.length >= MAX_LEADERBOARD_ENTRIES) {

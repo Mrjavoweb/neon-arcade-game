@@ -45,8 +45,8 @@ export function useOrientationLock(enableLock: boolean = true) {
         // Webkit/Mozilla prefixed versions
         else if ('mozLockOrientation' in screen) {
           (screen as any).mozLockOrientation('landscape');
-        }
-        else if ('msLockOrientation' in screen) {
+        } else
+        if ('msLockOrientation' in screen) {
           (screen as any).msLockOrientation('landscape');
         }
       } catch (error) {
